@@ -56,9 +56,11 @@ Base.@kwdef struct Params
     K::Int     = 3         # agents
     G::Int     = 5         # grid points per axis
     tau::Float64 = 2.0     # signal precision
-    gamma::Float64 = 0.5   # CRRA coefficient (gamma -> inf approaches CARA)
-    W::Float64   = 1.0     # wealth per agent
+    gamma::Float64 = 0.5   # risk-aversion coefficient (CRRA γ or CARA α depending on `utility`)
+    W::Float64   = 1.0     # wealth per agent (used by CRRA only)
     umax::Float64 = 2.0    # grid range [-umax, +umax]
+    utility::Symbol = :crra  # :crra  -> CRRA demand (power utility)
+                             # :cara  -> CARA demand (exponential utility, linear in log-odds)
 end
 
 logistic(x) = 1.0 / (1.0 + exp(-x))
@@ -72,14 +74,29 @@ f0(u, tau) = sqrt(tau / (2pi)) * exp(-tau/2 * (u + 0.5)^2)
 # Prior posterior (own signal only): mu = Lambda(tau*u)
 prior_posterior(u, tau) = logistic(tau * u)
 
-# [component of E1] CRRA demand per agent:
-#   x_k = W*(R-1) / ((1-p) + R*p),   R = exp((logit(mu) - logit(p))/gamma).
-# The market-clearing equation E1 is   Σ_k x_k(mu_k, p) = 0.
+# [component of E1] Per-agent demand.
+# Two functional forms are supported; both depend on (μ, p) via log-odds only.
+#
+#   :crra — CRRA / power utility
+#      x_k = W·(R − 1) / ((1 − p) + R·p),    R = exp((logit μ − logit p)/γ)
+#
+#   :cara — CARA / exponential utility on the binary asset
+#      x_k = (logit μ − logit p) / γ            [linear in log-odds]
+#
+# The market-clearing equation E1 is Σ_k x_k(μ_k, p) = 0 in both cases.
 function demand(mu, p, P::Params)
     mu_c = clamp(mu, 1e-12, 1.0 - 1e-12)
     p_c  = clamp(p,  1e-12, 1.0 - 1e-12)
-    R = exp((logit(mu_c) - logit(p_c)) / P.gamma)
-    return P.W * (R - 1.0) / ((1.0 - p_c) + R * p_c)
+    lo_mu = logit(mu_c)
+    lo_p  = logit(p_c)
+    if P.utility === :cara
+        return (lo_mu - lo_p) / P.gamma
+    elseif P.utility === :crra
+        R = exp((lo_mu - lo_p) / P.gamma)
+        return P.W * (R - 1.0) / ((1.0 - p_c) + R * p_c)
+    else
+        error("unknown utility: $(P.utility); expected :crra or :cara")
+    end
 end
 
 # [E1] Market-clearing residual  Σ_k x_k(mu_k, p).
@@ -355,23 +372,25 @@ function solve_newton(P::Params;
             break
         end
         J = fd_jacobian(x, u, P; h=h)
-        # Levenberg-Marquardt step: (J'J + lambda I) dx = -J' F
-        A = J' * J
+        # Direct Newton step: J dx = -F  (square system, n eqs = n unknowns)
+        # With LM damping we solve (J + lambda I) dx = -F instead.
         if lambda > 0
+            Jd = copy(J)
             @inbounds for k in 1:n
-                A[k, k] += lambda
+                Jd[k, k] += lambda
             end
+            dx = Jd \ (-Fx)
+        else
+            dx = J \ (-Fx)
         end
-        rhs = -(J' * Fx)
-        dx = A \ rhs
 
-        # simple backtracking line search
+        # Backtracking line search on ‖F‖∞
         alpha = 1.0
         xtrial = x + alpha * dx
         Ftrial = F(xtrial, u, P)
         nt = norm(Ftrial, Inf)
         tries = 0
-        while nt > fnorm && tries < 20
+        while nt > fnorm && tries < 25
             alpha *= 0.5
             xtrial = x + alpha * dx
             Ftrial = F(xtrial, u, P)
@@ -379,12 +398,19 @@ function solve_newton(P::Params;
             tries += 1
         end
 
+        # If line search failed to reduce F, bump lambda and retry next iter
+        if nt >= fnorm
+            lambda = lambda > 0 ? 10 * lambda : 1e-3
+        else
+            lambda = max(lambda / 2, 0.0)
+        end
+
         x = xtrial
         Fx = Ftrial
         fnorm = nt
         push!(history, fnorm)
         if verbose
-            @printf "iter %3d  ‖F‖∞ = %.6e   step=%.3g   lambda=%.1g\n" it fnorm alpha lambda
+            @printf "iter %3d  ‖F‖∞ = %.6e   step=%.3g   lambda=%.2e\n" it fnorm alpha lambda
         end
     end
 

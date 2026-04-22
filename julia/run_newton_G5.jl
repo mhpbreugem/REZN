@@ -6,9 +6,9 @@ using .Rezn
 using Printf
 using LinearAlgebra
 
-function run_case(; gamma::Float64, tag::String, u_report=(1.0, -1.0, 1.0),
-                   maxiters=50)
-    P = Rezn.Params(G=5, tau=2.0, gamma=gamma, umax=2.0)
+function run_case(; gamma::Float64, tag::String, utility::Symbol=:crra,
+                   u_report=(1.0, -1.0, 1.0), maxiters=50)
+    P = Rezn.Params(G=5, tau=2.0, gamma=gamma, umax=2.0, utility=utility)
     @printf "\n=== %s (gamma=%.3g) ===\n" tag gamma
     t0 = time()
     res = Rezn.solve_newton(P; verbose=true, maxiters=maxiters, abstol=1e-10)
@@ -29,8 +29,10 @@ function run_case(; gamma::Float64, tag::String, u_report=(1.0, -1.0, 1.0),
     return (gamma=gamma, p0=p0, p_star=p_star, mus=mus, res=res)
 end
 
-cara = run_case(gamma=100.0, tag="CARA (gamma=100, FR limit)")
-crra = run_case(gamma=0.5,   tag="CRRA (gamma=0.5, PR expected)")
+cara = run_case(gamma=1.0, utility=:cara,
+                tag="CARA explicit (exp utility, FR limit)")
+crra = run_case(gamma=0.5, utility=:crra,
+                tag="CRRA (gamma=0.5, PR expected)")
 
 println("\n=== Comparison at (u1,u2,u3) = (1,-1,1), G=5, tau=2.0 ===")
 @printf "                     |   CARA    |   CRRA    |\n"
@@ -41,5 +43,5 @@ println("\n=== Comparison at (u1,u2,u3) = (1,-1,1), G=5, tau=2.0 ===")
 @printf "mu_3 (u=+1)          | %.6f | %.6f |\n" cara.mus[3] crra.mus[3]
 
 println("\nSESSION_SUMMARY benchmark (G=5, tau=2):")
-println("  CARA FR prediction:  p* = Lambda(2) = 0.880797, mu_k = 0.880797 all")
+println("  CARA FR prediction:  p0 = Lambda(2/3) = 0.660833,  p* = Lambda(2) = 0.880797, mu_k = 0.880797 all")
 println("  CRRA PR prediction:  p* ~= 0.9077, mu ~= {0.9185, 0.8889, 0.9185}")
