@@ -7,11 +7,11 @@ using Printf
 using LinearAlgebra
 
 function run_case(; gamma::Float64, tag::String, utility::Symbol=:crra,
-                   u_report=(1.0, -1.0, 1.0), maxiters=50)
+                   u_report=(1.0, -1.0, 1.0), maxiters=200, abstol=1e-12)
     P = Rezn.Params(G=5, tau=2.0, gamma=gamma, umax=2.0, utility=utility)
     @printf "\n=== %s (gamma=%.3g) ===\n" tag gamma
     t0 = time()
-    res = Rezn.solve_newton(P; verbose=true, maxiters=maxiters, abstol=1e-10)
+    res = Rezn.solve_newton(P; verbose=true, maxiters=maxiters, abstol=abstol)
     dt = time() - t0
     @printf "solve time = %.2f s\n" dt
     @printf "‖F‖∞ = %.3e    converged=%s\n" norm(vec(res.residual), Inf) res.converged
