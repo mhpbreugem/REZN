@@ -492,4 +492,58 @@ function solve_anderson(P::Params;
             history=history, converged=(gnorm < abstol))
 end
 
+# -------------------------------------------------------------------
+# Plain Picard iteration:
+#
+#   P^{n+1}[i,j,l] = Φ(P^n)[i,j,l]  for every cell,
+#
+# where Φ at each cell is ONE 1-D root-find of the pointwise market
+# clearing equation E1 given posteriors computed from the conjectured
+# tensor P^n. Each cell's solve is independent in Φ — the only
+# coupling between cells is the (shared) conjectured price function.
+#
+# Damping:  P^{n+1} = α·Φ(P^n) + (1-α)·P^n  stabilises when Φ is not a
+# contraction near the fixed point.
+# -------------------------------------------------------------------
+function solve_picard(P::Params;
+                      maxiters::Int=500,
+                      abstol::Float64=1e-12,
+                      alpha::Float64=1.0,
+                      verbose::Bool=true)
+    u = build_grid(P)
+    P0 = nolearning_price(P, u)
+    Pcur = copy(P0)
+    history = Float64[]
+
+    if verbose
+        Fa = residual_array(Pcur, u, P)
+        gnorm0 = maximum(abs, Fa)
+        @printf "iter %3d  ‖Φ-I‖∞=%.2e   ‖F‖∞=%.2e   (initial, no-learning)\n" 0 NaN gnorm0
+    end
+
+    gnorm_g = Inf
+    for it in 1:maxiters
+        Pnew = phi_map(Pcur, u, P)
+        diff = maximum(abs, Pnew .- Pcur)
+        Pcur = alpha .* Pnew .+ (1 - alpha) .* Pcur
+        push!(history, diff)
+
+        # also report the stacked market-clearing residual at the current P
+        Fa = residual_array(Pcur, u, P)
+        fnorm = maximum(abs, Fa)
+        gnorm_g = diff
+
+        if verbose
+            @printf "iter %3d  ‖Φ-I‖∞=%.2e   ‖F‖∞=%.2e\n" it diff fnorm
+        end
+        if diff < abstol
+            break
+        end
+    end
+
+    Fa = residual_array(Pcur, u, P)
+    return (; P_star=Pcur, P0=P0, u=u, residual=Fa,
+            history=history, converged=(gnorm_g < abstol))
+end
+
 end # module
