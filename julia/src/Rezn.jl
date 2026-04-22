@@ -1,4 +1,47 @@
 module Rezn
+#
+# =====================================================================
+#   REE CONTOUR SOLVER — SYSTEM OF EQUATIONS AND UNKNOWNS
+# =====================================================================
+#
+#   Model (see SESSION_SUMMARY.md):
+#     v ∈ {0,1},  P(v=1) = 1/2
+#     K = 3 agents, private signal  s_k = v + ε_k,  ε_k ~ N(0, 1/τ)
+#     centered signal               u_k = s_k − 1/2
+#     CRRA utility, wealth W, zero net supply, NO noise traders.
+#
+#   The price function is a 3-tensor P[i,j,l] defined on the grid
+#     u_i, u_j, u_l ∈ u_grid  (i,j,l = 1,…,G).
+#
+#   --- Per cell (i,j,l), the REE system has 12G + 10 eqs/unknowns: ---
+#
+#   #   name            equation                                                   unknown        count
+#   ----------------------------------------------------------------------------------------------------
+#   D1  root-find A     P(·, u_jc, u_lc(·)) = p    [axis-A sweep, each agent]      u_lc           6G
+#   D2  root-find B     P(·, u_jc(·), u_lc) = p    [axis-B sweep, each agent]      u_jc           6G
+#   D3-D5 contour int.  A_v^(k) = ½[Σ_a f_v(u_a) f_v(u_lc) + Σ_b f_v(u_jc) f_v(u_b)]  A_v^(k)    6
+#                       (v ∈ {0,1}, k ∈ {1,2,3})
+#   D6  Bayes' rule     μ_k = f1_own · A1^(k) / (f0_own · A0^(k) + f1_own · A1^(k)) μ_k           3
+#   E1  market clearing Σ_k x_k(μ_k, p) = 0                                         P[i,j,l]      1
+#
+#   Stacked across all G³ cells: 12G⁴ + 10G³ equations & unknowns.
+#
+#   --- This file solves a REDUCED form of the system. ---
+#
+#   We substitute D1-D6 INSIDE the evaluation of F, so the outer solver
+#   only sees the G³ equations E1 in the G³ unknowns P[i,j,l]:
+#
+#        F(P)[i,j,l] := Σ_k x_k( μ_k(P; i,j,l),  P[i,j,l] ) = 0.           (E1 stacked)
+#
+#   Each evaluation of F at a candidate price array P performs, internally,
+#   the 12G + 9 hidden calculations (D1-D6) per cell: 6G piecewise-linear
+#   crossings (D1), 6G more (D2), sums those into six contour integrals
+#   (D3-D5), applies Bayes' rule (D6), and finally reports the market
+#   clearing residual (E1).
+#
+#   Functions in this file are tagged with their D/E role in the system.
+#
+# =====================================================================
 
 using LinearAlgebra
 using Printf
@@ -7,7 +50,7 @@ export Params, build_grid, nolearning_price, phi_map,
        residual_array, posteriors_at, solve_newton
 
 # -------------------------------------------------------------------
-# Parameters
+# Parameters — model primitives (all scalars, no eqs/unknowns attached)
 # -------------------------------------------------------------------
 Base.@kwdef struct Params
     K::Int     = 3         # agents
@@ -29,8 +72,9 @@ f0(u, tau) = sqrt(tau / (2pi)) * exp(-tau/2 * (u + 0.5)^2)
 # Prior posterior (own signal only): mu = Lambda(tau*u)
 prior_posterior(u, tau) = logistic(tau * u)
 
-# CRRA demand per agent:
-# x_k = W*(R-1)/((1-p) + R*p), R = exp((logit(mu) - logit(p))/gamma).
+# [component of E1] CRRA demand per agent:
+#   x_k = W*(R-1) / ((1-p) + R*p),   R = exp((logit(mu) - logit(p))/gamma).
+# The market-clearing equation E1 is   Σ_k x_k(mu_k, p) = 0.
 function demand(mu, p, P::Params)
     mu_c = clamp(mu, 1e-12, 1.0 - 1e-12)
     p_c  = clamp(p,  1e-12, 1.0 - 1e-12)
@@ -38,6 +82,9 @@ function demand(mu, p, P::Params)
     return P.W * (R - 1.0) / ((1.0 - p_c) + R * p_c)
 end
 
+# [E1] Market-clearing residual  Σ_k x_k(mu_k, p).
+# Setting this to zero (for each cell (i,j,l)) is the only equation that
+# survives in the reduced system: E1 stacked over G³ cells.
 function clearing_residual(mus::AbstractVector, p, P::Params)
     s = 0.0
     for mu in mus
@@ -92,7 +139,14 @@ function nolearning_price(P::Params, u)
 end
 
 # -------------------------------------------------------------------
-# Piecewise-linear 1D crossings.
+# [D1 / D2] Piecewise-linear 1D crossings.
+#
+# Both D1 (pass A) and D2 (pass B) are instances of the same 1D problem:
+# given a 1D slice of the price tensor at the conjectured price p,
+# find all grid off-axis points where the piecewise-linear interpolant
+# equals p. Each crossing is one unknown (u_lc in D1 or u_jc in D2);
+# we enumerate all of them because the price function need not be
+# monotone along the axis.
 # -------------------------------------------------------------------
 function find_crossings!(out::Vector{Float64}, xvals::AbstractVector, yvals::AbstractVector, target)
     empty!(out)
@@ -114,8 +168,20 @@ function find_crossings!(out::Vector{Float64}, xvals::AbstractVector, yvals::Abs
 end
 
 # -------------------------------------------------------------------
-# Posterior of agent `ag` at realization (i,j,l) given conjectured price array Pg.
-# 2-pass contour method.
+# [D1, D2, D3-D5, D6] Posterior of agent `ag` at cell (i,j,l),
+# given conjectured price array Pg and observed price p_obs.
+#
+# Role of each block inside this function:
+#   - the `for a in 1:G` loop performs D1 (sweep axis-A of the agent's
+#     slice, root-find for u_{axis-B}) and accumulates the axis-A half
+#     of D3-D5.
+#   - the `for b in 1:G` loop performs D2 (sweep axis-B, root-find for
+#     u_{axis-A}) and accumulates the axis-B half of D3-D5.
+#   - the final Bayes combination  μ_k = f1_own·A1 / (f0_own·A0 + f1_own·A1)
+#     implements D6 and returns the one scalar μ_k.
+#
+# The contour integrals D3-D5 are approximated by the two ½-weighted
+# sums of f_v(u_a)·f_v(u_b) evaluated at every (a, b) crossing pair.
 # -------------------------------------------------------------------
 function agent_posterior(ag::Int, i::Int, j::Int, l::Int,
                          p_obs, Pg::AbstractArray{<:Real,3},
@@ -135,11 +201,13 @@ function agent_posterior(ag::Int, i::Int, j::Int, l::Int,
         slice = @view Pg[:, :, l]
     end
 
-    A0 = 0.0
-    A1 = 0.0
+    A0 = 0.0    # accumulator for A_0^(k) — contour integral under v=0
+    A1 = 0.0    # accumulator for A_1^(k) — contour integral under v=1
     cross = buf
 
-    # Pass A: sweep a over grid, root-find b
+    # [D1] Pass A: sweep u_a over the grid, root-find u_b on the contour
+    # {(u_a, u_b): slice(u_a, u_b) = p_obs}.  Each crossing contributes one
+    # term to D3-D5 via f_v(u_a)*f_v(u_b).
     for a in 1:G
         yvals = @view slice[a, :]
         find_crossings!(cross, u, yvals, p_obs)
@@ -150,7 +218,7 @@ function agent_posterior(ag::Int, i::Int, j::Int, l::Int,
         end
     end
 
-    # Pass B: sweep b over grid, root-find a
+    # [D2] Pass B: sweep u_b over the grid, root-find u_a on the contour.
     for b in 1:G
         yvals = @view slice[:, b]
         find_crossings!(cross, u, yvals, p_obs)
@@ -161,9 +229,13 @@ function agent_posterior(ag::Int, i::Int, j::Int, l::Int,
         end
     end
 
+    # [D3-D5] Finalize contour integrals: A_v^(k) = ½·(pass-A + pass-B)
     A0 *= 0.5
     A1 *= 0.5
 
+    # [D6] Bayes' rule using the agent's own signal likelihood and the
+    # contour-integrated pair-likelihoods of the other two signals:
+    #   μ_k = f1_own * A1^(k) / (f0_own * A0^(k) + f1_own * A1^(k))
     g0 = f0(u_own, tau)
     g1 = f1(u_own, tau)
 
@@ -183,8 +255,10 @@ function posteriors_at(i, j, l, p_obs, Pg, u, P::Params)
 end
 
 # -------------------------------------------------------------------
-# Residual F(Pg)[i,j,l] = Σ_k x_k(mu_k(Pg; i,j,l), Pg[i,j,l]).
-# At REE this is zero everywhere.
+# [E1 stacked over G³ cells]
+# Residual F(Pg)[i,j,l] = Σ_k x_k(μ_k(Pg; i,j,l), Pg[i,j,l]).
+# The G³ unknowns are the prices P[i,j,l]; the G³ equations are the
+# market-clearing residuals. Setting F = 0 gives REE.
 # -------------------------------------------------------------------
 function residual_array(Pg::AbstractArray{<:Real,3}, u::AbstractVector, P::Params)
     G = P.G
@@ -317,6 +391,79 @@ function solve_newton(P::Params;
     Pg_star = reshape(x, P.G, P.G, P.G)
     return (; P_star=Pg_star, P0=P0, u=u, residual=reshape(Fx, P.G, P.G, P.G),
             history=history, converged=(fnorm < abstol))
+end
+
+# -------------------------------------------------------------------
+# Anderson-accelerated Picard on Φ (for large G where a dense Jacobian
+# is infeasible).
+#
+#   Picard step:       P^{n+1} = Φ(P^n)
+#   Anderson mixes the last m iterates to form a quasi-Newton step
+#   on the residual g(P) := Φ(P) - P.
+#
+# At REE both F(P)=0 (stacked E1) and g(P)=0 hold simultaneously — the
+# two formulations share the same fixed point.
+# -------------------------------------------------------------------
+function solve_anderson(P::Params;
+                        maxiters::Int=60,
+                        m::Int=6,
+                        abstol::Float64=1e-9,
+                        damping::Float64=1.0,
+                        verbose::Bool=true)
+    u = build_grid(P)
+    P0 = nolearning_price(P, u)
+    x = vec(copy(P0))
+    n = length(x)
+
+    gx = vec(phi_map(reshape(x, P.G, P.G, P.G), u, P)) .- x
+    gnorm = norm(gx, Inf)
+    history = Float64[gnorm]
+
+    # storage for last m iterates / residuals
+    X = Vector{Vector{Float64}}()
+    G = Vector{Vector{Float64}}()
+    push!(X, copy(x))
+    push!(G, copy(gx))
+
+    if verbose
+        @printf "iter %3d  ‖Φ(P)-P‖∞ = %.6e  (initial)\n" 0 gnorm
+    end
+
+    for it in 1:maxiters
+        if gnorm < abstol; break; end
+
+        # next iterate via linear least-squares over stored residuals
+        if length(G) == 1
+            x_new = X[end] .+ damping .* G[end]
+        else
+            # differences of residuals
+            ΔG = hcat([G[k+1] .- G[k] for k in 1:length(G)-1]...)
+            ΔX = hcat([X[k+1] .- X[k] for k in 1:length(X)-1]...)
+            # solve min_γ ‖G[end] - ΔG*γ‖
+            γ = ΔG \ G[end]
+            x_new = X[end] .+ damping .* G[end] .- (ΔX .+ damping .* ΔG) * γ
+        end
+
+        g_new = vec(phi_map(reshape(x_new, P.G, P.G, P.G), u, P)) .- x_new
+        gnorm = norm(g_new, Inf)
+
+        # slide history window
+        push!(X, copy(x_new))
+        push!(G, copy(g_new))
+        if length(X) > m + 1
+            popfirst!(X); popfirst!(G)
+        end
+        x = x_new
+        push!(history, gnorm)
+        if verbose
+            @printf "iter %3d  ‖Φ(P)-P‖∞ = %.6e\n" it gnorm
+        end
+    end
+
+    Pg_star = reshape(x, P.G, P.G, P.G)
+    Fa = residual_array(Pg_star, u, P)
+    return (; P_star=Pg_star, P0=P0, u=u, residual=Fa,
+            history=history, converged=(gnorm < abstol))
 end
 
 end # module
