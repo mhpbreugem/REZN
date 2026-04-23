@@ -629,16 +629,32 @@ function solve_newton_lu(P::Params;
         t_jac += (time_ns() - tb) * 1e-9
         bytes_jac += ab
 
-        # 2) LM damping
-        if lambda > 0
+        # 2) LM damping + LU factor with singular-J retry.
+        # Piecewise-linear contours make J rank-deficient on many rows;
+        # we bump λ on the diagonal and retry lu!() until it succeeds
+        # (ridge regression / LM regularisation).
+        tb = time_ns()
+        local F_lu
+        while true
+            Jd = copy(J)
+            lam_eff = max(lambda, 1e-10)
             @inbounds for k in 1:n
-                J[k, k] += lambda
+                Jd[k, k] += lam_eff
+            end
+            F_lu = LinearAlgebra.lu!(Jd; check=false)
+            if LinearAlgebra.issuccess(F_lu)
+                break
+            end
+            lambda = lambda > 0 ? 10*lambda : 1e-6
+            if lambda > 1e6
+                verbose && @printf "iter %3d  J stays singular up to λ=%.2e; aborting\n" it lambda
+                return (; P_star=reshape(x, P.G, P.G, P.G), P0=P0, u=u,
+                         residual=reshape(Fx, P.G, P.G, P.G),
+                         history, converged=false,
+                         timings=(; jac=t_jac, lu=t_lu, solve=t_solve, ls=t_ls, total=t_jac+t_lu+t_solve+t_ls),
+                         bytes_jac=bytes_jac)
             end
         end
-
-        # 3) in-place LU factor
-        tb = time_ns()
-        F_lu = LinearAlgebra.lu!(J)     # destructive; J now holds LU
         t_lu += (time_ns() - tb) * 1e-9
 
         # 4) triangular solves: dx = -F_lu \ Fx
@@ -662,8 +678,15 @@ function solve_newton_lu(P::Params;
         end
         t_ls += (time_ns() - tb) * 1e-9
 
+        # reject trial if line search failed to find a descent point:
+        # keep x, bump λ (LM damping) and retry next iter.
         if nt >= fnorm
             lambda = lambda > 0 ? 10*lambda : 1e-3
+            push!(history, fnorm)
+            verbose && @printf "iter %3d  ‖F‖∞=%.3e  (line search failed, λ=%.2e)\n" it fnorm lambda
+            # break out if λ explodes — no further progress possible
+            lambda > 1e12 && break
+            continue
         else
             lambda = max(lambda/2, 0.0)
         end

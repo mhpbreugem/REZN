@@ -27,8 +27,8 @@ function maxrss_mb()
 end
 
 function run_G(G::Int;
-               picard_iters::Int=2000, picard_tol=1e-13,
-               newton_iters::Int=8, newton_tol=1e-11,
+               picard_iters::Int=1200, picard_tol=1e-13,
+               newton_iters::Int=5, newton_tol=1e-11,
                do_newton::Bool=true)
     P = Rezn.Params(G=G, tau=TAU, gamma=GAMMA, umax=UMAX, utility=:crra)
     u = Rezn.build_grid(P)
@@ -39,6 +39,7 @@ function run_G(G::Int;
     jac_MB = unknowns^2 * 8 / (1024^2)
 
     @printf "\n=== G=%2d  (N=%d, J ~ %.1f MB dense)  cell (%d,%d,%d) -> u=(%.3f,%.3f,%.3f) ===\n" G unknowns jac_MB i j l u_hit[1] u_hit[2] u_hit[3]
+    flush(stdout)
 
     # Picard
     GC.gc(); b0 = Base.gc_bytes(); t0 = time()
@@ -52,6 +53,7 @@ function run_G(G::Int;
     PhiI_pic = isempty(pic.history) ? NaN : pic.history[end]
     @printf "  Picard     : iters=%5d   t=%6.2fs   alloc=%7s MB   peakRSS=%6.0f MB   ‖Φ-I‖∞=%.2e   ‖F‖∞=%.2e\n" length(pic.history) dt_pic fmt_mb(bytes_pic) rss_pic PhiI_pic Finf_pic
     @printf "              p*=%.10f   μ=(%.6f, %.6f, %.6f)   PR_gap=%.5f\n" p_pic mus_pic[1] mus_pic[2] mus_pic[3] mus_pic[1]-mus_pic[2]
+    flush(stdout)
 
     pic_summary = (method="Picard", G=G, iters=length(pic.history), dt=dt_pic, bytes=bytes_pic,
                    rss_mb=rss_pic, p=p_pic, mus=mus_pic, Finf=Finf_pic)
@@ -73,6 +75,7 @@ function run_G(G::Int;
         @printf "  Newton-LU  : iters=%5d   t=%6.2fs   alloc=%7s MB   peakRSS=%6.0f MB   ‖F‖∞=%.2e\n" length(new.history)-1 dt_new fmt_mb(bytes_new) rss_new Finf_new
         @printf "              breakdown: jac=%.2fs  lu=%.2fs  solve=%.2fs  line-search=%.2fs  (threads=%d)\n" tm.jac tm.lu tm.solve tm.ls Threads.nthreads()
         @printf "              p*=%.10f   μ=(%.6f, %.6f, %.6f)   PR_gap=%.5f\n" p_new mus_new[1] mus_new[2] mus_new[3] mus_new[1]-mus_new[2]
+        flush(stdout)
         newton_summary = (method="Newton-LU", G=G, iters=length(new.history)-1, dt=dt_new,
                           bytes=bytes_new, rss_mb=rss_new, p=p_new, mus=mus_new, Finf=Finf_new,
                           timings=tm)
@@ -89,7 +92,10 @@ results = []
 # G=5 → 0.12 MB, G=9 → 4 MB, G=13 → 37 MB, G=17 → 185 MB — all OK
 # but Jacobian BUILD TIME scales as G^7 (n F-evals * O(G^4) work each)
 for G in (5, 9, 13, 17)
-    do_newton = G <= 13       # skip Newton at G=17; ~hours on FD+LU
+    # Newton-LU feasibility budget. FD Jacobian is the bottleneck —
+    # O(G^7) flops per iter, so per Newton iter: G=5 <1s, G=9 ~10s,
+    # G=13 ~4min, G=17 ~30min. Run Newton at G=5,9,13; skip at G=17.
+    do_newton = G <= 13
     sp, sn, jmb = run_G(G; do_newton=do_newton)
     push!(results, (sp, sn, jmb))
 end
