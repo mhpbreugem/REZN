@@ -24,7 +24,7 @@ import rezn_het as rh
 import rezn_pchip as rp
 
 
-G        = 15
+G        = 11
 UMAX     = 2.0
 TAU      = 3.0           # default τ for the γ sweep
 GAMMA    = 3.0           # default γ for the τ sweep
