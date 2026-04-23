@@ -37,7 +37,11 @@ import rezn_het as rh
 parser = argparse.ArgumentParser()
 parser.add_argument("--G", type=int, default=9)
 parser.add_argument("--umax", type=float, default=2.0)
-parser.add_argument("--abstol", type=float, default=1e-10, help="‖Φ-I‖∞ tolerance")
+parser.add_argument("--abstol", type=float, default=1e-8,
+                    help="‖Φ-I‖∞ tolerance. At G=9 piecewise-linear kinks "
+                         "limit Picard to ~1e-7..1e-9 except at high τ where "
+                         "1e-10 is achievable. Default 1e-8 matches the "
+                         "practical G=9 floor.")
 parser.add_argument("--f-tol", type=float, default=1.0,
                     help="‖F‖∞ (market-clear) tolerance — loose, rejects only "
                          "blown-up solutions. Picard at low γ typically has "
