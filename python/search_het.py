@@ -164,6 +164,22 @@ def _log_tg(taus, gammas):
                                   np.asarray(gammas, dtype=float)]))
 
 
+def _cara_fr_tensor(G, u, taus, gammas):
+    """CARA full-revelation analytical prediction:
+       logit(p) = Σ (τ_k / γ_k) u_k / Σ (1/γ_k)."""
+    taus = np.asarray(taus, dtype=float)
+    gammas = np.asarray(gammas, dtype=float)
+    denom = (1.0 / gammas).sum()
+    w = (taus / gammas) / denom
+    P = np.empty((G, G, G))
+    for i in range(G):
+        for j in range(G):
+            for l in range(G):
+                z = w[0]*u[i] + w[1]*u[j] + w[2]*u[l]
+                P[i,j,l] = 1.0 / (1.0 + np.exp(-z))
+    return np.clip(P, 1e-9, 1.0 - 1e-9)
+
+
 def _nearest_cached(taus, gammas, max_dist=2.3):
     """Return P_star of the cached entry closest in log-parameter space,
     or None if the cache is empty or the nearest is further than max_dist."""
@@ -180,13 +196,18 @@ def solve_with_ladder(taus, gammas):
             "iters": 0, "time": 0.0, "alpha": None,
             "P_star": None, "converged": False, "warm": False}
 
-    # Try warm-start (from nearest cached converged P) first, then
-    # fall back to no-learning (cold) initialisation.
+    # Initialisation ladder:
+    #  1. warm-start from nearest cached converged P (if any close enough);
+    #  2. CARA FR analytical: logit(p) = Σ (τ_k/γ_k) u_k / Σ(1/γ_k);
+    #  3. cold (no-learning).
+    # On convergence the cache is updated; other ladders are skipped.
+    u_grid = rh.build_grid(G, UMAX)
     init_attempts = []
     P_warm = _nearest_cached(taus, gammas)
     if P_warm is not None:
-        init_attempts.append(("warm", P_warm))
-    init_attempts.append(("cold", None))
+        init_attempts.append(("warm",    P_warm))
+    init_attempts.append(("cara_fr",  _cara_fr_tensor(G, u_grid, taus, gammas)))
+    init_attempts.append(("cold",     None))
 
     for init_tag, P_init in init_attempts:
         for alpha in ALPHA_LADDER:
@@ -206,6 +227,7 @@ def solve_with_ladder(taus, gammas):
                     "iters": len(res["history"]), "time": dt,
                     "alpha": alpha, "P_star": res["P_star"],
                     "converged": (PhiI < ABSTOL) and (Finf < F_TOL),
+                    "init": init_tag,
                     "warm": (init_tag == "warm")}
             if cand["converged"] and not best["converged"]:
                 best = cand
@@ -253,7 +275,7 @@ def main():
         w.writerow(["tau_1","tau_2","tau_3","gamma_1","gamma_2","gamma_3",
                     "alpha","iters","time_s","PhiI","Finf",
                     "oneR2_het","oneR2_eq","p_star",
-                    "mu_1","mu_2","mu_3","pr_gap","converged","warm"])
+                    "mu_1","mu_2","mu_3","pr_gap","converged","init"])
         f.flush()
 
         t_start = time.time()
@@ -279,7 +301,7 @@ def main():
                  f"{float(P[i_r,j_r,l_r]):.10f}",
                  f"{mu[0]:.8f}", f"{mu[1]:.8f}", f"{mu[2]:.8f}",
                  f"{mu[0]-mu[1]:.6f}", int(best["converged"]),
-                 int(best.get("warm", False))]
+                 best.get("init", "")]
             )
             f.flush()
 
