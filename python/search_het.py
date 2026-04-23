@@ -61,7 +61,10 @@ U_REPORT = (1.0, -1.0, 1.0)
 
 def coarse_grid():
     """Deterministic coarse grid with light symmetry culling."""
-    gammas_grid = [0.1, 0.3, 1.0, 3.0, 10.0, 50.0]
+    # Drop gamma=0.1: at G=9 it fails cold-start across the full damping
+    # ladder (>30s per config, never converges); the IDW repair can still
+    # pick it up later from random/extreme candidates if any converge.
+    gammas_grid = [0.3, 1.0, 3.0, 10.0, 50.0]
     taus_grid = [0.3, 1.0, 3.0, 10.0]
     # Homogeneous baselines: all gammas equal, all taus equal
     for g in gammas_grid:
@@ -348,14 +351,15 @@ def main():
             n_conv += 1
             if row["oneR2_het"] > best_1mR2:
                 best_1mR2 = row["oneR2_het"]; best_tag = (taus, gammas, row["alpha"])
-        if n_done % 10 == 0 or n_done == 1:
+        # Flush CSV every config (cheap — 793 rows max) and status every 3
+        _flush_csv(args.out, rows)
+        if n_done % 3 == 0 or n_done == 1:
             dt = time.time() - t_start
             eta = (dt / n_done) * (len(unique) - n_done) / 3600.0
-            print(f"[pass-1 {n_done:4d}/{len(unique)}] converged={n_conv}  "
+            print(f"[pass-1 {n_done:4d}/{len(unique)}] conv={n_conv}  "
                   f"best 1-R²_het={best_1mR2:.3e}  at={best_tag}  "
-                  f"elapsed={dt/60:.1f}min  ETA={eta:.1f}h")
+                  f"dt={dt/60:.1f}m  ETA={eta:.1f}h  last={row['taus'] if row else None}→{row['converged'] if row else None}")
             sys.stdout.flush()
-            _flush_csv(args.out, rows)
 
     # Fill rows up to len(unique) with None so index alignment works.
     while len(rows) < len(unique):
@@ -389,11 +393,11 @@ def main():
                 # keep the better of old/new
                 if rows[i] is None or (row["PhiI"] < (rows[i]["PhiI"] if rows[i] else float("inf"))):
                     rows[i] = row
-            if k % 10 == 0:
+            _flush_csv(args.out, [r for r in rows if r is not None])
+            if k % 5 == 0:
                 print(f"  [pass-{pass_idx} {k}/{len(fails)}] repaired {n_repaired}  "
                       f"best 1-R²_het={best_1mR2:.3e}  cache={len(_CACHE)}")
                 sys.stdout.flush()
-                _flush_csv(args.out, [r for r in rows if r is not None])
         _flush_csv(args.out, [r for r in rows if r is not None])
         if n_repaired == 0:
             print(f"  pass-{pass_idx}: 0 repaired — stopping repair loop")
