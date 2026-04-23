@@ -38,7 +38,7 @@ CSV_OUT  = "/home/user/REZN/python/pchip_continuation_results.csv"
 # slow modes) but can be unstable.
 ANDERSON_WINDOWS = [6, 10, 15]
 ANDERSON_MAXITER = 800    # Anderson rarely needs more than this if it works
-PERTURB_SIGMA = 0.0      # DEBUG: disabled to isolate hang cause
+PERTURB_SIGMA = 1e-7     # tiny random logit noise on warm start
 
 
 # ---------------- Cache of converged (τ, γ, P*) -----------------------
@@ -70,29 +70,62 @@ def _perturb(P):
 # ---------------- Solve one config with α-ladder + warm start ---------
 
 def _linear_extrapolate(taus, gammas):
-    """DEBUG: disabled. Returns None → solve_one falls back to _nearest."""
-    return None
+    """Predictor step for continuation: extrapolate P* linearly in logit
+    space along the SAME continuation axis as the query.
+
+    The cache may contain entries from both a γ-chain (varying γ, fixed τ)
+    and a τ-sweep (varying τ, fixed γ). Picking the global 2-nearest can
+    mix these and extrapolate along the wrong axis (which caused earlier
+    hangs). So:
+
+      - Identify which coordinate of (taus, gammas) differs from most
+        cached entries → that's the "axis" we're sweeping.
+      - Filter cache to entries whose OTHER coordinates match the query.
+      - Use the 2 nearest along the swept axis.
+      - Require the query to extend in the same direction as e2 → e1,
+        i.e. λ > 0 (extrapolation, not interpolation between them).
+
+    Returns warm-start P or None if constraints not satisfied.
+    """
     if len(CACHE) < 2:
         return None
-    q = _log_tg(taus, gammas)
-    # distances
-    dists = [(float(np.linalg.norm(e["log_tg"] - q)), i) for i, e in enumerate(CACHE)]
-    dists.sort()
-    # top 2 nearest entries — assume they are on the continuation path
-    i1 = dists[0][1]; i2 = dists[1][1]
-    e1 = CACHE[i1]; e2 = CACHE[i2]
-    # direction from e2 → e1, extrapolate to query
-    v21 = e1["log_tg"] - e2["log_tg"]          # last step taken
-    v1q = q - e1["log_tg"]                      # step to query
-    norm21 = np.linalg.norm(v21)
-    if norm21 < 1e-9:
-        return e1["P_star"]
-    # cos similarity: if query continues the e2→e1 direction, extrapolate.
-    cos = float(np.dot(v21, v1q)) / (norm21 * max(np.linalg.norm(v1q), 1e-12))
-    if cos < 0.8:
-        return e1["P_star"]                     # not aligned; just use nearest
-    # first-order Taylor in logit space: logit P_q ≈ logit P_e1 + λ (logit P_e1 - logit P_e2)
-    lam = float(np.dot(v21, v1q)) / (norm21 ** 2)
+    t = np.asarray(taus, float); g = np.asarray(gammas, float)
+    # homogeneous case only: we use τ_1 and γ_1 as scalar axes
+    tq, gq = float(t[0]), float(g[0])
+
+    # Filter to same-γ (τ sweep) or same-τ (γ sweep) entries.
+    same_g = [e for e in CACHE if np.allclose(e["gammas"], g, atol=1e-12)
+              and not np.isclose(e["taus"][0], tq, atol=1e-12)]
+    same_t = [e for e in CACHE if np.allclose(e["taus"], t, atol=1e-12)
+              and not np.isclose(e["gammas"][0], gq, atol=1e-12)]
+
+    # prefer whichever axis has ≥2 same-axis neighbors
+    if len(same_g) >= 2:
+        candidates = same_g
+        axis_val = lambda e: float(e["taus"][0])
+        target = tq
+    elif len(same_t) >= 2:
+        candidates = same_t
+        axis_val = lambda e: float(e["gammas"][0])
+        target = gq
+    else:
+        return None
+
+    # Sort by distance along the swept axis
+    candidates.sort(key=lambda e: abs(axis_val(e) - target))
+    e1 = candidates[0]; e2 = candidates[1]
+    x1 = axis_val(e1); x2 = axis_val(e2)
+    if abs(x1 - x2) < 1e-12:
+        return None
+    # Direction e2 → e1. Query extends if (target-x1) has same sign as (x1-x2).
+    step = x1 - x2
+    delta = target - x1
+    lam = delta / step
+    # Only extrapolate if query is on the extrapolation side (λ>0) and
+    # the step is modest (|λ| ≤ 2) to avoid overshoot.
+    if lam <= 0.0 or lam > 2.0:
+        return None
+
     LP1 = np.log(e1["P_star"] / (1 - e1["P_star"]))
     LP2 = np.log(e2["P_star"] / (1 - e2["P_star"]))
     LP_q = LP1 + lam * (LP1 - LP2)
