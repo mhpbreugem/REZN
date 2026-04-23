@@ -546,4 +546,140 @@ function solve_picard(P::Params;
             history=history, converged=(gnorm_g < abstol))
 end
 
+# -------------------------------------------------------------------
+# Efficient Newton with explicit LU factorisation.
+#
+# At each iteration:
+#   1. Build dense FD Jacobian J in-place (central differences,
+#      optionally multithreaded across columns).
+#   2. Factor J in-place with LAPACK getrf via lu!(J).
+#   3. Solve J·dx = -F via triangular solves (no re-factor in line search).
+#   4. Backtrack on alpha on ‖F‖∞.
+#   5. LM damping added to J diagonal if a step fails.
+# -------------------------------------------------------------------
+
+# Threaded, in-place FD Jacobian. `xbuf`/`fpbuf`/`fmbuf` are reused.
+function fd_jacobian!(J::AbstractMatrix,
+                      x0::AbstractVector,
+                      u::AbstractVector, P::Params;
+                      h::Float64=1e-6,
+                      threaded::Bool=true)
+    n = length(x0)
+    @assert size(J) == (n, n)
+    if threaded && Threads.nthreads() > 1
+        Threads.@threads for k in 1:n
+            xp = copy(x0); xm = copy(x0)
+            xp[k] += h; xm[k] -= h
+            fp = F(xp, u, P)
+            fm = F(xm, u, P)
+            @inbounds for i in 1:n
+                J[i, k] = (fp[i] - fm[i]) / (2h)
+            end
+        end
+    else
+        xp = copy(x0); xm = copy(x0)
+        for k in 1:n
+            xp[k] = x0[k] + h
+            xm[k] = x0[k] - h
+            fp = F(xp, u, P)
+            fm = F(xm, u, P)
+            @inbounds for i in 1:n
+                J[i, k] = (fp[i] - fm[i]) / (2h)
+            end
+            xp[k] = x0[k]; xm[k] = x0[k]
+        end
+    end
+    return J
+end
+
+function solve_newton_lu(P::Params;
+                         x0=nothing,
+                         maxiters::Int=40,
+                         abstol::Float64=1e-11,
+                         h::Float64=1e-6,
+                         threaded::Bool=true,
+                         verbose::Bool=false)
+    u = build_grid(P)
+    if x0 === nothing
+        P0 = nolearning_price(P, u)
+        x = vec(copy(P0))
+    else
+        P0 = nolearning_price(P, u)
+        x = copy(x0)
+    end
+    n = length(x)
+    Fx = F(x, u, P)
+    fnorm = norm(Fx, Inf)
+    lambda = 0.0
+    history = Float64[fnorm]
+    J = Matrix{Float64}(undef, n, n)
+
+    t_jac = 0.0
+    t_lu  = 0.0
+    t_solve = 0.0
+    t_ls = 0.0
+    bytes_jac = 0
+
+    for it in 1:maxiters
+        fnorm < abstol && break
+
+        # 1) build Jacobian (timed)
+        tb = time_ns()
+        ab = @allocated fd_jacobian!(J, x, u, P; h=h, threaded=threaded)
+        t_jac += (time_ns() - tb) * 1e-9
+        bytes_jac += ab
+
+        # 2) LM damping
+        if lambda > 0
+            @inbounds for k in 1:n
+                J[k, k] += lambda
+            end
+        end
+
+        # 3) in-place LU factor
+        tb = time_ns()
+        F_lu = LinearAlgebra.lu!(J)     # destructive; J now holds LU
+        t_lu += (time_ns() - tb) * 1e-9
+
+        # 4) triangular solves: dx = -F_lu \ Fx
+        tb = time_ns()
+        dx = F_lu \ (-Fx)
+        t_solve += (time_ns() - tb) * 1e-9
+
+        # 5) backtracking line search
+        tb = time_ns()
+        alpha = 1.0
+        xtrial = x + alpha*dx
+        Ftrial = F(xtrial, u, P)
+        nt = norm(Ftrial, Inf)
+        tries = 0
+        while nt > fnorm && tries < 25
+            alpha *= 0.5
+            xtrial = x + alpha*dx
+            Ftrial = F(xtrial, u, P)
+            nt = norm(Ftrial, Inf)
+            tries += 1
+        end
+        t_ls += (time_ns() - tb) * 1e-9
+
+        if nt >= fnorm
+            lambda = lambda > 0 ? 10*lambda : 1e-3
+        else
+            lambda = max(lambda/2, 0.0)
+        end
+
+        x = xtrial; Fx = Ftrial; fnorm = nt
+        push!(history, fnorm)
+
+        verbose && @printf "iter %3d  ‖F‖∞=%.3e  α=%.3g  λ=%.2e  (jac=%.2fs lu=%.2fs solve=%.2fs ls=%.2fs)\n" it fnorm alpha lambda t_jac t_lu t_solve t_ls
+    end
+
+    Pg_star = reshape(x, P.G, P.G, P.G)
+    return (; P_star=Pg_star, P0=P0, u=u,
+            residual=reshape(Fx, P.G, P.G, P.G),
+            history, converged=(fnorm < abstol),
+            timings=(; jac=t_jac, lu=t_lu, solve=t_solve, ls=t_ls, total=t_jac+t_lu+t_solve+t_ls),
+            bytes_jac=bytes_jac)
+end
+
 end # module
