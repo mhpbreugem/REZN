@@ -24,7 +24,7 @@ import rezn_het as rh
 import rezn_pchip as rp
 
 
-G        = 7
+G        = 15
 UMAX     = 2.0
 TAU      = 3.0           # default τ for the γ sweep
 GAMMA    = 3.0           # default γ for the τ sweep
@@ -182,14 +182,14 @@ def main():
     sys.stdout.flush()
     _ = rp.solve_picard_pchip(5, 2.0, 0.5, maxiters=3)
 
-    # Solve the SEED first: τ=(3,3,3) γ=(50,50,50)
-    print(f"[seed] solving τ=({TAU},{TAU},{TAU}) γ=(50,50,50)")
+    # Solve the SEED first: τ=(3,3,3) γ=(3,3,3) — the γ=3 fixed τ sweep anchor
+    print(f"[seed] solving τ=({TAU},{TAU},{TAU}) γ=({GAMMA},{GAMMA},{GAMMA})")
     sys.stdout.flush()
-    seed = solve_one((TAU, TAU, TAU), (50.0, 50.0, 50.0))
+    seed = solve_one((TAU, TAU, TAU), (GAMMA, GAMMA, GAMMA))
     if seed["converged"]:
-        CACHE.append({"log_tg": _log_tg((TAU,TAU,TAU), (50,50,50)),
+        CACHE.append({"log_tg": _log_tg((TAU,TAU,TAU), (GAMMA,GAMMA,GAMMA)),
                       "P_star": seed["P_star"].copy(),
-                      "taus": (TAU,TAU,TAU), "gammas": (50,50,50)})
+                      "taus": (TAU,TAU,TAU), "gammas": (GAMMA,GAMMA,GAMMA)})
         print(f"  seed converged: iters={seed['iters']} "
               f"PhiI={seed['PhiI']:.2e} Finf={seed['Finf']:.2e}")
     else:
@@ -241,28 +241,8 @@ def main():
 
     # Record seed
     if seed is not None:
-        record((TAU,TAU,TAU), (50,50,50), seed)
+        record((TAU,TAU,TAU), (GAMMA,GAMMA,GAMMA), seed)
         flush()
-
-    # Walk homogeneous γ downward
-    print(f"\n=== homogeneous γ sweep ===")
-    sys.stdout.flush()
-    for (t, g) in gamma_sweep():
-        # skip the seed we already did
-        if g == (50.0, 50.0, 50.0) and rows:
-            continue
-        best = solve_one(t, g)
-        record(t, g, best)
-        flush()
-        if best["converged"]:
-            CACHE.append({"log_tg": _log_tg(t, g),
-                          "P_star": best["P_star"].copy(),
-                          "taus": t, "gammas": g})
-        print(f"  γ={g[0]:>5.1f}  α={best['alpha']:<5}  "
-              f"iters={best['iters']:>5}  PhiI={best['PhiI']:.2e}  "
-              f"Finf={best['Finf']:.2e}  "
-              f"conv={best['converged']}  time={best['time']:.1f}s")
-        sys.stdout.flush()
 
     # --- τ sweep at fixed γ=(GAMMA, GAMMA, GAMMA) ---
     # Seed the τ sweep: we need γ=(3,3,3) in the cache at τ=(3,3,3). That came
