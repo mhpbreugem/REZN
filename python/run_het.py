@@ -20,16 +20,33 @@ UMAX = 2.0
 U_REPORT = (1.0, -1.0, 1.0)
 
 
-def run_case(tag, taus, gammas, maxiters=3000, alpha=1.0):
+def run_case(tag, taus, gammas, maxiters=8000,
+             alphas=(1.0, 0.3, 0.1)):
+    """Run Picard at a ladder of damping values; keep the most converged."""
     print("\n" + "=" * 90)
     print(f"  {tag}")
     print(f"  taus   = {taus}")
     print(f"  gammas = {gammas}")
     print("=" * 90)
-    t0 = time.time()
-    res = rh.solve_picard(G, taus, gammas, umax=UMAX,
-                          maxiters=maxiters, abstol=1e-13, alpha=alpha)
-    dt = time.time() - t0
+
+    best = None
+    for alpha in alphas:
+        t0 = time.time()
+        res = rh.solve_picard(G, taus, gammas, umax=UMAX,
+                              maxiters=maxiters, abstol=1e-13, alpha=alpha)
+        dt = time.time() - t0
+        Finf = float(np.abs(res["residual"]).max())
+        PhiI = res["history"][-1] if res["history"] else float("nan")
+        print(f"  [α={alpha:.2f}]  iters={len(res['history'])}   t={dt:.1f}s   ‖Φ-I‖∞={PhiI:.2e}   ‖F‖∞={Finf:.2e}   converged={res['converged']}")
+        sys.stdout.flush()
+        cand = (Finf, PhiI, dt, res, alpha)
+        if best is None or cand[0] < best[0]:
+            best = cand
+        # if this alpha already converged fully, stop
+        if PhiI < 1e-10:
+            break
+    Finf, PhiI, dt, res, alpha = best
+    print(f"  chosen α={alpha:.2f} (lowest ‖F‖∞)")
 
     u = res["u"]
     taus_vec = res["taus"]
@@ -70,17 +87,14 @@ def main():
     results = []
     # (1) Homogeneous baseline, γ=0.5
     results.append(run_case("(1) Homogeneous γ=0.5, τ=2",
-                             taus=2.0, gammas=0.5,
-                             maxiters=3000, alpha=1.0))
+                             taus=2.0, gammas=0.5))
     # (2) Het γ=(1,3,10), equal τ
     results.append(run_case("(2) Het γ=(1,3,10), τ=2 for all",
-                             taus=2.0, gammas=(1.0, 3.0, 10.0),
-                             maxiters=3000, alpha=1.0))
+                             taus=2.0, gammas=(1.0, 3.0, 10.0)))
     # (3) Het γ and het τ aligned (low-γ = high-τ): γ=(1,3,10), τ=(10,3,1)
     results.append(run_case("(3) Het γ=(1,3,10), het τ=(10,3,1) — aligned",
                              taus=(10.0, 3.0, 1.0),
-                             gammas=(1.0, 3.0, 10.0),
-                             maxiters=3000, alpha=1.0))
+                             gammas=(1.0, 3.0, 10.0)))
 
     print("\n" + "=" * 127)
     print(f"  Heterogeneous preferences — Picard, G={G}, numba")
