@@ -38,7 +38,7 @@ CSV_OUT  = "/home/user/REZN/python/pchip_continuation_results.csv"
 # slow modes) but can be unstable.
 ANDERSON_WINDOWS = [6, 10, 15]
 ANDERSON_MAXITER = 800    # Anderson rarely needs more than this if it works
-PERTURB_SIGMA = 1e-7     # very small random logit-space perturbation
+PERTURB_SIGMA = 0.0      # DEBUG: disabled to isolate hang cause
 
 
 # ---------------- Cache of converged (τ, γ, P*) -----------------------
@@ -70,13 +70,8 @@ def _perturb(P):
 # ---------------- Solve one config with α-ladder + warm start ---------
 
 def _linear_extrapolate(taus, gammas):
-    """Return a linearly-extrapolated P_init if we have 2+ cached points
-    with identical 'other' params (e.g. same γ when varying τ).
-
-    Find the two most recent cache entries whose difference from the query
-    (taus, gammas) is a nonzero step along exactly one coordinate (τ or γ).
-    Use them to predict P(query) via first-order Taylor.
-    """
+    """DEBUG: disabled. Returns None → solve_one falls back to _nearest."""
+    return None
     if len(CACHE) < 2:
         return None
     q = _log_tg(taus, gammas)
