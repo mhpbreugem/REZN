@@ -61,8 +61,8 @@ U_REPORT = (1.0, -1.0, 1.0)
 
 def coarse_grid():
     """Deterministic coarse grid with light symmetry culling."""
-    gammas_grid = [0.3, 0.5, 1.0, 2.0, 5.0]
-    taus_grid = [0.5, 1.0, 2.0, 4.0]
+    gammas_grid = [0.1, 0.3, 1.0, 3.0, 10.0, 50.0]
+    taus_grid = [0.3, 1.0, 3.0, 10.0]
     # Homogeneous baselines: all gammas equal, all taus equal
     for g in gammas_grid:
         for t in taus_grid:
@@ -80,10 +80,10 @@ def coarse_grid():
 
 
 def random_loguniform(n):
-    """Random (tau_vec, gamma_vec) with log-uniform components."""
+    """Random (tau_vec, gamma_vec) with log-uniform components — wide range."""
     for _ in range(n):
-        tau = tuple(10 ** np.random.uniform(np.log10(0.3), np.log10(5.0), 3))
-        gam = tuple(10 ** np.random.uniform(np.log10(0.3), np.log10(10.0), 3))
+        tau = tuple(10 ** np.random.uniform(np.log10(0.1), np.log10(10.0), 3))
+        gam = tuple(10 ** np.random.uniform(np.log10(0.1), np.log10(50.0), 3))
         yield tau, gam
 
 
@@ -91,15 +91,26 @@ def extreme_misaligned(n):
     """Low-γ / low-τ on one agent, high on the others (aligned or not)."""
     for _ in range(n):
         agent = np.random.randint(3)
-        tau_noisy = 10 ** np.random.uniform(np.log10(0.3), np.log10(1.0))
-        tau_info = 10 ** np.random.uniform(np.log10(1.0), np.log10(5.0))
-        gam_aggressive = 10 ** np.random.uniform(np.log10(0.3), np.log10(1.0))
-        gam_safe = 10 ** np.random.uniform(np.log10(1.0), np.log10(10.0))
+        tau_noisy = 10 ** np.random.uniform(np.log10(0.1), np.log10(1.0))
+        tau_info = 10 ** np.random.uniform(np.log10(2.0), np.log10(10.0))
+        gam_aggressive = 10 ** np.random.uniform(np.log10(0.1), np.log10(0.5))
+        gam_safe = 10 ** np.random.uniform(np.log10(3.0), np.log10(50.0))
         taus = [tau_info, tau_info, tau_info]
         gams = [gam_safe, gam_safe, gam_safe]
         taus[agent] = tau_noisy
         gams[agent] = gam_aggressive  # aggressive trader on noisy signal
         yield tuple(taus), tuple(gams)
+
+
+def extreme_spread(n):
+    """Very different τ's and γ's across agents (wide spread)."""
+    for _ in range(n):
+        taus = tuple(10 ** np.random.uniform(np.log10(0.1), np.log10(10.0), 3))
+        gams = tuple(10 ** np.random.uniform(np.log10(0.1), np.log10(50.0), 3))
+        # accept only configs with at least 10x range in each vector
+        if max(taus)/min(taus) < 10 and max(gams)/min(gams) < 10:
+            continue
+        yield taus, gams
 
 
 # ---------------------------------------------------------
@@ -143,38 +154,70 @@ ALPHA_LADDER  = [1.0, 0.3, 0.1]
 MAXITER_TABLE = {1.0: 1000, 0.3: 2500, 0.1: 4000}
 
 
+# Cache of successfully-converged P tensors for warm-starting.
+# List of dicts: {"log_tg": ndarray(6), "P_star": ndarray(G,G,G)}
+_CACHE = []
+
+
+def _log_tg(taus, gammas):
+    return np.log(np.concatenate([np.asarray(taus, dtype=float),
+                                  np.asarray(gammas, dtype=float)]))
+
+
+def _nearest_cached(taus, gammas, max_dist=2.3):
+    """Return P_star of the cached entry closest in log-parameter space,
+    or None if the cache is empty or the nearest is further than max_dist."""
+    if not _CACHE:
+        return None
+    q = _log_tg(taus, gammas)
+    dists = [float(np.linalg.norm(e["log_tg"] - q)) for e in _CACHE]
+    i = int(np.argmin(dists))
+    return _CACHE[i]["P_star"] if dists[i] <= max_dist else None
+
+
 def solve_with_ladder(taus, gammas):
     best = {"PhiI": float("inf"), "Finf": float("inf"),
             "iters": 0, "time": 0.0, "alpha": None,
-            "P_star": None, "converged": False}
-    for alpha in ALPHA_LADDER:
-        mi = MAXITER_TABLE[alpha]
-        t0 = time.time()
-        try:
-            res = rh.solve_picard(G, taus, gammas, umax=UMAX,
-                                  maxiters=mi, abstol=ABSTOL, alpha=alpha)
-        except Exception as e:
-            sys.stderr.write(f"[error tau={taus} gamma={gammas} alpha={alpha}]: {e}\n")
-            continue
-        dt = time.time() - t0
-        PhiI = res["history"][-1] if res["history"] else float("inf")
-        Finf = float(np.abs(res["residual"]).max())
-        cand = {"PhiI": PhiI, "Finf": Finf,
-                "iters": len(res["history"]), "time": dt,
-                "alpha": alpha, "P_star": res["P_star"],
-                "converged": (PhiI < ABSTOL) and (Finf < F_TOL)}
-        # Prefer strictly converged, else lowest ‖Φ-I‖
-        better = False
-        if cand["converged"] and not best["converged"]:
-            better = True
-        elif cand["converged"] and best["converged"] and cand["time"] < best["time"]:
-            better = True
-        elif not best["converged"] and cand["PhiI"] < best["PhiI"]:
-            better = True
-        if better:
-            best = cand
-        if cand["converged"]:
-            break
+            "P_star": None, "converged": False, "warm": False}
+
+    # Try warm-start (from nearest cached converged P) first, then
+    # fall back to no-learning (cold) initialisation.
+    init_attempts = []
+    P_warm = _nearest_cached(taus, gammas)
+    if P_warm is not None:
+        init_attempts.append(("warm", P_warm))
+    init_attempts.append(("cold", None))
+
+    for init_tag, P_init in init_attempts:
+        for alpha in ALPHA_LADDER:
+            mi = MAXITER_TABLE[alpha]
+            t0 = time.time()
+            try:
+                res = rh.solve_picard(G, taus, gammas, umax=UMAX,
+                                      maxiters=mi, abstol=ABSTOL,
+                                      alpha=alpha, P_init=P_init)
+            except Exception as e:
+                sys.stderr.write(f"[error tau={taus} gamma={gammas} alpha={alpha} init={init_tag}]: {e}\n")
+                continue
+            dt = time.time() - t0
+            PhiI = res["history"][-1] if res["history"] else float("inf")
+            Finf = float(np.abs(res["residual"]).max())
+            cand = {"PhiI": PhiI, "Finf": Finf,
+                    "iters": len(res["history"]), "time": dt,
+                    "alpha": alpha, "P_star": res["P_star"],
+                    "converged": (PhiI < ABSTOL) and (Finf < F_TOL),
+                    "warm": (init_tag == "warm")}
+            if cand["converged"] and not best["converged"]:
+                best = cand
+            elif cand["converged"] and best["converged"] and cand["time"] < best["time"]:
+                best = cand
+            elif not best["converged"] and cand["PhiI"] < best["PhiI"]:
+                best = cand
+            if cand["converged"]:
+                # cache and return
+                _CACHE.append({"log_tg": _log_tg(taus, gammas),
+                               "P_star": cand["P_star"].copy()})
+                return best
     return best
 
 
@@ -189,8 +232,9 @@ def main():
 
     # combine candidate generators
     cands = list(coarse_grid()) \
-          + list(random_loguniform(150)) \
-          + list(extreme_misaligned(80))
+          + list(random_loguniform(200)) \
+          + list(extreme_misaligned(100)) \
+          + list(extreme_spread(200))
     # dedup
     seen = set(); unique = []
     for t, g in cands:
@@ -209,7 +253,7 @@ def main():
         w.writerow(["tau_1","tau_2","tau_3","gamma_1","gamma_2","gamma_3",
                     "alpha","iters","time_s","PhiI","Finf",
                     "oneR2_het","oneR2_eq","p_star",
-                    "mu_1","mu_2","mu_3","pr_gap","converged"])
+                    "mu_1","mu_2","mu_3","pr_gap","converged","warm"])
         f.flush()
 
         t_start = time.time()
@@ -234,7 +278,8 @@ def main():
                  f"{one_het:.6e}", f"{one_eq:.6e}",
                  f"{float(P[i_r,j_r,l_r]):.10f}",
                  f"{mu[0]:.8f}", f"{mu[1]:.8f}", f"{mu[2]:.8f}",
-                 f"{mu[0]-mu[1]:.6f}", int(best["converged"])]
+                 f"{mu[0]-mu[1]:.6f}", int(best["converged"]),
+                 int(best.get("warm", False))]
             )
             f.flush()
 

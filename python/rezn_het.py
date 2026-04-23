@@ -233,13 +233,18 @@ def build_grid(G, umax=2.0):
 
 
 def solve_picard(G, taus, gammas, umax=2.0, Ws=1.0,
-                 maxiters=3000, abstol=1e-13, alpha=1.0):
+                 maxiters=3000, abstol=1e-13, alpha=1.0,
+                 P_init=None):
     u = build_grid(G, umax)
     taus = _as_vec3(taus)
     gammas = _as_vec3(gammas)
     Ws = _as_vec3(Ws)
     P0 = _nolearning_price(u, taus, gammas, Ws)
-    Pcur = P0.copy()
+    if P_init is not None:
+        assert P_init.shape == (G, G, G), f"P_init shape {P_init.shape} != ({G},{G},{G})"
+        Pcur = np.clip(P_init, 1e-9, 1.0 - 1e-9).copy()
+    else:
+        Pcur = P0.copy()
     history = []
     for _ in range(maxiters):
         Pnew = _phi_map(Pcur, u, taus, gammas, Ws)
