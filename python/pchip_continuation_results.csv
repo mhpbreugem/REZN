@@ -1,0 +1,2 @@
+tau_1,tau_2,tau_3,gamma_1,gamma_2,gamma_3,alpha,iters,time_s,PhiI,Finf,oneR2_het,p_star,mu_1,mu_2,mu_3,pr_gap,converged,init
+3.0,3.0,3.0,50,50,50,1.0,1062,14.33,9.095e-13,1.691e-06,1.677420e-03,0.9279668414,0.93860868,0.93675120,0.93860868,0.001857,1,cold
