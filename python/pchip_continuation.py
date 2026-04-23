@@ -38,7 +38,7 @@ CSV_OUT  = "/home/user/REZN/python/pchip_continuation_results.csv"
 # slow modes) but can be unstable.
 ANDERSON_WINDOWS = [6, 10, 15]
 ANDERSON_MAXITER = 800    # Anderson rarely needs more than this if it works
-PERTURB_SIGMA = 0.001    # tiny logit-space perturbation to break symmetry
+PERTURB_SIGMA = 1e-7     # very small random logit-space perturbation
 
 
 # ---------------- Cache of converged (τ, γ, P*) -----------------------
@@ -57,12 +57,13 @@ def _nearest(t, g):
     return CACHE[i]["P_star"], CACHE[i]["taus"], CACHE[i]["gammas"]
 
 
+_PERTURB_RNG = np.random.default_rng()  # unseeded → different noise each call
+
 def _perturb(P):
     if PERTURB_SIGMA == 0.0:
         return P
-    rng = np.random.default_rng(12345)
     logit_P = np.log(P / (1.0 - P))
-    noise = rng.normal(0.0, PERTURB_SIGMA, P.shape)
+    noise = _PERTURB_RNG.normal(0.0, PERTURB_SIGMA, P.shape)
     return np.clip(1.0 / (1.0 + np.exp(-(logit_P + noise))), 1e-9, 1 - 1e-9)
 
 
