@@ -30,8 +30,8 @@ TAU      = 3.0           # hold τ fixed for now
 ABSTOL   = 1e-12         # PCHIP allows us to demand much more than 1e-8
 F_TOL    = 1.0
 CSV_OUT  = "/home/user/REZN/python/pchip_continuation_results.csv"
-ALPHAS   = [1.0, 0.3, 0.1, 0.03]
-MAXITER  = {1.0: 2000, 0.3: 5000, 0.1: 10000, 0.03: 20000}
+ALPHAS   = [1.0, 0.3, 0.1]
+MAXITER  = {1.0: 500, 0.3: 3000, 0.1: 20000}
 PERTURB_SIGMA = 0.005    # logit-space std for warm-start perturbation
 
 
@@ -119,11 +119,13 @@ def one_minus_R2_het(Pg, u, taus, gammas):
 # ---------------- Build γ grid ----------------------------------------
 
 def gamma_sweep():
-    """Homogeneous γ grid, log-decreasing from 50 down to 0.1."""
-    vals = [50.0, 40.0, 30.0, 20.0, 15.0, 10.0, 7.0, 5.0, 3.0,
-            2.0, 1.5, 1.0, 0.7, 0.5, 0.3, 0.2, 0.1]
+    """Homogeneous γ grid, unit-size steps from 50 down to 0.1."""
+    vals = (
+        list(np.arange(50.0, 1.0 - 1e-9, -1.0))          # 50, 49, ..., 2, 1
+        + [0.8, 0.6, 0.5, 0.4, 0.3, 0.2, 0.15, 0.1]
+    )
     for g in vals:
-        yield (TAU, TAU, TAU), (g, g, g)
+        yield (TAU, TAU, TAU), (float(g), float(g), float(g))
 
 
 def het_sweep(start_g=50.0):
