@@ -275,17 +275,53 @@ def solve_with_ladder(taus, gammas):
 # Main loop with CSV streaming
 # ---------------------------------------------------------
 
+def _evaluate(taus, gammas, u, i_r, j_r, l_r, best):
+    """Helper: pack Picard output into a CSV row dict."""
+    P = best["P_star"]
+    if P is None:
+        return None
+    mu = rh.posteriors_at(i_r, j_r, l_r, float(P[i_r,j_r,l_r]), P, u,
+                          np.asarray(taus, dtype=float))
+    one_het = one_minus_R2_het(P, u, taus, gammas)
+    one_eq  = rh.one_minus_R2(P, u, taus)
+    return {
+        "taus": taus, "gammas": gammas,
+        "alpha": best["alpha"], "iters": best["iters"],
+        "time": best["time"], "PhiI": best["PhiI"], "Finf": best["Finf"],
+        "oneR2_het": one_het, "oneR2_eq": one_eq,
+        "p_star": float(P[i_r,j_r,l_r]), "mu": tuple(mu),
+        "converged": best["converged"], "init": best.get("init",""),
+    }
+
+
+def _flush_csv(out, rows):
+    with open(out, "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["tau_1","tau_2","tau_3","gamma_1","gamma_2","gamma_3",
+                    "alpha","iters","time_s","PhiI","Finf",
+                    "oneR2_het","oneR2_eq","p_star",
+                    "mu_1","mu_2","mu_3","pr_gap","converged","init"])
+        for r in rows:
+            if r is None: continue
+            t = r["taus"]; g = r["gammas"]; mu = r["mu"]
+            w.writerow(list(t) + list(g) +
+                       [f"{r['alpha']}", r["iters"], f"{r['time']:.2f}",
+                        f"{r['PhiI']:.3e}", f"{r['Finf']:.3e}",
+                        f"{r['oneR2_het']:.6e}", f"{r['oneR2_eq']:.6e}",
+                        f"{r['p_star']:.10f}",
+                        f"{mu[0]:.8f}", f"{mu[1]:.8f}", f"{mu[2]:.8f}",
+                        f"{mu[0]-mu[1]:.6f}", int(r["converged"]), r["init"]])
+
+
 def main():
     u = rh.build_grid(G, UMAX)
     idx = lambda x: int(np.argmin(np.abs(u - x)))
     i_r, j_r, l_r = idx(U_REPORT[0]), idx(U_REPORT[1]), idx(U_REPORT[2])
 
-    # combine candidate generators
     cands = list(coarse_grid()) \
           + list(random_loguniform(200)) \
           + list(extreme_misaligned(100)) \
           + list(extreme_spread(200))
-    # dedup
     seen = set(); unique = []
     for t, g in cands:
         key = (tuple(round(x, 6) for x in t), tuple(round(x, 6) for x in g))
@@ -294,62 +330,79 @@ def main():
     print(f"total candidate configs: {len(unique)}  (budget {args.budget_hours:.1f} h)")
     sys.stdout.flush()
 
-    # warmup numba JIT
     _ = rh.solve_picard(5, 2.0, 0.5, maxiters=3, abstol=1e-3)
-
     os.makedirs(os.path.dirname(args.out), exist_ok=True)
-    with open(args.out, "w", newline="") as f:
-        w = csv.writer(f)
-        w.writerow(["tau_1","tau_2","tau_3","gamma_1","gamma_2","gamma_3",
-                    "alpha","iters","time_s","PhiI","Finf",
-                    "oneR2_het","oneR2_eq","p_star",
-                    "mu_1","mu_2","mu_3","pr_gap","converged","init"])
-        f.flush()
 
-        t_start = time.time()
-        n_done = 0; n_conv = 0; best_1mR2 = 0.0; best_tag = None
-        for (taus, gammas) in unique:
+    # ---- PASS 1: main sweep (configs in order) ----
+    t_start = time.time()
+    rows = []
+    best_1mR2 = 0.0; best_tag = None; n_conv = 0
+    for n_done, (taus, gammas) in enumerate(unique, start=1):
+        if time.time() - t_start > BUDGET_S * 0.65:
+            print(f"\npass-1 time cap reached after {n_done-1} configs")
+            break
+        best = solve_with_ladder(taus, gammas)
+        row = _evaluate(taus, gammas, u, i_r, j_r, l_r, best)
+        rows.append(row)
+        if row and row["converged"]:
+            n_conv += 1
+            if row["oneR2_het"] > best_1mR2:
+                best_1mR2 = row["oneR2_het"]; best_tag = (taus, gammas, row["alpha"])
+        if n_done % 10 == 0 or n_done == 1:
+            dt = time.time() - t_start
+            eta = (dt / n_done) * (len(unique) - n_done) / 3600.0
+            print(f"[pass-1 {n_done:4d}/{len(unique)}] converged={n_conv}  "
+                  f"best 1-R²_het={best_1mR2:.3e}  at={best_tag}  "
+                  f"elapsed={dt/60:.1f}min  ETA={eta:.1f}h")
+            sys.stdout.flush()
+            _flush_csv(args.out, rows)
+
+    # Fill rows up to len(unique) with None so index alignment works.
+    while len(rows) < len(unique):
+        rows.append(None)
+
+    # ---- REPAIR PASSES: retry unconverged configs with the now-richer cache ----
+    for pass_idx in range(1, 6):
+        if time.time() - t_start > BUDGET_S:
+            print(f"\nbudget exhausted at start of pass-{pass_idx+1}")
+            break
+        fails = [i for i, r in enumerate(rows) if (r is None) or (not r["converged"])]
+        if not fails:
+            print(f"all {len(rows)} configs converged — no repair needed")
+            break
+        print(f"\n=== repair pass {pass_idx} — retry {len(fails)} non-converged configs (cache size {len(_CACHE)}) ===")
+        sys.stdout.flush()
+        n_repaired = 0
+        for k, i in enumerate(fails, start=1):
             if time.time() - t_start > BUDGET_S:
-                print(f"\nbudget exhausted after {n_done} configs")
+                print(f"  budget exhausted mid-pass-{pass_idx} after {k-1} retries")
                 break
+            taus, gammas = unique[i]
             best = solve_with_ladder(taus, gammas)
-            if best["P_star"] is None:
-                continue
-            P = best["P_star"]
-            mu = rh.posteriors_at(i_r, j_r, l_r, float(P[i_r,j_r,l_r]), P, u,
-                                   np.asarray(taus, dtype=float))
-            one_het = one_minus_R2_het(P, u, taus, gammas)
-            one_eq  = rh.one_minus_R2(P, u, taus)
-            w.writerow(
-                list(taus) + list(gammas) +
-                [f"{best['alpha']}", best["iters"],
-                 f"{best['time']:.2f}",
-                 f"{best['PhiI']:.3e}", f"{best['Finf']:.3e}",
-                 f"{one_het:.6e}", f"{one_eq:.6e}",
-                 f"{float(P[i_r,j_r,l_r]):.10f}",
-                 f"{mu[0]:.8f}", f"{mu[1]:.8f}", f"{mu[2]:.8f}",
-                 f"{mu[0]-mu[1]:.6f}", int(best["converged"]),
-                 best.get("init", "")]
-            )
-            f.flush()
-
-            n_done += 1
-            if best["converged"]:
-                n_conv += 1
-                if one_het > best_1mR2:
-                    best_1mR2 = one_het
-                    best_tag = (taus, gammas, best["alpha"], best["iters"])
-
-            # periodic status
-            if n_done % 25 == 0 or n_done == 1:
-                tot_s = time.time() - t_start
-                eta_h = (tot_s / n_done) * (len(unique) - n_done) / 3600.0
-                print(f"[{n_done:4d}/{len(unique)}] converged={n_conv}  "
-                      f"best 1-R²_het={best_1mR2:.3e}  at={best_tag}  "
-                      f"elapsed={tot_s/60:.1f}min  ETA={eta_h:.1f}h")
+            row = _evaluate(taus, gammas, u, i_r, j_r, l_r, best)
+            if row and row["converged"]:
+                rows[i] = row
+                n_repaired += 1
+                if row["oneR2_het"] > best_1mR2:
+                    best_1mR2 = row["oneR2_het"]; best_tag = (taus, gammas, row["alpha"])
+            elif row:
+                # keep the better of old/new
+                if rows[i] is None or (row["PhiI"] < (rows[i]["PhiI"] if rows[i] else float("inf"))):
+                    rows[i] = row
+            if k % 10 == 0:
+                print(f"  [pass-{pass_idx} {k}/{len(fails)}] repaired {n_repaired}  "
+                      f"best 1-R²_het={best_1mR2:.3e}  cache={len(_CACHE)}")
                 sys.stdout.flush()
+                _flush_csv(args.out, [r for r in rows if r is not None])
+        _flush_csv(args.out, [r for r in rows if r is not None])
+        if n_repaired == 0:
+            print(f"  pass-{pass_idx}: 0 repaired — stopping repair loop")
+            break
 
-    print(f"\n=== search complete: {n_done} tried, {n_conv} strictly converged ===")
+    _flush_csv(args.out, [r for r in rows if r is not None])
+    n_final_conv = sum(1 for r in rows if r and r["converged"])
+    print(f"\n=== search complete: {sum(1 for r in rows if r is not None)} tried, {n_final_conv} strictly converged ===")
+    print(f"best 1-R²_het = {best_1mR2:.3e}  at {best_tag}")
     print(f"CSV: {args.out}")
 
 
