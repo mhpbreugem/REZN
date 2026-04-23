@@ -34,8 +34,8 @@ ABSTOL  = 1e-8
 F_TOL   = 1.0
 MAXITER = {1.0: 2000, 0.3: 5000, 0.1: 10000}
 ALPHAS  = [1.0, 0.3, 0.1]
-MIN_STEPS = 3
-MAX_STEPS = 16
+MIN_STEPS = 10
+MAX_STEPS = 40
 BRIDGE_SUCCESS_DIST = 1.5   # don't bridge if nearest cached is already < this
 
 
