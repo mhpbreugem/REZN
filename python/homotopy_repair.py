@@ -111,39 +111,53 @@ def solve_with_bridge(t_tgt, g_tgt):
         # nearest is close enough — already tried warm/IDW; bridge unlikely
         # to help. Still try with small N as fallback.
         pass
-    # adaptive: start with MIN_STEPS, double if any intermediate fails
+    # find initial P_prev: the cached P for (t0, g0)
+    P_base = None
+    for e in CACHE:
+        if e["taus"] == t0 and e["gammas"] == g0:
+            P_base = e["P_star"]; break
+    if P_base is None: return None, None
+
+    # adaptive: start with MIN_STEPS, double if any intermediate fails.
+    # Re-perturb on each retry.
     n_steps = MIN_STEPS
+    retry_idx = 0
     while n_steps <= MAX_STEPS:
-        print(f"    bridge: {n_steps} steps from τ={t0} γ={g0}")
+        retry_idx += 1
+        # perturb starting P in logit space with a per-retry seed
+        rng = np.random.default_rng(
+            int(abs(hash((t_tgt, g_tgt, n_steps, retry_idx))) % (2**32)))
+        logit_P0 = np.log(P_base / (1.0 - P_base))
+        noise = rng.normal(0.0, PERTURB_SIGMA, P_base.shape)
+        P_start = 1.0 / (1.0 + np.exp(-(logit_P0 + noise)))
+        P_start = np.clip(P_start, 1e-9, 1.0 - 1e-9)
+
+        print(f"    bridge: {n_steps} steps from τ={t0} γ={g0}  "
+              f"(perturb σ={PERTURB_SIGMA} retry#{retry_idx})")
         sys.stdout.flush()
         pts = bridge_path(t0, g0, t_tgt, g_tgt, n_steps)
-        P_prev = None
-        # find initial P_prev: the cached P for (t0, g0)
-        for e in CACHE:
-            if e["taus"] == t0 and e["gammas"] == g0:
-                P_prev = e["P_star"]; break
+        P_prev = P_start
         all_ok = True
+        last_res = None
         for k, (t, g) in enumerate(pts):
-            if k == 0: continue         # skip starting point (already cached)
+            if k == 0: continue                 # skip starting point
             res = picard(t, g, P_init=P_prev)
+            last_res = res
             if res is None:
                 all_ok = False; break
             if not res["converged"]:
                 all_ok = False
-                # hitting first failing intermediate; bisect
                 print(f"    bridge failed at step {k}/{n_steps-1}  "
                       f"τ={t} γ={g}  PhiI={res['PhiI']:.2e}")
                 sys.stdout.flush()
                 break
             P_prev = res["P_star"]
-            # add intermediate to cache (valid REE too)
-            if (k < n_steps - 1):  # not the target itself
+            if k < n_steps - 1:
                 add_to_cache(t, g, P_prev)
         if all_ok:
-            # last res is the target
-            return res, "bridge"
+            return last_res, "bridge"
         n_steps *= 2
-    return res, "bridge_failed"
+    return last_res, "bridge_failed"
 
 
 # -------- Main ------------------------------------------------------------
