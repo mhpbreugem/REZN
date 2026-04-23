@@ -34,8 +34,11 @@ ABSTOL  = 1e-8
 F_TOL   = 1.0
 MAXITER = {1.0: 2000, 0.3: 5000, 0.1: 10000}
 ALPHAS  = [1.0, 0.3, 0.1]
-MIN_STEPS = 10
-MAX_STEPS = 40
+MIN_STEPS = 20
+MAX_STEPS = 80
+PERTURB_SIGMA = 0.02      # small Gaussian perturbation of the starting P in
+                          # logit space (per cell) to break symmetry before
+                          # the first bridge step.
 BRIDGE_SUCCESS_DIST = 1.5   # don't bridge if nearest cached is already < this
 
 
