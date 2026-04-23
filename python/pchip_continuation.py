@@ -156,13 +156,11 @@ def gamma_sweep():
 
 
 def tau_sweep():
-    """Very fine homogeneous τ grid, starting from τ=3 (γ-sweep anchor):
-      pass A: 3.0 → 2.0 in steps of -0.01 (101 points)
-      pass B: 3.01 → 5.0 in steps of +0.01 (200 points)
-    Warm-start chain from the previous τ solution."""
-    down = list(np.arange(3.0, 2.0 - 1e-9, -0.01))
-    up   = list(np.arange(3.01, 5.0 + 1e-9, 0.01))
-    for t in down + up:
+    """Very fine homogeneous τ grid, push up from τ=3 (γ-sweep anchor):
+      pass A: 3.00 → 5.00 in steps of +0.01 (201 points).
+    Warm-start chain from each previous solution."""
+    vals = np.arange(3.0, 5.0 + 1e-9, 0.01)
+    for t in vals:
         yield (float(t), float(t), float(t)), (GAMMA, GAMMA, GAMMA)
 
 
