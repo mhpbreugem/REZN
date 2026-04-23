@@ -27,8 +27,8 @@ import rezn_pchip as rp
 G        = 9
 UMAX     = 2.0
 TAU      = 3.0           # hold τ fixed for now
-ABSTOL   = 1e-10         # PCHIP hits this cleanly with Anderson; tighter
-                         # (1e-12) works on some configs but not all
+ABSTOL   = 1e-8          # still 2 orders beyond old PL kink floor at typical
+                         # 1e-6; Anderson+PCHIP reliably reaches ~1e-8 on G=9
 F_TOL    = 1.0
 CSV_OUT  = "/home/user/REZN/python/pchip_continuation_results.csv"
 # Anderson windows to try. Anderson with window m≈6 usually works very
