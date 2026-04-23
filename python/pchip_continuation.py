@@ -38,9 +38,7 @@ CSV_OUT  = "/home/user/REZN/python/pchip_continuation_results.csv"
 # slow modes) but can be unstable.
 ANDERSON_WINDOWS = [6, 10, 15]
 ANDERSON_MAXITER = 800    # Anderson rarely needs more than this if it works
-PERTURB_SIGMA = 0.0      # use exact warm-start P (no perturbation)
-                         # — perturbation tended to push us off the very
-                         # close neighbouring fixed point for unit γ steps
+PERTURB_SIGMA = 0.001    # tiny logit-space perturbation to break symmetry
 
 
 # ---------------- Cache of converged (τ, γ, P*) -----------------------
@@ -70,16 +68,60 @@ def _perturb(P):
 
 # ---------------- Solve one config with α-ladder + warm start ---------
 
+def _linear_extrapolate(taus, gammas):
+    """Return a linearly-extrapolated P_init if we have 2+ cached points
+    with identical 'other' params (e.g. same γ when varying τ).
+
+    Find the two most recent cache entries whose difference from the query
+    (taus, gammas) is a nonzero step along exactly one coordinate (τ or γ).
+    Use them to predict P(query) via first-order Taylor.
+    """
+    if len(CACHE) < 2:
+        return None
+    q = _log_tg(taus, gammas)
+    # distances
+    dists = [(float(np.linalg.norm(e["log_tg"] - q)), i) for i, e in enumerate(CACHE)]
+    dists.sort()
+    # top 2 nearest entries — assume they are on the continuation path
+    i1 = dists[0][1]; i2 = dists[1][1]
+    e1 = CACHE[i1]; e2 = CACHE[i2]
+    # direction from e2 → e1, extrapolate to query
+    v21 = e1["log_tg"] - e2["log_tg"]          # last step taken
+    v1q = q - e1["log_tg"]                      # step to query
+    norm21 = np.linalg.norm(v21)
+    if norm21 < 1e-9:
+        return e1["P_star"]
+    # cos similarity: if query continues the e2→e1 direction, extrapolate.
+    cos = float(np.dot(v21, v1q)) / (norm21 * max(np.linalg.norm(v1q), 1e-12))
+    if cos < 0.8:
+        return e1["P_star"]                     # not aligned; just use nearest
+    # first-order Taylor in logit space: logit P_q ≈ logit P_e1 + λ (logit P_e1 - logit P_e2)
+    lam = float(np.dot(v21, v1q)) / (norm21 ** 2)
+    LP1 = np.log(e1["P_star"] / (1 - e1["P_star"]))
+    LP2 = np.log(e2["P_star"] / (1 - e2["P_star"]))
+    LP_q = LP1 + lam * (LP1 - LP2)
+    P_q = 1.0 / (1.0 + np.exp(-LP_q))
+    return np.clip(P_q, 1e-9, 1 - 1e-9)
+
+
 def solve_one(taus, gammas):
-    """Warm-start from nearest cached P, try α-ladder. Return best dict."""
-    P_warm = None
-    t_near = None
-    g_near = None
-    nearest_res = _nearest(taus, gammas)
-    if nearest_res[0] is not None:
-        P_warm = _perturb(nearest_res[0])
-        t_near = nearest_res[1]
-        g_near = nearest_res[2]
+    """Warm-start from linearly-extrapolated (or nearest) cached P;
+    apply tiny perturbation; try α-ladder."""
+    t_near = g_near = None
+    P_extrap = _linear_extrapolate(taus, gammas)
+    if P_extrap is not None:
+        P_warm = _perturb(P_extrap)
+        # record which point we extrapolated "near"
+        nr = _nearest(taus, gammas)
+        if nr[0] is not None:
+            t_near, g_near = nr[1], nr[2]
+    else:
+        nr = _nearest(taus, gammas)
+        if nr[0] is not None:
+            P_warm = _perturb(nr[0])
+            t_near, g_near = nr[1], nr[2]
+        else:
+            P_warm = None
 
     best = None
     attempts = []
