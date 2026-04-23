@@ -155,9 +155,9 @@ def gamma_sweep():
 
 
 def tau_sweep():
-    """Fine homogeneous τ grid 2.0 → 5.0 in steps of 0.05 (61 points).
+    """Very fine homogeneous τ grid 2.0 → 5.0 in steps of 0.01 (301 points).
     Walks up from τ=2 chain-warm-starting."""
-    vals = np.arange(2.0, 5.0 + 1e-9, 0.05)
+    vals = np.arange(2.0, 5.0 + 1e-9, 0.01)
     for t in vals:
         yield (float(t), float(t), float(t)), (GAMMA, GAMMA, GAMMA)
 
