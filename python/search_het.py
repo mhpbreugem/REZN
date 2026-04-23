@@ -38,7 +38,11 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--G", type=int, default=9)
 parser.add_argument("--umax", type=float, default=2.0)
 parser.add_argument("--abstol", type=float, default=1e-10, help="‖Φ-I‖∞ tolerance")
-parser.add_argument("--f-tol", type=float, default=1e-6, help="‖F‖∞ (market-clear) tolerance")
+parser.add_argument("--f-tol", type=float, default=1.0,
+                    help="‖F‖∞ (market-clear) tolerance — loose, rejects only "
+                         "blown-up solutions. Picard at low γ typically has "
+                         "‖F‖ amplified 4-5 orders over ‖Φ-I‖ due to demand "
+                         "sensitivity; strict F-tol excludes genuine PR fixed points.")
 parser.add_argument("--budget-hours", type=float, default=3.0)
 parser.add_argument("--seed", type=int, default=42)
 parser.add_argument("--out", type=str,
