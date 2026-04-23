@@ -263,6 +263,57 @@ def _residual_array_pchip(Pg, u, taus, gammas, Ws):
     return F
 
 
+def solve_anderson_pchip(G, taus, gammas, umax=2.0, Ws=1.0,
+                          maxiters=500, abstol=1e-13, m_window=6,
+                          P_init=None, damping=1.0):
+    """Anderson-accelerated fixed-point iteration on the PCHIP Φ map.
+
+    At each step we store the last m_window iterates and fixed-point
+    residuals g_n = Φ(x_n) - x_n. Next iterate is the Anderson-optimal
+    linear combination:
+        x_{n+1} = x_n + damping * g_n - (ΔX + damping*ΔG) γ_n
+    where γ_n minimises ‖g_n - ΔG γ_n‖.
+    """
+    u = np.linspace(-umax, umax, G)
+    taus = rh._as_vec3(taus)
+    gammas = rh._as_vec3(gammas)
+    Ws = rh._as_vec3(Ws)
+    P0 = rh._nolearning_price(u, taus, gammas, Ws)
+    x = (P_init.reshape(-1).copy() if P_init is not None else P0.reshape(-1).copy())
+    x = np.clip(x, 1e-9, 1 - 1e-9)
+
+    Xs = []
+    Gs = []
+    history = []
+    for it in range(maxiters):
+        Pcur = x.reshape(G, G, G)
+        Pnew = _phi_map_pchip(Pcur, u, taus, gammas, Ws)
+        g = Pnew.reshape(-1) - x
+        diff = float(np.abs(g).max())
+        history.append(diff)
+        if diff < abstol:
+            x = Pnew.reshape(-1)
+            break
+        Xs.append(x.copy()); Gs.append(g.copy())
+        if len(Xs) > m_window + 1:
+            Xs.pop(0); Gs.pop(0)
+
+        if len(Gs) == 1:
+            x_new = x + damping * g
+        else:
+            dG = np.column_stack([Gs[k + 1] - Gs[k] for k in range(len(Gs) - 1)])
+            dX = np.column_stack([Xs[k + 1] - Xs[k] for k in range(len(Xs) - 1)])
+            gamma, *_ = np.linalg.lstsq(dG, g, rcond=None)
+            x_new = x + damping * g - (dX + damping * dG) @ gamma
+        x = np.clip(x_new, 1e-9, 1 - 1e-9)
+
+    Pstar = x.reshape(G, G, G)
+    F = _residual_array_pchip(Pstar, u, taus, gammas, Ws)
+    return dict(P_star=Pstar, P0=P0, u=u, residual=F,
+                history=history, converged=(history and history[-1] < abstol),
+                taus=taus, gammas=gammas)
+
+
 def solve_picard_pchip(G, taus, gammas, umax=2.0, Ws=1.0,
                        maxiters=3000, abstol=1e-13, alpha=1.0,
                        P_init=None):

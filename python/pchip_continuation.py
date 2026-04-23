@@ -30,8 +30,11 @@ TAU      = 3.0           # hold τ fixed for now
 ABSTOL   = 1e-12         # PCHIP allows us to demand much more than 1e-8
 F_TOL    = 1.0
 CSV_OUT  = "/home/user/REZN/python/pchip_continuation_results.csv"
-ALPHAS   = [1.0, 0.3, 0.1]
-MAXITER  = {1.0: 500, 0.3: 3000, 0.1: 20000}
+# Anderson windows to try. Anderson with window m≈6 usually works very
+# well; larger windows bring more memory-of-past iterates (better for
+# slow modes) but can be unstable.
+ANDERSON_WINDOWS = [6, 10, 15]
+ANDERSON_MAXITER = 800    # Anderson rarely needs more than this if it works
 PERTURB_SIGMA = 0.005    # logit-space std for warm-start perturbation
 
 
@@ -72,21 +75,21 @@ def solve_one(taus, gammas):
         g_near = nearest_res[2]
 
     best = None
-    for alpha in ALPHAS:
+    for m in ANDERSON_WINDOWS:
         t0 = time.time()
         try:
-            res = rp.solve_picard_pchip(G, taus, gammas, umax=UMAX,
-                                        maxiters=MAXITER[alpha],
-                                        abstol=ABSTOL, alpha=alpha,
-                                        P_init=P_warm)
+            res = rp.solve_anderson_pchip(G, taus, gammas, umax=UMAX,
+                                          maxiters=ANDERSON_MAXITER,
+                                          abstol=ABSTOL, m_window=m,
+                                          damping=1.0, P_init=P_warm)
         except Exception as e:
-            print(f"    α={alpha} error: {e}")
+            print(f"    Anderson m={m} error: {e}")
             continue
         dt = time.time() - t0
         PhiI = res["history"][-1] if res["history"] else float("inf")
         Finf = float(np.abs(res["residual"]).max())
         converged = (PhiI < ABSTOL) and (Finf < F_TOL)
-        cand = dict(alpha=alpha, iters=len(res["history"]), time=dt,
+        cand = dict(alpha=f"A{m}", iters=len(res["history"]), time=dt,
                     PhiI=PhiI, Finf=Finf, P_star=res["P_star"],
                     converged=converged,
                     init=("warm" if P_warm is not None else "cold"),
