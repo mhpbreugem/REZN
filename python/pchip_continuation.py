@@ -24,9 +24,10 @@ import rezn_het as rh
 import rezn_pchip as rp
 
 
-G        = 9
+G        = 7
 UMAX     = 2.0
-TAU      = 3.0           # hold τ fixed for now
+TAU      = 3.0           # default τ for the γ sweep
+GAMMA    = 3.0           # default γ for the τ sweep
 ABSTOL   = 1e-8          # still 2 orders beyond old PL kink floor at typical
                          # 1e-6; Anderson+PCHIP reliably reaches ~1e-8 on G=9
 F_TOL    = 1.0
@@ -144,13 +145,22 @@ def one_minus_R2_het(Pg, u, taus, gammas):
 # ---------------- Build γ grid ----------------------------------------
 
 def gamma_sweep():
-    """Homogeneous γ grid, unit-size steps from 50 down to 0.1."""
+    """Homogeneous γ grid at fixed τ=(TAU,TAU,TAU), unit-size steps."""
     vals = (
         list(np.arange(50.0, 1.0 - 1e-9, -1.0))          # 50, 49, ..., 2, 1
         + [0.8, 0.6, 0.5, 0.4, 0.3, 0.2, 0.15, 0.1]
     )
     for g in vals:
         yield (TAU, TAU, TAU), (float(g), float(g), float(g))
+
+
+def tau_sweep():
+    """Homogeneous τ grid at fixed γ=(GAMMA,GAMMA,GAMMA), walks outward from τ=3."""
+    # From τ=3 walk up to 50, then down to 0.1
+    up    = list(np.arange(3.0, 50.0 + 1e-9, 1.0))       # 3, 4, ..., 50
+    down  = [2.5, 2.0, 1.5, 1.0, 0.8, 0.6, 0.5, 0.4, 0.3, 0.2, 0.15, 0.1]
+    for t in up + down:
+        yield (float(t), float(t), float(t)), (GAMMA, GAMMA, GAMMA)
 
 
 def het_sweep(start_g=50.0):
@@ -255,10 +265,17 @@ def main():
               f"conv={best['converged']}  time={best['time']:.1f}s")
         sys.stdout.flush()
 
-    # Walk one-axis heterogeneous from start_g=50
-    print(f"\n=== heterogeneous γ: move one axis at a time from 50 ===")
+    # --- τ sweep at fixed γ=(GAMMA, GAMMA, GAMMA) ---
+    # Seed the τ sweep: we need γ=(3,3,3) in the cache at τ=(3,3,3). That came
+    # from the end of the γ sweep above.
+    print(f"\n=== homogeneous τ sweep (γ={GAMMA} fixed) ===")
     sys.stdout.flush()
-    for (t, g) in het_sweep(start_g=50.0):
+    for (t, g) in tau_sweep():
+        # skip τ=(3,3,3) γ=(3,3,3) if already solved by γ sweep (it was)
+        already = any((abs(r["tau_1"] - t[0]) < 1e-9
+                       and abs(r["gamma_1"] - g[0]) < 1e-9) for r in rows)
+        if already:
+            continue
         best = solve_one(t, g)
         record(t, g, best)
         flush()
@@ -266,9 +283,10 @@ def main():
             CACHE.append({"log_tg": _log_tg(t, g),
                           "P_star": best["P_star"].copy(),
                           "taus": t, "gammas": g})
-        print(f"  γ={str(g):<25}  α={best['alpha']:<5}  "
+        print(f"  τ={t[0]:>5.1f}  α={best['alpha']:<5}  "
               f"iters={best['iters']:>5}  PhiI={best['PhiI']:.2e}  "
-              f"conv={best['converged']}")
+              f"Finf={best['Finf']:.2e}  "
+              f"conv={best['converged']}  time={best['time']:.1f}s")
         sys.stdout.flush()
 
     # Summary
