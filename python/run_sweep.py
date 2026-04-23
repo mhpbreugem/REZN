@@ -58,10 +58,11 @@ def run_G(G, picard_iters=1200, newton_iters=5, do_newton=True):
     Finf_pic = float(np.abs(pic["residual"]).max())
     PhiI = pic["history"][-1] if pic["history"] else float("nan")
     rss_pic = peak_rss_mb()
-    print(f"  Picard     : iters={len(pic['history']):5d}   t={dt_pic:7.2f}s   peakRSS={rss_pic:6.0f} MB   ‖Φ-I‖∞={PhiI:.2e}   ‖F‖∞={Finf_pic:.2e}")
+    oneR2_pic = rezn.one_minus_R2(pic["P_star"], u, TAU) if hasattr(rezn, "one_minus_R2") else float("nan")
+    print(f"  Picard     : iters={len(pic['history']):5d}   t={dt_pic:7.2f}s   peakRSS={rss_pic:6.0f} MB   ‖Φ-I‖∞={PhiI:.2e}   ‖F‖∞={Finf_pic:.2e}   1-R²={oneR2_pic:.4e}")
     print(f"              p*={p_pic:.10f}   μ=({mu_pic[0]:.6f}, {mu_pic[1]:.6f}, {mu_pic[2]:.6f})   PR_gap={mu_pic[0]-mu_pic[1]:.5f}")
     sys.stdout.flush()
-    pic_row = (G, "Picard", len(pic["history"]), dt_pic, rss_pic, Finf_pic, p_pic, mu_pic)
+    pic_row = (G, "Picard", len(pic["history"]), dt_pic, rss_pic, Finf_pic, p_pic, mu_pic, oneR2_pic)
 
     new_row = None
     if do_newton:
@@ -76,11 +77,12 @@ def run_G(G, picard_iters=1200, newton_iters=5, do_newton=True):
         Finf_new = float(np.abs(new["residual"]).max())
         rss_new = peak_rss_mb()
         tm = new["timings"]
-        print(f"  Newton-LU  : iters={len(new['history'])-1:5d}   t={dt_new:7.2f}s   peakRSS={rss_new:6.0f} MB   ‖F‖∞={Finf_new:.2e}")
+        oneR2_new = rezn.one_minus_R2(new["P_star"], u, TAU) if hasattr(rezn, "one_minus_R2") else float("nan")
+        print(f"  Newton-LU  : iters={len(new['history'])-1:5d}   t={dt_new:7.2f}s   peakRSS={rss_new:6.0f} MB   ‖F‖∞={Finf_new:.2e}   1-R²={oneR2_new:.4e}")
         print(f"              breakdown: jac={tm['jac']:.2f}s  lu={tm['lu']:.2f}s  solve={tm['solve']:.2f}s  line-search={tm['ls']:.2f}s")
         print(f"              p*={p_new:.10f}   μ=({mu_new[0]:.6f}, {mu_new[1]:.6f}, {mu_new[2]:.6f})   PR_gap={mu_new[0]-mu_new[1]:.5f}")
         sys.stdout.flush()
-        new_row = (G, "Newton-LU", len(new["history"]) - 1, dt_new, rss_new, Finf_new, p_new, mu_new)
+        new_row = (G, "Newton-LU", len(new["history"]) - 1, dt_new, rss_new, Finf_new, p_new, mu_new, oneR2_new)
 
     return pic_row, new_row
 
@@ -123,11 +125,11 @@ def main():
     print("\n" + "=" * 127)
     print(f"  PYTHON / {mode.upper()}   CRRA γ={GAMMA}, τ={TAU}, target (1,-1,1)")
     print("=" * 127)
-    print(f"{'G':>3} | {'method':<10} | {'iters':>6} | {'time(s)':>8} | {'peakRSS(MB)':>12} | {'‖F‖∞':>10} | {'p*':>14} | {'μ₁':>11} | {'PR gap':>8}")
-    print("-" * 127)
+    print(f"{'G':>3} | {'method':<10} | {'iters':>6} | {'time(s)':>8} | {'peakRSS(MB)':>12} | {'‖F‖∞':>10} | {'1-R²':>10} | {'p*':>14} | {'μ₁':>11} | {'PR gap':>8}")
+    print("-" * 140)
     for row in rows:
-        G, method, iters, dt, rss, Finf, p, mu = row
-        print(f"{G:>3} | {method:<10} | {iters:>6} | {dt:8.2f} | {rss:>12.0f} | {Finf:10.2e} | {p:14.10f} | {mu[0]:11.6f} | {mu[0]-mu[1]:8.5f}")
+        G, method, iters, dt, rss, Finf, p, mu, oneR2 = row
+        print(f"{G:>3} | {method:<10} | {iters:>6} | {dt:8.2f} | {rss:>12.0f} | {Finf:10.2e} | {oneR2:10.3e} | {p:14.10f} | {mu[0]:11.6f} | {mu[0]-mu[1]:8.5f}")
     print("-" * 127)
 
 

@@ -705,4 +705,28 @@ function solve_newton_lu(P::Params;
             bytes_jac=bytes_jac)
 end
 
+# PR measure: 1 - R² of logit(p) regressed on T* = τ·Σu_k.
+# Under CARA (FR) R²=1 → 1-R²=0; under CRRA (PR) 1-R² > 0.
+function one_minus_R2(Pg::AbstractArray{<:Real,3}, u::AbstractVector, tau::Float64)
+    G = length(u)
+    n = G^3
+    y = Vector{Float64}(undef, n)
+    T = Vector{Float64}(undef, n)
+    k = 0
+    for i in 1:G, j in 1:G, l in 1:G
+        k += 1
+        p = Pg[i,j,l]
+        y[k] = log(p / (1 - p))
+        T[k] = tau * (u[i] + u[j] + u[l])
+    end
+    ymean = sum(y) / n
+    Tmean = sum(T) / n
+    Syy = sum((y[i] - ymean)^2 for i in 1:n)
+    STT = sum((T[i] - Tmean)^2 for i in 1:n)
+    SyT = sum((y[i] - ymean) * (T[i] - Tmean) for i in 1:n)
+    if Syy == 0 || STT == 0; return 0.0; end
+    R2 = SyT^2 / (Syy * STT)
+    return 1.0 - R2
+end
+
 end # module

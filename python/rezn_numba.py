@@ -346,3 +346,30 @@ def peak_rss_mb():
         return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024.0
     except Exception:
         return float("nan")
+
+
+def one_minus_R2(Pg, u, tau):
+    """PR measure: 1 − R² of logit(p) regressed on T* = τ·Σ u_k.
+
+    Under CARA (FR) logit(p) = (1/K)·T*, so R²=1 → 1−R²=0.
+    Under CRRA (PR) logit(p) is not a function of T* alone (Jensen
+    curvature), so R²<1 → 1−R²>0.  Computed over all G³ cells.
+    """
+    G = u.shape[0]
+    y = np.log(Pg / (1.0 - Pg)).reshape(-1)
+    T = np.empty(G ** 3)
+    k = 0
+    for i in range(G):
+        for j in range(G):
+            for l in range(G):
+                T[k] = tau * (u[i] + u[j] + u[l])
+                k += 1
+    y_c = y - y.mean()
+    T_c = T - T.mean()
+    Syy = float((y_c * y_c).sum())
+    STT = float((T_c * T_c).sum())
+    SyT = float((y_c * T_c).sum())
+    if Syy == 0.0 or STT == 0.0:
+        return 0.0
+    R2 = (SyT * SyT) / (Syy * STT)
+    return 1.0 - R2
