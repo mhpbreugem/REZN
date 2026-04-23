@@ -48,6 +48,10 @@ parser.add_argument("--f-tol", type=float, default=1.0,
                          "‖F‖ amplified 4-5 orders over ‖Φ-I‖ due to demand "
                          "sensitivity; strict F-tol excludes genuine PR fixed points.")
 parser.add_argument("--budget-hours", type=float, default=3.0)
+parser.add_argument("--resume", action="store_true",
+                    help="If output CSV exists, skip rows already tried and "
+                         "pre-populate the warm cache from previously-converged "
+                         "configs (re-solving them cold to recover P tensors).")
 parser.add_argument("--seed", type=int, default=42)
 parser.add_argument("--out", type=str,
                     default="/home/user/REZN/python/search_het_results.csv")
@@ -329,6 +333,57 @@ def main():
     idx = lambda x: int(np.argmin(np.abs(u - x)))
     i_r, j_r, l_r = idx(U_REPORT[0]), idx(U_REPORT[1]), idx(U_REPORT[2])
 
+    _ = rh.solve_picard(5, 2.0, 0.5, maxiters=3, abstol=1e-3)
+    os.makedirs(os.path.dirname(args.out), exist_ok=True)
+
+    # --- Resume support (must come BEFORE candidate filtering) --------------
+    # If --resume and the output CSV exists, load its rows, mark them as
+    # "already tried" (skip in pass-1), and for converged configs re-solve
+    # once cold to repopulate the warm cache with their P tensors.
+    preloaded_rows = []          # list of dicts keyed by tuple(τ,γ)
+    preloaded_tried: set = set() # set of ((τ),(γ)) keys — always defined
+    if getattr(args, "resume", False) and os.path.exists(args.out):
+        with open(args.out, "r") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                try:
+                    t = (float(row["tau_1"]), float(row["tau_2"]), float(row["tau_3"]))
+                    g = (float(row["gamma_1"]), float(row["gamma_2"]), float(row["gamma_3"]))
+                except (KeyError, ValueError):
+                    continue
+                key = (tuple(round(x, 6) for x in t), tuple(round(x, 6) for x in g))
+                preloaded_tried.add(key)
+                preloaded_rows.append(row)
+        print(f"[resume] loaded {len(preloaded_rows)} previously-tried rows from {args.out}")
+        sys.stdout.flush()
+
+        # Re-solve converged rows cold to repopulate warm cache.
+        conv_rows = [r for r in preloaded_rows if r.get("converged") == "1"]
+        print(f"[resume] re-solving {len(conv_rows)} converged configs to rebuild warm cache...")
+        sys.stdout.flush()
+        for k, row in enumerate(conv_rows, start=1):
+            t = (float(row["tau_1"]), float(row["tau_2"]), float(row["tau_3"]))
+            g = (float(row["gamma_1"]), float(row["gamma_2"]), float(row["gamma_3"]))
+            try:
+                res = rh.solve_picard(G, t, g, umax=UMAX,
+                                       maxiters=3000, abstol=ABSTOL, alpha=1.0)
+            except Exception as e:
+                print(f"  [resume] re-solve failed for τ={t} γ={g}: {e}")
+                continue
+            PhiI = res["history"][-1] if res["history"] else float("inf")
+            Finf = float(np.abs(res["residual"]).max())
+            if PhiI < ABSTOL and Finf < F_TOL:
+                _CACHE.append({"log_tg": _log_tg(t, g), "P_star": res["P_star"].copy()})
+                if k % 5 == 0 or k == len(conv_rows):
+                    print(f"  [resume] cached {k}/{len(conv_rows)}  latest τ={t} γ={g}")
+                    sys.stdout.flush()
+            else:
+                print(f"  [resume] WARN: prior-converged config no longer converges: τ={t} γ={g} PhiI={PhiI:.2e}")
+                sys.stdout.flush()
+        print(f"[resume] cache rebuilt — {len(_CACHE)} entries; starting new exploration")
+        sys.stdout.flush()
+
+    # --- Candidate list (dedup + skip already-tried on resume) --------------
     cands = list(coarse_grid()) \
           + list(random_loguniform(200)) \
           + list(extreme_misaligned(100)) \
@@ -337,17 +392,49 @@ def main():
     for t, g in cands:
         key = (tuple(round(x, 6) for x in t), tuple(round(x, 6) for x in g))
         if key in seen: continue
+        if key in preloaded_tried: continue       # skip if already in CSV (resume)
         seen.add(key); unique.append((t, g))
-    print(f"total candidate configs: {len(unique)}  (budget {args.budget_hours:.1f} h)")
+    print(f"total candidate configs: {len(unique)} new  "
+          f"({len(preloaded_tried)} carried over from resume)  "
+          f"(budget {args.budget_hours:.1f} h)")
     sys.stdout.flush()
 
-    _ = rh.solve_picard(5, 2.0, 0.5, maxiters=3, abstol=1e-3)
-    os.makedirs(os.path.dirname(args.out), exist_ok=True)
 
     # ---- PASS 1: main sweep (configs in order) ----
     t_start = time.time()
+
+    # Seed `rows` with preloaded CSV rows so they're preserved across resume.
+    # Convert dict rows back to the in-memory dict format used downstream.
     rows = []
     best_1mR2 = 0.0; best_tag = None; n_conv = 0
+    for r in preloaded_rows:
+        try:
+            t = (float(r["tau_1"]), float(r["tau_2"]), float(r["tau_3"]))
+            g = (float(r["gamma_1"]), float(r["gamma_2"]), float(r["gamma_3"]))
+            conv = (r.get("converged") == "1")
+            mu = (float(r["mu_1"]), float(r["mu_2"]), float(r["mu_3"]))
+            row = dict(
+                taus=t, gammas=g,
+                alpha=float(r["alpha"]) if r["alpha"] else 1.0,
+                iters=int(r["iters"]) if r["iters"] else 0,
+                time=float(r["time_s"]) if r["time_s"] else 0.0,
+                PhiI=float(r["PhiI"]),
+                Finf=float(r["Finf"]),
+                oneR2_het=float(r["oneR2_het"]),
+                oneR2_eq=float(r["oneR2_eq"]),
+                p_star=float(r["p_star"]),
+                mu=mu,
+                converged=conv,
+                init=r.get("init", ""),
+            )
+            rows.append(row)
+            if conv:
+                n_conv += 1
+                if row["oneR2_het"] > best_1mR2:
+                    best_1mR2 = row["oneR2_het"]
+                    best_tag = (t, g, row["alpha"])
+        except Exception:
+            continue
     for n_done, (taus, gammas) in enumerate(unique, start=1):
         if time.time() - t_start > BUDGET_S * 0.65:
             print(f"\npass-1 time cap reached after {n_done-1} configs")
