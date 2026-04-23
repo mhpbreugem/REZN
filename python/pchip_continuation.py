@@ -1,0 +1,254 @@
+"""PCHIP-based parameter continuation grid.
+
+Start from the known (3,3,3)/(50,50,50) PCHIP solution and walk outward
+in γ-space, warm-starting each new config from the previous converged
+P tensor (with a small logit-space perturbation to break symmetry).
+Each step tries an α-ladder α ∈ {1.0, 0.3, 0.1, 0.03} so oscillation
+(seen at γ=(3,3,3) under α=1) falls back to damping.
+
+Currently sweeps γ homogeneous along a log-grid, then walks along
+heterogeneous axes. Grows the cache of solved configs as we go.
+
+Output: pchip_continuation_results.csv with one row per attempted
+config: τ, γ, α, iters, PhiI, Finf, 1-R²_het, 1-R²_eq, posteriors,
+PR gap at (1,-1,1), converged flag, init method.
+"""
+from __future__ import annotations
+import csv
+import os
+import sys
+import time
+import numpy as np
+
+import rezn_het as rh
+import rezn_pchip as rp
+
+
+G        = 9
+UMAX     = 2.0
+TAU      = 3.0           # hold τ fixed for now
+ABSTOL   = 1e-12         # PCHIP allows us to demand much more than 1e-8
+F_TOL    = 1.0
+CSV_OUT  = "/home/user/REZN/python/pchip_continuation_results.csv"
+ALPHAS   = [1.0, 0.3, 0.1, 0.03]
+MAXITER  = {1.0: 2000, 0.3: 5000, 0.1: 10000, 0.03: 20000}
+PERTURB_SIGMA = 0.005    # logit-space std for warm-start perturbation
+
+
+# ---------------- Cache of converged (τ, γ, P*) -----------------------
+CACHE = []               # dicts: {log_tg, P_star, taus, gammas}
+
+
+def _log_tg(t, g):
+    return np.log(np.concatenate([np.asarray(t, float), np.asarray(g, float)]))
+
+
+def _nearest(t, g):
+    if not CACHE: return None, None
+    q = _log_tg(t, g)
+    d = [float(np.linalg.norm(e["log_tg"] - q)) for e in CACHE]
+    i = int(np.argmin(d))
+    return CACHE[i]["P_star"], CACHE[i]["taus"], CACHE[i]["gammas"]
+
+
+def _perturb(P):
+    rng = np.random.default_rng(12345)
+    logit_P = np.log(P / (1.0 - P))
+    noise = rng.normal(0.0, PERTURB_SIGMA, P.shape)
+    return np.clip(1.0 / (1.0 + np.exp(-(logit_P + noise))), 1e-9, 1 - 1e-9)
+
+
+# ---------------- Solve one config with α-ladder + warm start ---------
+
+def solve_one(taus, gammas):
+    """Warm-start from nearest cached P, try α-ladder. Return best dict."""
+    P_warm = None
+    t_near = None
+    g_near = None
+    nearest_res = _nearest(taus, gammas)
+    if nearest_res[0] is not None:
+        P_warm = _perturb(nearest_res[0])
+        t_near = nearest_res[1]
+        g_near = nearest_res[2]
+
+    best = None
+    for alpha in ALPHAS:
+        t0 = time.time()
+        try:
+            res = rp.solve_picard_pchip(G, taus, gammas, umax=UMAX,
+                                        maxiters=MAXITER[alpha],
+                                        abstol=ABSTOL, alpha=alpha,
+                                        P_init=P_warm)
+        except Exception as e:
+            print(f"    α={alpha} error: {e}")
+            continue
+        dt = time.time() - t0
+        PhiI = res["history"][-1] if res["history"] else float("inf")
+        Finf = float(np.abs(res["residual"]).max())
+        converged = (PhiI < ABSTOL) and (Finf < F_TOL)
+        cand = dict(alpha=alpha, iters=len(res["history"]), time=dt,
+                    PhiI=PhiI, Finf=Finf, P_star=res["P_star"],
+                    converged=converged,
+                    init=("warm" if P_warm is not None else "cold"),
+                    warm_from=(t_near, g_near))
+        if best is None or (cand["converged"] and not best["converged"]) \
+           or (not best["converged"] and cand["PhiI"] < best["PhiI"]):
+            best = cand
+        if converged:
+            break
+    return best
+
+
+def one_minus_R2_het(Pg, u, taus, gammas):
+    taus = np.asarray(taus, float); gammas = np.asarray(gammas, float)
+    w = (1.0 / gammas) / (1.0 / gammas).sum()
+    coef = w * taus
+    y = np.log(Pg / (1 - Pg)).reshape(-1)
+    G_ = u.shape[0]
+    T = np.empty(G_ ** 3); k = 0
+    for i in range(G_):
+        for j in range(G_):
+            for l in range(G_):
+                T[k] = coef[0]*u[i] + coef[1]*u[j] + coef[2]*u[l]; k += 1
+    yc = y - y.mean(); Tc = T - T.mean()
+    Syy = (yc * yc).sum(); STT = (Tc * Tc).sum(); SyT = (yc * Tc).sum()
+    if Syy == 0 or STT == 0: return 0.0
+    return 1 - (SyT * SyT) / (Syy * STT)
+
+
+# ---------------- Build γ grid ----------------------------------------
+
+def gamma_sweep():
+    """Homogeneous γ grid, log-decreasing from 50 down to 0.1."""
+    vals = [50.0, 40.0, 30.0, 20.0, 15.0, 10.0, 7.0, 5.0, 3.0,
+            2.0, 1.5, 1.0, 0.7, 0.5, 0.3, 0.2, 0.1]
+    for g in vals:
+        yield (TAU, TAU, TAU), (g, g, g)
+
+
+def het_sweep(start_g=50.0):
+    """Walk one gamma down while holding others at start_g. Three axes."""
+    axes = [(0, [start_g, 30, 20, 10, 5, 3, 1, 0.3]),
+            (1, [start_g, 30, 20, 10, 5, 3, 1, 0.3]),
+            (2, [start_g, 30, 20, 10, 5, 3, 1, 0.3])]
+    for axis, vals in axes:
+        for v in vals:
+            g = [start_g, start_g, start_g]
+            g[axis] = v
+            yield (TAU, TAU, TAU), tuple(g)
+
+
+# ---------------- Main ------------------------------------------------
+
+def main():
+    # Warmup JIT
+    print("numba JIT warmup…")
+    sys.stdout.flush()
+    _ = rp.solve_picard_pchip(5, 2.0, 0.5, maxiters=3)
+
+    # Solve the SEED first: τ=(3,3,3) γ=(50,50,50)
+    print(f"[seed] solving τ=({TAU},{TAU},{TAU}) γ=(50,50,50)")
+    sys.stdout.flush()
+    seed = solve_one((TAU, TAU, TAU), (50.0, 50.0, 50.0))
+    if seed["converged"]:
+        CACHE.append({"log_tg": _log_tg((TAU,TAU,TAU), (50,50,50)),
+                      "P_star": seed["P_star"].copy(),
+                      "taus": (TAU,TAU,TAU), "gammas": (50,50,50)})
+        print(f"  seed converged: iters={seed['iters']} "
+              f"PhiI={seed['PhiI']:.2e} Finf={seed['Finf']:.2e}")
+    else:
+        print(f"  SEED FAILED: PhiI={seed['PhiI']:.2e}")
+    sys.stdout.flush()
+
+    u = np.linspace(-UMAX, UMAX, G)
+    idx = lambda x: int(np.argmin(np.abs(u - x)))
+    i_r, j_r, l_r = idx(1.0), idx(-1.0), idx(1.0)
+
+    # CSV writer
+    fieldnames = ["tau_1","tau_2","tau_3","gamma_1","gamma_2","gamma_3",
+                  "alpha","iters","time_s","PhiI","Finf","oneR2_het",
+                  "p_star","mu_1","mu_2","mu_3","pr_gap","converged","init"]
+    rows = []
+
+    def flush():
+        with open(CSV_OUT, "w", newline="") as f:
+            w = csv.DictWriter(f, fieldnames=fieldnames)
+            w.writeheader()
+            for rr in rows: w.writerow(rr)
+
+    def record(t, g, best):
+        P = best["P_star"]
+        if P is None:
+            return
+        try:
+            mu = rh.posteriors_at(i_r, j_r, l_r, float(P[i_r,j_r,l_r]), P, u,
+                                    np.asarray(t))
+            one_het = one_minus_R2_het(P, u, t, g)
+        except Exception:
+            mu = (float("nan"),)*3; one_het = float("nan")
+        rows.append({
+            "tau_1": t[0], "tau_2": t[1], "tau_3": t[2],
+            "gamma_1": g[0], "gamma_2": g[1], "gamma_3": g[2],
+            "alpha": f"{best['alpha']}",
+            "iters": best["iters"],
+            "time_s": f"{best['time']:.2f}",
+            "PhiI": f"{best['PhiI']:.3e}",
+            "Finf": f"{best['Finf']:.3e}",
+            "oneR2_het": f"{one_het:.6e}",
+            "p_star": f"{float(P[i_r,j_r,l_r]):.10f}",
+            "mu_1": f"{mu[0]:.8f}", "mu_2": f"{mu[1]:.8f}",
+            "mu_3": f"{mu[2]:.8f}",
+            "pr_gap": f"{mu[0]-mu[1]:.6f}",
+            "converged": int(best["converged"]),
+            "init": best["init"],
+        })
+
+    # Record seed
+    if seed is not None:
+        record((TAU,TAU,TAU), (50,50,50), seed)
+        flush()
+
+    # Walk homogeneous γ downward
+    print(f"\n=== homogeneous γ sweep ===")
+    sys.stdout.flush()
+    for (t, g) in gamma_sweep():
+        # skip the seed we already did
+        if g == (50.0, 50.0, 50.0) and rows:
+            continue
+        best = solve_one(t, g)
+        record(t, g, best)
+        flush()
+        if best["converged"]:
+            CACHE.append({"log_tg": _log_tg(t, g),
+                          "P_star": best["P_star"].copy(),
+                          "taus": t, "gammas": g})
+        print(f"  γ={g[0]:>5.1f}  α={best['alpha']:<5}  "
+              f"iters={best['iters']:>5}  PhiI={best['PhiI']:.2e}  "
+              f"Finf={best['Finf']:.2e}  "
+              f"conv={best['converged']}  time={best['time']:.1f}s")
+        sys.stdout.flush()
+
+    # Walk one-axis heterogeneous from start_g=50
+    print(f"\n=== heterogeneous γ: move one axis at a time from 50 ===")
+    sys.stdout.flush()
+    for (t, g) in het_sweep(start_g=50.0):
+        best = solve_one(t, g)
+        record(t, g, best)
+        flush()
+        if best["converged"]:
+            CACHE.append({"log_tg": _log_tg(t, g),
+                          "P_star": best["P_star"].copy(),
+                          "taus": t, "gammas": g})
+        print(f"  γ={str(g):<25}  α={best['alpha']:<5}  "
+              f"iters={best['iters']:>5}  PhiI={best['PhiI']:.2e}  "
+              f"conv={best['converged']}")
+        sys.stdout.flush()
+
+    # Summary
+    n_conv = sum(1 for r in rows if r["converged"] == 1)
+    print(f"\n[done] {n_conv}/{len(rows)} converged")
+    print(f"CSV: {CSV_OUT}")
+
+
+if __name__ == "__main__":
+    main()
