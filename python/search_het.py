@@ -136,8 +136,11 @@ def one_minus_R2_het(Pg, u, taus, gammas):
 # Per-config solver (damping ladder, early exit on convergence)
 # ---------------------------------------------------------
 
-ALPHA_LADDER  = [1.0, 0.3, 0.1, 0.03]
-MAXITER_TABLE = {1.0: 3000, 0.3: 6000, 0.1: 15000, 0.03: 30000}
+# Compact budget: the waterfall is only 3 attempts now.
+# At G=9 each Picard iter ~5 ms, so worst-case per config is
+# (1000 + 2500 + 4000)*5ms ≈ 38 s. ~300-600 configs in 3 h.
+ALPHA_LADDER  = [1.0, 0.3, 0.1]
+MAXITER_TABLE = {1.0: 1000, 0.3: 2500, 0.1: 4000}
 
 
 def solve_with_ladder(taus, gammas):
@@ -186,8 +189,8 @@ def main():
 
     # combine candidate generators
     cands = list(coarse_grid()) \
-          + list(random_loguniform(500)) \
-          + list(extreme_misaligned(200))
+          + list(random_loguniform(150)) \
+          + list(extreme_misaligned(80))
     # dedup
     seen = set(); unique = []
     for t, g in cands:
