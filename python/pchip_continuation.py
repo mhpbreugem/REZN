@@ -36,7 +36,9 @@ CSV_OUT  = "/home/user/REZN/python/pchip_continuation_results.csv"
 # slow modes) but can be unstable.
 ANDERSON_WINDOWS = [6, 10, 15]
 ANDERSON_MAXITER = 800    # Anderson rarely needs more than this if it works
-PERTURB_SIGMA = 0.005    # logit-space std for warm-start perturbation
+PERTURB_SIGMA = 0.0      # use exact warm-start P (no perturbation)
+                         # — perturbation tended to push us off the very
+                         # close neighbouring fixed point for unit γ steps
 
 
 # ---------------- Cache of converged (τ, γ, P*) -----------------------
@@ -56,6 +58,8 @@ def _nearest(t, g):
 
 
 def _perturb(P):
+    if PERTURB_SIGMA == 0.0:
+        return P
     rng = np.random.default_rng(12345)
     logit_P = np.log(P / (1.0 - P))
     noise = rng.normal(0.0, PERTURB_SIGMA, P.shape)
