@@ -155,11 +155,12 @@ def gamma_sweep():
 
 
 def tau_sweep():
-    """Homogeneous τ grid at fixed γ=(GAMMA,GAMMA,GAMMA), walks outward from τ=3."""
-    # From τ=3 walk up to 50, then down to 0.1
-    up    = list(np.arange(3.0, 50.0 + 1e-9, 1.0))       # 3, 4, ..., 50
-    down  = [2.5, 2.0, 1.5, 1.0, 0.8, 0.6, 0.5, 0.4, 0.3, 0.2, 0.15, 0.1]
-    for t in up + down:
+    """Homogeneous τ grid at fixed γ=(GAMMA,GAMMA,GAMMA).
+    DOWN first (warm-start chain from τ=3), then attempt UP (will fail for
+    τ>4 at G=7 because prices saturate to the boundary)."""
+    down  = [3.0, 2.5, 2.0, 1.5, 1.0, 0.8, 0.6, 0.5, 0.4, 0.3, 0.2, 0.15, 0.1]
+    up    = [3.5, 4.0]   # only modest up-steps work at G=7
+    for t in down + up:
         yield (float(t), float(t), float(t)), (GAMMA, GAMMA, GAMMA)
 
 
