@@ -27,7 +27,8 @@ import rezn_pchip as rp
 G        = 9
 UMAX     = 2.0
 TAU      = 3.0           # hold τ fixed for now
-ABSTOL   = 1e-12         # PCHIP allows us to demand much more than 1e-8
+ABSTOL   = 1e-10         # PCHIP hits this cleanly with Anderson; tighter
+                         # (1e-12) works on some configs but not all
 F_TOL    = 1.0
 CSV_OUT  = "/home/user/REZN/python/pchip_continuation_results.csv"
 # Anderson windows to try. Anderson with window m≈6 usually works very
@@ -75,21 +76,38 @@ def solve_one(taus, gammas):
         g_near = nearest_res[2]
 
     best = None
+    attempts = []
+    # Attempt 1: plain Picard α=1 (works for seed and nearby configs)
+    attempts.append(("P1.0", dict(solver="picard", alpha=1.0, maxiters=2000)))
+    # Attempts 2-4: Anderson with growing windows
     for m in ANDERSON_WINDOWS:
+        attempts.append((f"A{m}", dict(solver="anderson", m_window=m,
+                                        maxiters=ANDERSON_MAXITER)))
+    # Attempt 5: damped Picard as last resort
+    attempts.append(("P0.3", dict(solver="picard", alpha=0.3, maxiters=5000)))
+
+    for tag, opts in attempts:
         t0 = time.time()
         try:
-            res = rp.solve_anderson_pchip(G, taus, gammas, umax=UMAX,
-                                          maxiters=ANDERSON_MAXITER,
-                                          abstol=ABSTOL, m_window=m,
-                                          damping=1.0, P_init=P_warm)
+            if opts["solver"] == "picard":
+                res = rp.solve_picard_pchip(G, taus, gammas, umax=UMAX,
+                                            maxiters=opts["maxiters"],
+                                            abstol=ABSTOL, alpha=opts["alpha"],
+                                            P_init=P_warm)
+            else:
+                res = rp.solve_anderson_pchip(G, taus, gammas, umax=UMAX,
+                                              maxiters=opts["maxiters"],
+                                              abstol=ABSTOL,
+                                              m_window=opts["m_window"],
+                                              damping=1.0, P_init=P_warm)
         except Exception as e:
-            print(f"    Anderson m={m} error: {e}")
+            print(f"    {tag} error: {e}")
             continue
         dt = time.time() - t0
         PhiI = res["history"][-1] if res["history"] else float("inf")
         Finf = float(np.abs(res["residual"]).max())
         converged = (PhiI < ABSTOL) and (Finf < F_TOL)
-        cand = dict(alpha=f"A{m}", iters=len(res["history"]), time=dt,
+        cand = dict(alpha=tag, iters=len(res["history"]), time=dt,
                     PhiI=PhiI, Finf=Finf, P_star=res["P_star"],
                     converged=converged,
                     init=("warm" if P_warm is not None else "cold"),
