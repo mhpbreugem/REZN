@@ -191,23 +191,51 @@ def _nearest_cached(taus, gammas, max_dist=2.3):
     return _CACHE[i]["P_star"] if dists[i] <= max_dist else None
 
 
+def _idw_interp(taus, gammas, k=5, power=2.0, max_dist=4.0):
+    """Inverse-distance-weighted interpolation of P (in logit space) from
+    up to k nearest cached points within max_dist in log-param L2 norm.
+    Also covers mild extrapolation when the query is slightly outside the
+    cached cloud (weights remain finite)."""
+    if len(_CACHE) < 2:
+        return None
+    q = _log_tg(taus, gammas)
+    dists = np.array([float(np.linalg.norm(e["log_tg"] - q)) for e in _CACHE])
+    keep = np.where(dists <= max_dist)[0]
+    if keep.size < 2:
+        return None
+    order = keep[np.argsort(dists[keep])][:k]
+    d = dists[order]
+    w = 1.0 / (d ** power + 1e-12)
+    w /= w.sum()
+    logit_avg = np.zeros_like(_CACHE[0]["P_star"])
+    for idx, wi in zip(order, w):
+        P = _CACHE[idx]["P_star"]
+        logit_avg += wi * np.log(P / (1.0 - P))
+    P_init = 1.0 / (1.0 + np.exp(-logit_avg))
+    return np.clip(P_init, 1e-9, 1.0 - 1e-9)
+
+
 def solve_with_ladder(taus, gammas):
     best = {"PhiI": float("inf"), "Finf": float("inf"),
             "iters": 0, "time": 0.0, "alpha": None,
             "P_star": None, "converged": False, "warm": False}
 
-    # Initialisation ladder:
-    #  1. warm-start from nearest cached converged P (if any close enough);
-    #  2. CARA FR analytical: logit(p) = Σ (τ_k/γ_k) u_k / Σ(1/γ_k);
-    #  3. cold (no-learning).
-    # On convergence the cache is updated; other ladders are skipped.
-    u_grid = rh.build_grid(G, UMAX)
-    init_attempts = []
+    # Initialisation ladder — NEVER start from CARA-FR:
+    #   CARA-FR is a formal (knife-edge) fixed point of Φ even under CRRA
+    #   demand, so Picard initialised there gets stuck in the FR basin
+    #   rather than descending to the PR fixed point we want. Instead:
+    #     1. COLD (no-learning): agents use only own signal → posteriors
+    #        perturbed from FR → Picard descends to PR.
+    #     2. warm-start from nearest cached CONVERGED P (which must itself
+    #        have been found from cold start or from another warm PR seed,
+    #        so the PR character propagates).
+    init_attempts = [("cold", None)]
     P_warm = _nearest_cached(taus, gammas)
     if P_warm is not None:
-        init_attempts.append(("warm",    P_warm))
-    init_attempts.append(("cara_fr",  _cara_fr_tensor(G, u_grid, taus, gammas)))
-    init_attempts.append(("cold",     None))
+        init_attempts.append(("warm", P_warm))
+    P_idw = _idw_interp(taus, gammas)
+    if P_idw is not None:
+        init_attempts.append(("idw", P_idw))
 
     for init_tag, P_init in init_attempts:
         for alpha in ALPHA_LADDER:
