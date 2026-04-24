@@ -1,4 +1,5 @@
 python/sweep_restart.log
 python/*.log
+python/sweep_status.txt
 __pycache__/
 *.pyc
