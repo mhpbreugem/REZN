@@ -306,6 +306,11 @@ def solve_one(taus, gammas):
             best = cand
         if converged:
             break
+        # Chain subsequent attempts: if this attempt reduced Finf below what
+        # the warm start would have given, use its P_star as the next warm
+        # start. This lets Anderson polish NK's output (or vice versa).
+        if np.isfinite(Finf) and Finf < 1.0 and np.all(np.isfinite(res["P_star"])):
+            P_warm = np.clip(res["P_star"].copy(), 1e-9, 1 - 1e-9)
     return best
 
 
