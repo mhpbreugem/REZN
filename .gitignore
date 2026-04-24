@@ -2,5 +2,9 @@ python/sweep_restart.log
 python/*.log
 python/sweep_status.txt
 python/pchip_cache.pkl
+python/sweep_asym_status.txt
+python/pchip_asym_cache.pkl
+python/pchip_asymmetric_results.csv
+python/pchip_backward_results.csv
 __pycache__/
 *.pyc
