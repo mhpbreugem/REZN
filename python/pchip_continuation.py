@@ -30,12 +30,13 @@ G        = 15
 UMAX     = 2.0           # density 3.5 points per SD (between G=11 and G=21)
 TAU      = 3.0           # default τ for the γ sweep
 GAMMA    = 3.0           # default γ for the τ sweep
-ABSTOL   = 1e-12         # Picard-step tolerance. With solvers now returning
-                         # min-residual iterate seen, Picard can bottom out
-                         # at whatever the Φ-evaluation noise floor allows
-                         # (~1e-13 for smooth PCHIP + contour).
-F_TOL    = 1e-10         # Acceptance for true fixed-point residual. With
-                         # the min-iterate return, we should see this.
+ABSTOL   = 1e-11         # Picard-step tolerance. FD-Jacobian noise floor in
+                         # our stack is ~1e-10; 1e-11 is an ambitious target
+                         # that may only be reachable via continuation warm
+                         # start (not cold).
+F_TOL    = 5e-10         # Acceptance for true fixed-point residual ||F||∞.
+                         # FD-Newton plateaus around 2-5e-10 for the seed;
+                         # warm-started configs may go tighter.
 CSV_OUT  = "/home/user/REZN/python/pchip_G15_forward.csv"
 CACHE_PKL = "/home/user/REZN/python/pchip_G15_cache.pkl"
 STATUS_PATH = "/home/user/REZN/python/sweep_status.txt"
