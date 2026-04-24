@@ -27,7 +27,8 @@ import rezn_pchip as rp
 
 
 G        = 21
-UMAX     = 3.0
+UMAX     = 2.0           # keep ±2 signal-SD range as at G=11 (where solver
+                         # was stable); density is now 5 points per SD.
 TAU      = 3.0           # default τ for the γ sweep
 GAMMA    = 3.0           # default γ for the τ sweep
 ABSTOL   = 1e-12         # Target: Picard-step tolerance 10⁻¹². At G=21 the
