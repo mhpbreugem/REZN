@@ -26,8 +26,8 @@ import rezn_het as rh
 import rezn_pchip as rp
 
 
-G        = 15
-UMAX     = 2.0           # density 3.5 points per SD (between G=11 and G=21)
+G        = 11
+UMAX     = 2.0           # density 2.5 points per SD
 TAU      = 3.0           # default τ for the γ sweep
 GAMMA    = 3.0           # default γ for the τ sweep
 ABSTOL   = 1e-11         # Picard-step tolerance. FD-Jacobian noise floor in
@@ -37,8 +37,8 @@ ABSTOL   = 1e-11         # Picard-step tolerance. FD-Jacobian noise floor in
 F_TOL    = 1e-11         # Tight acceptance. FD-Newton seed may stall at
                          # 2-5e-10 (rejected); warm-started configs should
                          # do better with the min-iterate trick.
-CSV_OUT  = "/home/user/REZN/python/pchip_G15_forward.csv"
-CACHE_PKL = "/home/user/REZN/python/pchip_G15_cache.pkl"
+CSV_OUT  = "/home/user/REZN/python/pchip_G11logit_forward.csv"
+CACHE_PKL = "/home/user/REZN/python/pchip_G11logit_cache.pkl"
 STATUS_PATH = "/home/user/REZN/python/sweep_status.txt"
 # Anderson windows to try. Anderson with window m≈6 usually works very
 # well; larger windows bring more memory-of-past iterates (better for
