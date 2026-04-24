@@ -127,8 +127,9 @@ def _preload_from_csv(csv_path, fieldnames):
         res = rp.solve_picard_pchip(G, t, g, umax=UMAX, maxiters=400,
                                     abstol=ABSTOL, alpha=1.0, P_init=P_init)
         Finf = float(np.abs(res["residual"]).max())
-        # Accept into CACHE if Finf ≤ F_TOL (true fixed-point residual OK).
-        if Finf <= F_TOL:
+        # Preload acceptance: loose (1e-6) — we just want a useful warm
+        # start for the next config in the sweep, not strict convergence.
+        if np.isfinite(Finf) and Finf < 1e-6:
             CACHE.append({"log_tg": _log_tg(t, g),
                           "P_star": res["P_star"].copy(),
                           "taus": t, "gammas": g})
