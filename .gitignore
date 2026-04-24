@@ -1,0 +1,4 @@
+python/sweep_restart.log
+python/*.log
+__pycache__/
+*.pyc
