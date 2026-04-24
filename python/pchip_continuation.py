@@ -351,9 +351,11 @@ def _solve_nk(taus, gammas, P_init, status_prefix=""):
             pass
 
     x0 = np.clip(P_init, 1e-9, 1-1e-9).reshape(-1)
+    # rdiff = sqrt(machine eps) ≈ 1.5e-8 minimises the combined
+    # truncation+rounding error in the FD Jacobian-vector product.
     try:
-        sol = newton_krylov(F, x0, f_tol=ABSTOL, rdiff=1e-7,
-                            method="lgmres", maxiter=50, verbose=False,
+        sol = newton_krylov(F, x0, f_tol=ABSTOL, rdiff=1.5e-8,
+                            method="lgmres", maxiter=80, verbose=False,
                             callback=cb)
     except NoConvergence as e:
         sol = np.asarray(e.args[0])
