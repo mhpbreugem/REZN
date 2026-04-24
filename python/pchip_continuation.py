@@ -261,12 +261,15 @@ def solve_one(taus, gammas):
             attempts.append((f"A{m}", dict(solver="anderson", m_window=m,
                                             maxiters=2000)))
     else:
+        # Warm-started configs: Picard first (fast when ρ small, esp. at
+        # high γ), then NK to finish, Anderson as extra safety, then
+        # damped Picard as a last resort.
+        attempts.append(("P1.0", dict(solver="picard", alpha=1.0, maxiters=500)))
         attempts.append(("NK",   dict(solver="nk")))
         for m in ANDERSON_WINDOWS:
             attempts.append((f"A{m}", dict(solver="anderson", m_window=m,
-                                            maxiters=2000)))
-        attempts.append(("P1.0", dict(solver="picard", alpha=1.0, maxiters=3000)))
-        attempts.append(("P0.3", dict(solver="picard", alpha=0.3, maxiters=5000)))
+                                            maxiters=1000)))
+        attempts.append(("P0.3", dict(solver="picard", alpha=0.3, maxiters=3000)))
 
     prefix = (f"τ=({taus[0]:.3f},{taus[1]:.3f},{taus[2]:.3f}) "
               f"γ=({gammas[0]:.3f},{gammas[1]:.3f},{gammas[2]:.3f})")
@@ -394,7 +397,8 @@ def one_minus_R2_het(Pg, u, taus, gammas):
 def gamma_sweep():
     """Homogeneous γ grid at fixed τ=(TAU,TAU,TAU), unit-size steps."""
     vals = (
-        [500.0, 200.0, 100.0, 70.0]                     # approach from pure-CARA
+        # Dense near pure-CARA so each γ step is small (good warm start)
+        [500.0, 400.0, 300.0, 250.0, 200.0, 150.0, 120.0, 100.0, 80.0, 60.0]
         + list(np.arange(50.0, 1.0 - 1e-9, -1.0))        # 50, 49, ..., 2, 1
         + [0.8, 0.6, 0.5, 0.4, 0.3, 0.2, 0.15, 0.1]
     )
