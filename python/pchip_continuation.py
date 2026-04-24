@@ -351,10 +351,11 @@ def _solve_nk(taus, gammas, P_init, status_prefix=""):
             pass
 
     x0 = np.clip(P_init, 1e-9, 1-1e-9).reshape(-1)
-    # rdiff = sqrt(machine eps) ≈ 1.5e-8 minimises the combined
-    # truncation+rounding error in the FD Jacobian-vector product.
+    # rdiff optimum = sqrt(eps_F) where eps_F is the noise in F evaluation.
+    # Our Φ map has PCHIP + contour quadrature noise ~1e-13, so optimum is
+    # sqrt(1e-13) ≈ 3e-7. Use 5e-7 for a little extra margin.
     try:
-        sol = newton_krylov(F, x0, f_tol=ABSTOL, rdiff=1.5e-8,
+        sol = newton_krylov(F, x0, f_tol=ABSTOL, rdiff=5e-7,
                             method="lgmres", maxiter=80, verbose=False,
                             callback=cb)
     except NoConvergence as e:
