@@ -261,13 +261,13 @@ def solve_one(taus, gammas):
             attempts.append((f"A{m}", dict(solver="anderson", m_window=m,
                                             maxiters=2000)))
     else:
-        # Warm-started configs: long Picard (tracks best iterate), Anderson
-        # backup. 20000 iters lets Picard ride the linear-convergence curve
-        # down to the noise floor even when ρ is close to 1.
-        attempts.append(("P1.0", dict(solver="picard", alpha=1.0, maxiters=20000)))
+        # Warm-started configs: NK first (quadratic from close warm start),
+        # then Anderson (superlinear polish), Picard as safety net.
+        attempts.append(("NK",   dict(solver="nk")))
         for m in ANDERSON_WINDOWS:
             attempts.append((f"A{m}", dict(solver="anderson", m_window=m,
                                             maxiters=2000)))
+        attempts.append(("P1.0", dict(solver="picard", alpha=1.0, maxiters=5000)))
 
     prefix = (f"τ=({taus[0]:.3f},{taus[1]:.3f},{taus[2]:.3f}) "
               f"γ=({gammas[0]:.3f},{gammas[1]:.3f},{gammas[2]:.3f})")
