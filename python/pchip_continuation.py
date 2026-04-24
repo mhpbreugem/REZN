@@ -248,23 +248,14 @@ def solve_one(taus, gammas):
 
     best = None
     attempts = []
-    # First solve (empty CACHE = no seed yet): full ladder including Picard
-    # to make the FP basin. Once the seed is in CACHE, every subsequent
-    # config gets only Newton-Krylov (warm-start → quadratic convergence to
-    # machine precision) with Anderson as a safety net. Picard is too slow
-    # at G=21 + ABSTOL=1e-12.
-    if len(CACHE) == 0:
-        attempts.append(("P1.0", dict(solver="picard", alpha=1.0, maxiters=3000)))
-        attempts.append(("NK",   dict(solver="nk")))
-        for m in ANDERSON_WINDOWS:
-            attempts.append((f"A{m}", dict(solver="anderson", m_window=m,
-                                            maxiters=2000)))
-        attempts.append(("P0.3", dict(solver="picard", alpha=0.3, maxiters=5000)))
-    else:
-        attempts.append(("NK",   dict(solver="nk")))
-        for m in ANDERSON_WINDOWS:
-            attempts.append((f"A{m}", dict(solver="anderson", m_window=m,
-                                            maxiters=2000)))
+    # No Picard: NK (primary) → Anderson variants (safety net).
+    # NK converges quadratically from a warm start; for the seed it falls
+    # back to the no-learning price internally. Anderson is used only if
+    # NK fails to make progress.
+    attempts.append(("NK",   dict(solver="nk")))
+    for m in ANDERSON_WINDOWS:
+        attempts.append((f"A{m}", dict(solver="anderson", m_window=m,
+                                        maxiters=2000)))
 
     prefix = (f"τ=({taus[0]:.3f},{taus[1]:.3f},{taus[2]:.3f}) "
               f"γ=({gammas[0]:.3f},{gammas[1]:.3f},{gammas[2]:.3f})")
