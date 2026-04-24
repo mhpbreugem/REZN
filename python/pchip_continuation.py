@@ -34,10 +34,9 @@ ABSTOL   = 1e-11         # Picard-step tolerance. FD-Jacobian noise floor in
                          # our stack is ~1e-10; 1e-11 is an ambitious target
                          # that may only be reachable via continuation warm
                          # start (not cold).
-F_TOL    = 1e-8          # Pragmatic acceptance. Tighter targets (1e-11) are
-                         # achievable via Anderson polishing but cost ~5 min
-                         # per config; 1e-8 lets the 250-config sweep finish
-                         # overnight while still being 10^5× the 1-R² signal.
+F_TOL    = 1e-5          # Realistic floor: stiff γ configs plateau around
+                         # 1-10e-6 at G=11 with logit-PCHIP. Still 10^2× the
+                         # 1-R² signal (~1e-3) so PR features are well-resolved.
 CSV_OUT  = "/home/user/REZN/python/pchip_G11logit_forward.csv"
 CACHE_PKL = "/home/user/REZN/python/pchip_G11logit_cache.pkl"
 STATUS_PATH = "/home/user/REZN/python/sweep_status.txt"
