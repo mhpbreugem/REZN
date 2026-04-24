@@ -278,7 +278,7 @@ def solve_one(taus, gammas):
             if opts["solver"] == "picard":
                 res = rp.solve_picard_pchip(G, taus, gammas, umax=UMAX,
                                             maxiters=opts["maxiters"],
-                                            abstol=ABSTOL, alpha=opts["alpha"],
+                                            abstol=F_TOL, alpha=opts["alpha"],
                                             P_init=P_warm,
                                             status_path=STATUS_PATH,
                                             status_every=25,
@@ -286,7 +286,7 @@ def solve_one(taus, gammas):
             elif opts["solver"] == "anderson":
                 res = rp.solve_anderson_pchip(G, taus, gammas, umax=UMAX,
                                               maxiters=opts["maxiters"],
-                                              abstol=ABSTOL,
+                                              abstol=F_TOL,
                                               m_window=opts["m_window"],
                                               damping=1.0, P_init=P_warm,
                                               status_path=STATUS_PATH,
