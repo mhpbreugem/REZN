@@ -34,9 +34,9 @@ ABSTOL   = 1e-11         # Picard-step tolerance. FD-Jacobian noise floor in
                          # our stack is ~1e-10; 1e-11 is an ambitious target
                          # that may only be reachable via continuation warm
                          # start (not cold).
-F_TOL    = 5e-10         # Acceptance for true fixed-point residual ||F||∞.
-                         # FD-Newton plateaus around 2-5e-10 for the seed;
-                         # warm-started configs may go tighter.
+F_TOL    = 1e-11         # Tight acceptance. FD-Newton seed may stall at
+                         # 2-5e-10 (rejected); warm-started configs should
+                         # do better with the min-iterate trick.
 CSV_OUT  = "/home/user/REZN/python/pchip_G15_forward.csv"
 CACHE_PKL = "/home/user/REZN/python/pchip_G15_cache.pkl"
 STATUS_PATH = "/home/user/REZN/python/sweep_status.txt"
