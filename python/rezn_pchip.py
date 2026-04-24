@@ -133,25 +133,54 @@ def _pchip_root_in_segment(y0, y1, m0, m1, h, p_obs):
 
 @njit(cache=True)
 def _contour_sum_pchip(slice_, u, tau_A, tau_B, p_obs):
+    """Contour sum using PCHIP interpolation in LOGIT space.
+
+    The price surface P(uA, uB) at fixed own-signal slice is very steep near
+    p=0 or p=1 (log-odds diverge), making raw PCHIP bend sharply at grid
+    boundaries. Transforming to logit(P), which is close to linear in uA+uB
+    under CARA-FR, keeps the interpolation wiggles at machine-precision
+    levels. We convert once, interpolate, find the crossing with logit(p_obs),
+    then lift back implicitly — the u-coordinate of the crossing is all we
+    need (no inverse-logit required).
+    """
     G = u.shape[0]
     A0 = 0.0
     A1 = 0.0
-    # reusable derivative buffers
     m_row = np.empty(G)
     m_col = np.empty(G)
 
+    # Precompute logit of the whole slice
+    L = np.empty_like(slice_)
+    for a in range(G):
+        for b in range(G):
+            pab = slice_[a, b]
+            # guard against exact 0/1 (shouldn't happen — P is clipped)
+            if pab <= 1e-15:
+                L[a, b] = np.log(1e-15 / (1.0 - 1e-15))
+            elif pab >= 1.0 - 1e-15:
+                L[a, b] = np.log((1.0 - 1e-15) / 1e-15)
+            else:
+                L[a, b] = np.log(pab / (1.0 - pab))
+
+    # Observed p becomes logit(p_obs) in the transformed space
+    if p_obs <= 1e-15:
+        lp_obs = np.log(1e-15 / (1.0 - 1e-15))
+    elif p_obs >= 1.0 - 1e-15:
+        lp_obs = np.log((1.0 - 1e-15) / 1e-15)
+    else:
+        lp_obs = np.log(p_obs / (1.0 - p_obs))
+
     # Pass A: rows (along axis-B)
     for a in range(G):
-        row = slice_[a]
+        row = L[a]
         ua = u[a]
-        # PCHIP derivatives for this row
         m_row[:] = _pchip_derivs(row, u)
         for k in range(G - 1):
             y0 = row[k]; y1 = row[k + 1]
-            d0 = y0 - p_obs; d1 = y1 - p_obs
+            d0 = y0 - lp_obs; d1 = y1 - lp_obs
             h = u[k + 1] - u[k]
             if d0 * d1 < 0.0:
-                t = _pchip_root_in_segment(y0, y1, m_row[k], m_row[k + 1], h, p_obs)
+                t = _pchip_root_in_segment(y0, y1, m_row[k], m_row[k + 1], h, lp_obs)
                 if t < 0.0: continue
                 ub = u[k] + t * h
                 A0 += rh._f0(ua, tau_A) * rh._f0(ub, tau_B)
@@ -168,17 +197,16 @@ def _contour_sum_pchip(slice_, u, tau_A, tau_B, p_obs):
     # Pass B: columns (along axis-A)
     for b in range(G):
         ub_grid = u[b]
-        # build column into local contiguous array
         col = np.empty(G)
         for i in range(G):
-            col[i] = slice_[i, b]
+            col[i] = L[i, b]
         m_col[:] = _pchip_derivs(col, u)
         for k in range(G - 1):
             y0 = col[k]; y1 = col[k + 1]
-            d0 = y0 - p_obs; d1 = y1 - p_obs
+            d0 = y0 - lp_obs; d1 = y1 - lp_obs
             h = u[k + 1] - u[k]
             if d0 * d1 < 0.0:
-                t = _pchip_root_in_segment(y0, y1, m_col[k], m_col[k + 1], h, p_obs)
+                t = _pchip_root_in_segment(y0, y1, m_col[k], m_col[k + 1], h, lp_obs)
                 if t < 0.0: continue
                 ua = u[k] + t * h
                 A0 += rh._f0(ua, tau_A) * rh._f0(ub_grid, tau_B)
