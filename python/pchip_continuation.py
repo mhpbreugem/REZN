@@ -105,15 +105,6 @@ def _preload_from_csv(csv_path, fieldnames):
             # Normalize τ, γ to floats (csv.DictReader gives strings)
             for k in ("tau_1","tau_2","tau_3","gamma_1","gamma_2","gamma_3"):
                 r[k] = float(r[k])
-            # Drop the post-branch-jump τ-sweep rows (γ=3, τ ≥ 3.46): those
-            # are on the wrong (jumped) branch. Re-solve them with Newton-
-            # Krylov warm-started from the pre-jump side.
-            if (abs(r["gamma_1"] - 3.0) < 1e-9
-                and abs(r["gamma_2"] - 3.0) < 1e-9
-                and abs(r["gamma_3"] - 3.0) < 1e-9
-                and r["tau_1"] > 3.455):
-                bad += 1
-                continue
             good.append(r)
         else:
             bad += 1
