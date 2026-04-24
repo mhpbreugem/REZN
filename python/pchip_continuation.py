@@ -1,6 +1,6 @@
 """PCHIP-based parameter continuation grid.
 
-Start from the known (3,3,3)/(50,50,50) PCHIP solution and walk outward
+Start from the known (3,3,3)/(500,500,500) PCHIP solution and walk outward
 in γ-space, warm-starting each new config from the previous converged
 P tensor (with a small logit-space perturbation to break symmetry).
 Each step tries an α-ladder α ∈ {1.0, 0.3, 0.1, 0.03} so oscillation
@@ -376,7 +376,8 @@ def one_minus_R2_het(Pg, u, taus, gammas):
 def gamma_sweep():
     """Homogeneous γ grid at fixed τ=(TAU,TAU,TAU), unit-size steps."""
     vals = (
-        list(np.arange(50.0, 1.0 - 1e-9, -1.0))          # 50, 49, ..., 2, 1
+        [500.0, 200.0, 100.0, 70.0]                     # approach from pure-CARA
+        + list(np.arange(50.0, 1.0 - 1e-9, -1.0))        # 50, 49, ..., 2, 1
         + [0.8, 0.6, 0.5, 0.4, 0.3, 0.2, 0.15, 0.1]
     )
     for g in vals:
@@ -425,16 +426,16 @@ def main():
 
     # If the seed is absent, solve it now (cold start).
     seed_present = any(
-        abs(float(r["tau_1"]) - TAU) < 1e-9 and abs(float(r["gamma_1"]) - 50.0) < 1e-9
+        abs(float(r["tau_1"]) - TAU) < 1e-9 and abs(float(r["gamma_1"]) - 500.0) < 1e-9
         for r in rows)
     if not seed_present:
-        print(f"[seed] solving τ=({TAU},{TAU},{TAU}) γ=(50,50,50)")
+        print(f"[seed] solving τ=({TAU},{TAU},{TAU}) γ=(500,500,500)")
         sys.stdout.flush()
-        seed = solve_one((TAU, TAU, TAU), (50.0, 50.0, 50.0))
+        seed = solve_one((TAU, TAU, TAU), (500.0, 500.0, 500.0))
         if seed["converged"]:
-            CACHE.append({"log_tg": _log_tg((TAU,TAU,TAU), (50,50,50)),
+            CACHE.append({"log_tg": _log_tg((TAU,TAU,TAU), (500,500,500)),
                           "P_star": seed["P_star"].copy(),
-                          "taus": (TAU,TAU,TAU), "gammas": (50,50,50)})
+                          "taus": (TAU,TAU,TAU), "gammas": (500,500,500)})
             print(f"  seed converged: iters={seed['iters']} "
                   f"PhiI={seed['PhiI']:.2e} Finf={seed['Finf']:.2e}")
         else:
@@ -480,14 +481,14 @@ def main():
 
     # Record seed
     if seed is not None:
-        record((TAU,TAU,TAU), (50,50,50), seed)
+        record((TAU,TAU,TAU), (500,500,500), seed)
         flush()
 
     # Walk homogeneous γ downward (warm-start chain 50 → 49 → … → 3)
     print(f"\n=== homogeneous γ sweep (τ={TAU} fixed) ===")
     sys.stdout.flush()
     for (t, g) in gamma_sweep():
-        if g == (50.0, 50.0, 50.0) and rows:
+        if g == (500.0, 500.0, 500.0) and rows:
             continue
         # stop at γ=3, we'll pivot into the τ sweep
         if g[0] < GAMMA - 1e-9:
