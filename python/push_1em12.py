@@ -83,7 +83,9 @@ print("\n-- Picard α=1.0, 50000 iters --", flush=True)
 t0 = time.time()
 res = rp.solve_picard_pchip(G, (TAU,)*3, (GAMMA,)*3, umax=UMAX,
                              maxiters=50000, abstol=1e-16, alpha=1.0,
-                             P_init=best["P"].copy())
+                             P_init=best["P"].copy(),
+                             status_path="/home/user/REZN/python/sweep_status.txt",
+                             status_every=100, status_prefix="Picard")
 print(f"  time={time.time()-t0:.1f}s  last PhiI={res['history'][-1]:.3e}  "
       f"min PhiI={min(res['history']):.3e}", flush=True)
 keep("picard-long", res["P_star"])
@@ -94,7 +96,9 @@ print("\n-- Anderson m=10, 5000 iters --", flush=True)
 t0 = time.time()
 res = rp.solve_anderson_pchip(G, (TAU,)*3, (GAMMA,)*3, umax=UMAX,
                                maxiters=5000, abstol=1e-16, m_window=10,
-                               damping=1.0, P_init=best["P"].copy())
+                               damping=1.0, P_init=best["P"].copy(),
+                               status_path="/home/user/REZN/python/sweep_status.txt",
+                               status_every=50, status_prefix="Anderson-m10")
 print(f"  time={time.time()-t0:.1f}s  last PhiI={res['history'][-1]:.3e}  "
       f"min PhiI={min(res['history']):.3e}", flush=True)
 keep("anderson-m10", res["P_star"])
@@ -146,14 +150,18 @@ if best["finf"] > 1e-12:
     for rd in range(5):
         res = rp.solve_picard_pchip(G, (TAU,)*3, (GAMMA,)*3, umax=UMAX,
                                      maxiters=20000, abstol=1e-16, alpha=1.0,
-                                     P_init=best["P"].copy())
+                                     P_init=best["P"].copy(),
+                                     status_path="/home/user/REZN/python/sweep_status.txt",
+                                     status_every=100, status_prefix=f"rd{rd}-P")
         keep(f"round{rd}-picard", res["P_star"])
         if best["finf"] < 1e-12:
             break
         res = rp.solve_anderson_pchip(G, (TAU,)*3, (GAMMA,)*3, umax=UMAX,
                                        maxiters=3000, abstol=1e-16,
                                        m_window=15, damping=1.0,
-                                       P_init=best["P"].copy())
+                                       P_init=best["P"].copy(),
+                                       status_path="/home/user/REZN/python/sweep_status.txt",
+                                       status_every=50, status_prefix=f"rd{rd}-A15")
         keep(f"round{rd}-anderson", res["P_star"])
         if best["finf"] < 1e-12:
             break
