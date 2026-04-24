@@ -16,6 +16,7 @@ PR gap at (1,-1,1), converged flag, init method.
 from __future__ import annotations
 import csv
 import os
+import pickle
 import sys
 import time
 import numpy as np
@@ -39,6 +40,7 @@ F_TOL    = 3e-3          # reject fake convergences where PhiI hit abstol
                          # in stiff regions, so 3e-3 keeps real solutions
                          # but catches the τ=3.46 jump (Finf=0.19).
 CSV_OUT  = "/home/user/REZN/python/pchip_continuation_results.csv"
+CACHE_PKL = "/home/user/REZN/python/pchip_cache.pkl"
 STATUS_PATH = "/home/user/REZN/python/sweep_status.txt"
 # Anderson windows to try. Anderson with window m≈6 usually works very
 # well; larger windows bring more memory-of-past iterates (better for
@@ -52,13 +54,39 @@ PERTURB_SIGMA = 1e-7     # tiny random logit noise on warm start
 CACHE = []               # dicts: {log_tg, P_star, taus, gammas}
 
 
+def _save_cache():
+    """Pickle CACHE to disk so subsequent runs skip re-solving."""
+    try:
+        with open(CACHE_PKL, "wb") as f:
+            pickle.dump(CACHE, f)
+    except Exception as e:
+        print(f"  [cache save failed: {e}]")
+
+
 def _preload_from_csv(csv_path, fieldnames):
-    """Load previously-converged rows (Finf ≤ F_TOL) from CSV. Re-solves
-    each config once (fast with warm-start) to recover the full P tensor
-    for CACHE, since the CSV only stores a scalar p*. Returns the list of
-    rows (dicts, for re-writing) and populates CACHE in-place."""
+    """Load previously-converged rows (Finf ≤ F_TOL) from CSV. If a
+    pickled CACHE exists and matches, use it directly (fast path).
+    Otherwise re-solve each config once to rebuild P tensors (slow path).
+    Returns the list of rows (dicts, for re-writing)."""
     if not os.path.exists(csv_path):
         return []
+
+    # Try the pickle fast-path
+    if os.path.exists(CACHE_PKL):
+        try:
+            with open(CACHE_PKL, "rb") as f:
+                cached = pickle.load(f)
+            # Expect list of dicts matching CACHE schema; sanity-check
+            if isinstance(cached, list) and cached \
+               and all(isinstance(e, dict) and "P_star" in e and "log_tg" in e
+                       for e in cached):
+                CACHE.extend(cached)
+                print(f"[cache] loaded {len(CACHE)} entries from {CACHE_PKL}")
+                sys.stdout.flush()
+        except Exception as e:
+            print(f"  [cache load failed: {e}; will re-solve]")
+            CACHE.clear()
+
     rows = []
     with open(csv_path, "r", newline="") as f:
         reader = csv.DictReader(f)
@@ -91,33 +119,35 @@ def _preload_from_csv(csv_path, fieldnames):
             bad += 1
     print(f"[preload] {len(good)} clean rows from CSV ({bad} rejected)")
     sys.stdout.flush()
-    # Re-solve each to repopulate CACHE with P_star tensors.
+
+    # If CACHE is already populated (pickle fast-path), skip re-solve.
+    # Otherwise rebuild it from scratch.
+    if len(CACHE) >= max(1, len(good) // 2):
+        print(f"  [cache hit] skipping re-solve, CACHE has {len(CACHE)} entries")
+        sys.stdout.flush()
+        return good
+
+    # Slow path: re-solve each to repopulate CACHE with P_star tensors.
+    # Use shorter maxiters and only Picard (no Anderson) to keep preload fast.
     for i, r in enumerate(good):
         t = (float(r["tau_1"]), float(r["tau_2"]), float(r["tau_3"]))
         g = (float(r["gamma_1"]), float(r["gamma_2"]), float(r["gamma_3"]))
         nr = _nearest(t, g)
         P_init = nr[0] if nr[0] is not None else None
-        res = rp.solve_picard_pchip(G, t, g, umax=UMAX, maxiters=1500,
+        res = rp.solve_picard_pchip(G, t, g, umax=UMAX, maxiters=400,
                                     abstol=ABSTOL, alpha=1.0, P_init=P_init)
-        if res["history"] and res["history"][-1] < ABSTOL:
+        Finf = float(np.abs(res["residual"]).max())
+        # Accept into CACHE if Finf ≤ F_TOL (true fixed-point residual OK).
+        if Finf <= F_TOL:
             CACHE.append({"log_tg": _log_tg(t, g),
                           "P_star": res["P_star"].copy(),
                           "taus": t, "gammas": g})
-        else:
-            # Try Anderson once
-            res = rp.solve_anderson_pchip(G, t, g, umax=UMAX, maxiters=500,
-                                          abstol=ABSTOL, m_window=6, damping=1.0,
-                                          P_init=P_init)
-            if res["history"] and res["history"][-1] < ABSTOL \
-               and float(np.abs(res["residual"]).max()) <= F_TOL:
-                CACHE.append({"log_tg": _log_tg(t, g),
-                              "P_star": res["P_star"].copy(),
-                              "taus": t, "gammas": g})
         if (i+1) % 20 == 0 or (i+1) == len(good):
             print(f"  preload {i+1}/{len(good)}  CACHE={len(CACHE)}")
             sys.stdout.flush()
-    # Return clean rows (keyed as dicts with full fields) — main() uses
-    # these as the starting "rows" list so we don't duplicate in CSV.
+    _save_cache()
+    print(f"  [cache saved] {CACHE_PKL}")
+    sys.stdout.flush()
     return good
 
 
@@ -492,6 +522,7 @@ def main():
             CACHE.append({"log_tg": _log_tg(t, g),
                           "P_star": best["P_star"].copy(),
                           "taus": t, "gammas": g})
+            _save_cache()
         print(f"  τ={t[0]:>5.1f}  α={best['alpha']:<5}  "
               f"iters={best['iters']:>5}  PhiI={best['PhiI']:.2e}  "
               f"Finf={best['Finf']:.2e}  "
