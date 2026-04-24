@@ -19,6 +19,7 @@ import os
 import sys
 import time
 import numpy as np
+from scipy.optimize import newton_krylov, NoConvergence
 
 import rezn_het as rh
 import rezn_pchip as rp
@@ -31,7 +32,11 @@ GAMMA    = 3.0           # default γ for the τ sweep
 ABSTOL   = 1e-6          # PCHIP-Picard floor at G=11 is ~1e-6 (spectral
                          # radius near 1); at G=7 it was ~1e-8. Accept 1e-6
                          # here to capture the PR signal across the sweep.
-F_TOL    = 1.0
+F_TOL    = 3e-3          # reject fake convergences where PhiI hit abstol
+                         # but residual ||F||∞ is still large (branch jumps).
+                         # G=11 PCHIP legitimately plateaus at Finf ~1-2e-3
+                         # in stiff regions, so 3e-3 keeps real solutions
+                         # but catches the τ=3.46 jump (Finf=0.19).
 CSV_OUT  = "/home/user/REZN/python/pchip_continuation_results.csv"
 # Anderson windows to try. Anderson with window m≈6 usually works very
 # well; larger windows bring more memory-of-past iterates (better for
@@ -43,6 +48,75 @@ PERTURB_SIGMA = 1e-7     # tiny random logit noise on warm start
 
 # ---------------- Cache of converged (τ, γ, P*) -----------------------
 CACHE = []               # dicts: {log_tg, P_star, taus, gammas}
+
+
+def _preload_from_csv(csv_path, fieldnames):
+    """Load previously-converged rows (Finf ≤ F_TOL) from CSV. Re-solves
+    each config once (fast with warm-start) to recover the full P tensor
+    for CACHE, since the CSV only stores a scalar p*. Returns the list of
+    rows (dicts, for re-writing) and populates CACHE in-place."""
+    if not os.path.exists(csv_path):
+        return []
+    rows = []
+    with open(csv_path, "r", newline="") as f:
+        reader = csv.DictReader(f)
+        for r in reader:
+            rows.append(r)
+    # Keep only Finf ≤ F_TOL AND converged=1 (reject fake convergences
+    # and previously-failed rows — those should be re-attempted).
+    good = []
+    bad = 0
+    for r in rows:
+        try:
+            Finf = float(r["Finf"])
+        except Exception:
+            continue
+        if int(r.get("converged", 0)) == 1 and Finf <= F_TOL:
+            # Normalize τ, γ to floats (csv.DictReader gives strings)
+            for k in ("tau_1","tau_2","tau_3","gamma_1","gamma_2","gamma_3"):
+                r[k] = float(r[k])
+            # Drop the post-branch-jump τ-sweep rows (γ=3, τ ≥ 3.46): those
+            # are on the wrong (jumped) branch. Re-solve them with Newton-
+            # Krylov warm-started from the pre-jump side.
+            if (abs(r["gamma_1"] - 3.0) < 1e-9
+                and abs(r["gamma_2"] - 3.0) < 1e-9
+                and abs(r["gamma_3"] - 3.0) < 1e-9
+                and r["tau_1"] > 3.455):
+                bad += 1
+                continue
+            good.append(r)
+        else:
+            bad += 1
+    print(f"[preload] {len(good)} clean rows from CSV ({bad} rejected)")
+    sys.stdout.flush()
+    # Re-solve each to repopulate CACHE with P_star tensors.
+    for i, r in enumerate(good):
+        t = (float(r["tau_1"]), float(r["tau_2"]), float(r["tau_3"]))
+        g = (float(r["gamma_1"]), float(r["gamma_2"]), float(r["gamma_3"]))
+        nr = _nearest(t, g)
+        P_init = nr[0] if nr[0] is not None else None
+        res = rp.solve_picard_pchip(G, t, g, umax=UMAX, maxiters=1500,
+                                    abstol=ABSTOL, alpha=1.0, P_init=P_init)
+        if res["history"] and res["history"][-1] < ABSTOL:
+            CACHE.append({"log_tg": _log_tg(t, g),
+                          "P_star": res["P_star"].copy(),
+                          "taus": t, "gammas": g})
+        else:
+            # Try Anderson once
+            res = rp.solve_anderson_pchip(G, t, g, umax=UMAX, maxiters=500,
+                                          abstol=ABSTOL, m_window=6, damping=1.0,
+                                          P_init=P_init)
+            if res["history"] and res["history"][-1] < ABSTOL \
+               and float(np.abs(res["residual"]).max()) <= F_TOL:
+                CACHE.append({"log_tg": _log_tg(t, g),
+                              "P_star": res["P_star"].copy(),
+                              "taus": t, "gammas": g})
+        if (i+1) % 20 == 0 or (i+1) == len(good):
+            print(f"  preload {i+1}/{len(good)}  CACHE={len(CACHE)}")
+            sys.stdout.flush()
+    # Return clean rows (keyed as dicts with full fields) — main() uses
+    # these as the starting "rows" list so we don't duplicate in CSV.
+    return good
 
 
 def _log_tg(t, g):
@@ -117,18 +191,17 @@ def _linear_extrapolate(taus, gammas):
     x1 = axis_val(e1); x2 = axis_val(e2)
     if abs(x1 - x2) < 1e-12:
         return None
-    # Direction e2 → e1. Query extends if (target-x1) has same sign as (x1-x2).
-    step = x1 - x2
-    delta = target - x1
-    lam = delta / step
-    # Only extrapolate if query is on the extrapolation side (λ>0) and
-    # the step is modest (|λ| ≤ 2) to avoid overshoot.
-    if lam <= 0.0 or lam > 2.0:
+    # Standard linear interpolation/extrapolation in logit(P):
+    #   w = (target - x1) / (x2 - x1)   (0 = at e1, 1 = at e2)
+    # Allow w in [-1, 2]: modest extrapolation in either direction +
+    # any interpolation. Cap to avoid overshoot when the step is wide.
+    w = (target - x1) / (x2 - x1)
+    if w < -1.0 or w > 2.0:
         return None
 
     LP1 = np.log(e1["P_star"] / (1 - e1["P_star"]))
     LP2 = np.log(e2["P_star"] / (1 - e2["P_star"]))
-    LP_q = LP1 + lam * (LP1 - LP2)
+    LP_q = LP1 + w * (LP2 - LP1)
     P_q = 1.0 / (1.0 + np.exp(-LP_q))
     return np.clip(P_q, 1e-9, 1 - 1e-9)
 
@@ -160,8 +233,12 @@ def solve_one(taus, gammas):
     for m in ANDERSON_WINDOWS:
         attempts.append((f"A{m}", dict(solver="anderson", m_window=m,
                                         maxiters=ANDERSON_MAXITER)))
-    # Attempt 5: damped Picard as last resort
+    # Attempt 5: damped Picard
     attempts.append(("P0.3", dict(solver="picard", alpha=0.3, maxiters=5000)))
+    # Attempt 6: Newton-Krylov (matrix-free inexact Newton w/ GMRES) —
+    # expensive but robust against stiff fixed points where Picard/Anderson
+    # stall on a spectral-radius≈1 mode.
+    attempts.append(("NK", dict(solver="nk")))
 
     for tag, opts in attempts:
         t0 = time.time()
@@ -171,12 +248,14 @@ def solve_one(taus, gammas):
                                             maxiters=opts["maxiters"],
                                             abstol=ABSTOL, alpha=opts["alpha"],
                                             P_init=P_warm)
-            else:
+            elif opts["solver"] == "anderson":
                 res = rp.solve_anderson_pchip(G, taus, gammas, umax=UMAX,
                                               maxiters=opts["maxiters"],
                                               abstol=ABSTOL,
                                               m_window=opts["m_window"],
                                               damping=1.0, P_init=P_warm)
+            else:  # newton-krylov
+                res = _solve_nk(taus, gammas, P_warm)
         except Exception as e:
             print(f"    {tag} error: {e}")
             continue
@@ -195,6 +274,36 @@ def solve_one(taus, gammas):
         if converged:
             break
     return best
+
+
+def _solve_nk(taus, gammas, P_init):
+    """Newton-Krylov on F(P)=P-Φ(P). Requires a warm-start; skip otherwise."""
+    if P_init is None:
+        return {"history": [], "residual": np.full((G,G,G), np.inf),
+                "P_star": np.full((G,G,G), 0.5)}
+    u = np.linspace(-UMAX, UMAX, G)
+    taus_v = rh._as_vec3(taus[0]) if len(set(taus))==1 else np.asarray(taus, float)
+    gammas_v = rh._as_vec3(gammas[0]) if len(set(gammas))==1 else np.asarray(gammas, float)
+    Ws = rh._as_vec3(1.0)
+
+    def F(x):
+        P = x.reshape(G, G, G)
+        Pn = rp._phi_map_pchip(P, u, taus_v, gammas_v, Ws)
+        return x - Pn.reshape(-1)
+
+    x0 = np.clip(P_init, 1e-9, 1-1e-9).reshape(-1)
+    try:
+        sol = newton_krylov(F, x0, f_tol=max(ABSTOL, 1e-8),
+                            rdiff=1e-7, method="lgmres",
+                            maxiter=20, verbose=False)
+    except NoConvergence as e:
+        sol = np.asarray(e.args[0])
+    P_star = sol.reshape(G, G, G)
+    # Report the final Φ-iterate residual and one Picard "error" as PhiI.
+    Pn = rp._phi_map_pchip(P_star, u, taus_v, gammas_v, Ws)
+    Finf = float(np.abs(P_star - Pn).max())
+    PhiI = Finf  # no Picard history; use Finf as a scalar
+    return {"history": [PhiI], "residual": (P_star - Pn), "P_star": P_star}
 
 
 def one_minus_R2_het(Pg, u, taus, gammas):
@@ -255,30 +364,38 @@ def main():
     sys.stdout.flush()
     _ = rp.solve_picard_pchip(5, 2.0, 0.5, maxiters=3)
 
-    # Solve the SEED first: τ=(3,3,3) γ=(50,50,50) — easy near-CARA anchor.
-    # Chain-warm through γ sweep down to γ=3, then launch τ sweep from there.
-    print(f"[seed] solving τ=({TAU},{TAU},{TAU}) γ=(50,50,50)")
-    sys.stdout.flush()
-    seed = solve_one((TAU, TAU, TAU), (50.0, 50.0, 50.0))
-    if seed["converged"]:
-        CACHE.append({"log_tg": _log_tg((TAU,TAU,TAU), (50,50,50)),
-                      "P_star": seed["P_star"].copy(),
-                      "taus": (TAU,TAU,TAU), "gammas": (50,50,50)})
-        print(f"  seed converged: iters={seed['iters']} "
-              f"PhiI={seed['PhiI']:.2e} Finf={seed['Finf']:.2e}")
-    else:
-        print(f"  SEED FAILED: PhiI={seed['PhiI']:.2e}")
-    sys.stdout.flush()
-
     u = np.linspace(-UMAX, UMAX, G)
     idx = lambda x: int(np.argmin(np.abs(u - x)))
     i_r, j_r, l_r = idx(1.0), idx(-1.0), idx(1.0)
 
-    # CSV writer
     fieldnames = ["tau_1","tau_2","tau_3","gamma_1","gamma_2","gamma_3",
                   "alpha","iters","time_s","PhiI","Finf","oneR2_het",
                   "p_star","mu_1","mu_2","mu_3","pr_gap","converged","init"]
-    rows = []
+
+    # Preload CACHE + rows from the snapshot of the previous run.
+    rows = _preload_from_csv(CSV_OUT, fieldnames)
+
+    # If the seed is absent, solve it now (cold start).
+    seed_present = any(
+        abs(float(r["tau_1"]) - TAU) < 1e-9 and abs(float(r["gamma_1"]) - 50.0) < 1e-9
+        for r in rows)
+    if not seed_present:
+        print(f"[seed] solving τ=({TAU},{TAU},{TAU}) γ=(50,50,50)")
+        sys.stdout.flush()
+        seed = solve_one((TAU, TAU, TAU), (50.0, 50.0, 50.0))
+        if seed["converged"]:
+            CACHE.append({"log_tg": _log_tg((TAU,TAU,TAU), (50,50,50)),
+                          "P_star": seed["P_star"].copy(),
+                          "taus": (TAU,TAU,TAU), "gammas": (50,50,50)})
+            print(f"  seed converged: iters={seed['iters']} "
+                  f"PhiI={seed['PhiI']:.2e} Finf={seed['Finf']:.2e}")
+        else:
+            print(f"  SEED FAILED: PhiI={seed['PhiI']:.2e}")
+        sys.stdout.flush()
+    else:
+        seed = None
+        print(f"[seed] already in preload")
+        sys.stdout.flush()
 
     def flush():
         with open(CSV_OUT, "w", newline="") as f:
@@ -327,6 +444,10 @@ def main():
         # stop at γ=3, we'll pivot into the τ sweep
         if g[0] < GAMMA - 1e-9:
             break
+        already = any((abs(float(r["tau_1"]) - t[0]) < 1e-9
+                       and abs(float(r["gamma_1"]) - g[0]) < 1e-9) for r in rows)
+        if already:
+            continue
         best = solve_one(t, g)
         record(t, g, best)
         flush()
@@ -345,9 +466,9 @@ def main():
     print(f"\n=== homogeneous τ sweep (γ={GAMMA} fixed) ===")
     sys.stdout.flush()
     for (t, g) in tau_sweep():
-        # skip τ=(3,3,3) γ=(3,3,3) if already solved by γ sweep (it was)
-        already = any((abs(r["tau_1"] - t[0]) < 1e-9
-                       and abs(r["gamma_1"] - g[0]) < 1e-9) for r in rows)
+        # skip configs already present in rows (preload + prior progress)
+        already = any((abs(float(r["tau_1"]) - t[0]) < 1e-9
+                       and abs(float(r["gamma_1"]) - g[0]) < 1e-9) for r in rows)
         if already:
             continue
         best = solve_one(t, g)
