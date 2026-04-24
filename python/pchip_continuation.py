@@ -30,16 +30,13 @@ G        = 21
 UMAX     = 3.0
 TAU      = 3.0           # default τ for the γ sweep
 GAMMA    = 3.0           # default γ for the τ sweep
-ABSTOL   = 1e-4          # PhiI floor at G=11 PCHIP in stiff regions (τ>3.3,
-                         # γ=3) is genuinely ~2-5e-4 — spectral radius very
-                         # close to 1. Acceptance is primarily driven by
-                         # Finf (true fixed-point residual) ≤ F_TOL below.
-                         # At G=21 the floor should be tighter; leave here.
-F_TOL    = 3e-3          # reject fake convergences where PhiI hit abstol
-                         # but residual ||F||∞ is still large (branch jumps).
-                         # G=11 PCHIP legitimately plateaus at Finf ~1-2e-3
-                         # in stiff regions, so 3e-3 keeps real solutions
-                         # but catches the τ=3.46 jump (Finf=0.19).
+ABSTOL   = 1e-12         # Target: Picard-step tolerance 10⁻¹². At G=21 the
+                         # discretization floor should be well below this in
+                         # easy regions. Stiff configs will fall back to NK
+                         # (quadratic convergence to machine precision).
+F_TOL    = 1e-10         # Accept only high-precision fixed points (matches
+                         # ABSTOL=1e-12 target). Rejects near-fixed-points
+                         # that Picard plateaus at.
 CSV_OUT  = "/home/user/REZN/python/pchip_G21_forward.csv"
 CACHE_PKL = "/home/user/REZN/python/pchip_G21_cache.pkl"
 STATUS_PATH = "/home/user/REZN/python/sweep_status.txt"
@@ -251,20 +248,14 @@ def solve_one(taus, gammas):
 
     best = None
     attempts = []
-    # Ladder is ordered by expected time-to-solution at this configuration's
-    # stiffness. P1.0 usually resolves easy configs in <500 iters. If it
-    # plateaus, NK with a good warm start typically converges in ~1s.
-    # Anderson variants and damped Picard are backstops.
-    # Attempt 1: short Picard (fast for easy configs)
-    attempts.append(("P1.0", dict(solver="picard", alpha=1.0, maxiters=500)))
-    # Attempt 2: Newton-Krylov (quick with warm start — O(30 Φ evals))
-    attempts.append(("NK", dict(solver="nk")))
-    # Attempts 3-5: Anderson with growing windows
+    # Tolerances 1e-12 require many more iterations. NK dominates on
+    # stiff configs (quadratic convergence once in the basin).
+    attempts.append(("P1.0", dict(solver="picard", alpha=1.0, maxiters=3000)))
+    attempts.append(("NK",   dict(solver="nk")))
     for m in ANDERSON_WINDOWS:
         attempts.append((f"A{m}", dict(solver="anderson", m_window=m,
-                                        maxiters=400)))
-    # Attempt 6: damped Picard, trimmed to 1500 iters
-    attempts.append(("P0.3", dict(solver="picard", alpha=0.3, maxiters=1500)))
+                                        maxiters=2000)))
+    attempts.append(("P0.3", dict(solver="picard", alpha=0.3, maxiters=5000)))
 
     prefix = (f"τ=({taus[0]:.3f},{taus[1]:.3f},{taus[2]:.3f}) "
               f"γ=({gammas[0]:.3f},{gammas[1]:.3f},{gammas[2]:.3f})")
