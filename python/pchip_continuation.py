@@ -280,9 +280,8 @@ def solve_one(taus, gammas):
                                               status_every=25,
                                               status_prefix=f"{prefix} | {tag}")
             else:  # newton-krylov
-                with open(STATUS_PATH, "w") as _sf:
-                    _sf.write(f"{prefix} | {tag} (newton-krylov, no iter info)\n")
-                res = _solve_nk(taus, gammas, P_warm)
+                res = _solve_nk(taus, gammas, P_warm,
+                                status_prefix=f"{prefix} | {tag}")
         except Exception as e:
             print(f"    {tag} error: {e}")
             continue
@@ -308,8 +307,9 @@ def solve_one(taus, gammas):
     return best
 
 
-def _solve_nk(taus, gammas, P_init):
-    """Newton-Krylov on F(P)=P-Φ(P). Uses no-learning seed when no warm start."""
+def _solve_nk(taus, gammas, P_init, status_prefix=""):
+    """Newton-Krylov on F(P)=P-Φ(P). Uses no-learning seed when no warm start.
+    Writes live status (outer iteration, current ||F||∞) to STATUS_PATH."""
     u = np.linspace(-UMAX, UMAX, G)
     taus_v = rh._as_vec3(taus[0]) if len(set(taus))==1 else np.asarray(taus, float)
     gammas_v = rh._as_vec3(gammas[0]) if len(set(gammas))==1 else np.asarray(gammas, float)
@@ -322,10 +322,23 @@ def _solve_nk(taus, gammas, P_init):
         Pn = rp._phi_map_pchip(P, u, taus_v, gammas_v, Ws)
         return x - Pn.reshape(-1)
 
+    t_start = time.time()
+    nk_iter = [0]
+    def cb(xk, fk):
+        nk_iter[0] += 1
+        try:
+            Finf_k = float(np.abs(fk).max())
+            with open(STATUS_PATH, "w") as _sf:
+                _sf.write(f"{status_prefix} NK iter={nk_iter[0]} "
+                          f"Finf={Finf_k:.3e} elapsed={time.time()-t_start:.1f}s\n")
+        except Exception:
+            pass
+
     x0 = np.clip(P_init, 1e-9, 1-1e-9).reshape(-1)
     try:
         sol = newton_krylov(F, x0, f_tol=ABSTOL, rdiff=1e-7,
-                            method="lgmres", maxiter=50, verbose=False)
+                            method="lgmres", maxiter=50, verbose=False,
+                            callback=cb)
     except NoConvergence as e:
         sol = np.asarray(e.args[0])
     # Guard against non-finite solutions (can happen if GMRES hit a singular
