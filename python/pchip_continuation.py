@@ -34,11 +34,11 @@ ABSTOL   = 1e-8          # Picard-step tolerance. FD-Newton can't reach
                          # 1e-12 because the FD Jacobian has noise ~1e-6
                          # from the PCHIP+contour Φ evaluation. Subsequent
                          # warm-started configs can hit tighter.
-F_TOL    = 3e-4          # Accept Finf ≤ 3e-4 for G=15 PCHIP. With FD-Newton
-                         # noise floor ~1e-5 for well-warmed configs and
-                         # Picard stalling at ~1e-4 for harder ones, this
-                         # captures the true fixed-point residual rather
-                         # than spurious oscillation.
+F_TOL    = 1e-3          # Accept Finf ≤ 1e-3 for G=15 PCHIP. Picard alone
+                         # stalls at ~1-5e-4 in stiff regions; NK's FD
+                         # Jacobian oscillates above that floor. 1e-3 is
+                         # still << 1-R² signal (~1e-3 to 0.3) so captures
+                         # PR structure without wasting time fighting noise.
 CSV_OUT  = "/home/user/REZN/python/pchip_G15_forward.csv"
 CACHE_PKL = "/home/user/REZN/python/pchip_G15_cache.pkl"
 STATUS_PATH = "/home/user/REZN/python/sweep_status.txt"
@@ -263,15 +263,14 @@ def solve_one(taus, gammas):
             attempts.append((f"A{m}", dict(solver="anderson", m_window=m,
                                             maxiters=2000)))
     else:
-        # Warm-started configs: Picard first (fast when ρ small, esp. at
-        # high γ), then NK to finish, Anderson as extra safety, then
-        # damped Picard as a last resort.
+        # Warm-started configs: Picard → Anderson. NK removed from the
+        # post-seed ladder because its FD-Jacobian oscillates above the
+        # Picard floor and adds 3-5 min per config without helping.
         attempts.append(("P1.0", dict(solver="picard", alpha=1.0, maxiters=500)))
-        attempts.append(("NK",   dict(solver="nk")))
         for m in ANDERSON_WINDOWS:
             attempts.append((f"A{m}", dict(solver="anderson", m_window=m,
-                                            maxiters=1000)))
-        attempts.append(("P0.3", dict(solver="picard", alpha=0.3, maxiters=3000)))
+                                            maxiters=500)))
+        attempts.append(("P0.3", dict(solver="picard", alpha=0.3, maxiters=1500)))
 
     prefix = (f"τ=({taus[0]:.3f},{taus[1]:.3f},{taus[2]:.3f}) "
               f"γ=({gammas[0]:.3f},{gammas[1]:.3f},{gammas[2]:.3f})")
