@@ -34,9 +34,10 @@ ABSTOL   = 1e-11         # Picard-step tolerance. FD-Jacobian noise floor in
                          # our stack is ~1e-10; 1e-11 is an ambitious target
                          # that may only be reachable via continuation warm
                          # start (not cold).
-F_TOL    = 1e-9          # Practical floor at G=11 with logit-PCHIP + FD-NK.
-                         # Seed typically hits 7e-11 via Anderson polishing;
-                         # warm-started configs can sometimes go tighter.
+F_TOL    = 1e-8          # Pragmatic acceptance. Tighter targets (1e-11) are
+                         # achievable via Anderson polishing but cost ~5 min
+                         # per config; 1e-8 lets the 250-config sweep finish
+                         # overnight while still being 10^5× the 1-R² signal.
 CSV_OUT  = "/home/user/REZN/python/pchip_G11logit_forward.csv"
 CACHE_PKL = "/home/user/REZN/python/pchip_G11logit_cache.pkl"
 STATUS_PATH = "/home/user/REZN/python/sweep_status.txt"
@@ -370,25 +371,6 @@ def _solve_nk(taus, gammas, P_init, status_prefix=""):
     Finf = float(np.abs(P_star - Pn).max())
     PhiI = Finf
     best = dict(P=P_star.copy(), Finf=Finf)
-
-    # If NK didn't reach ABSTOL, perturb in LOGIT space by σ=1e-10 and retry.
-    # The noise dislodges the FD-Jacobian from a spurious noise floor without
-    # changing the actual solution meaningfully.
-    rng = np.random.default_rng(12345)
-    for attempt in range(3):
-        if best["Finf"] < ABSTOL:
-            break
-        L = np.log(best["P"] / (1.0 - best["P"]))
-        sigma = 1e-10 * (10 ** attempt)  # 1e-10, 1e-9, 1e-8
-        L_perturbed = L + rng.standard_normal(L.shape) * sigma
-        P_perturbed = 1.0 / (1.0 + np.exp(-L_perturbed))
-        nk_iter[0] = 0  # reset the status counter for callback reporting
-        sol = _run_nk(P_perturbed.reshape(-1))
-        P_try = np.clip(sol.reshape(G, G, G), 1e-9, 1 - 1e-9)
-        Pn_try = rp._phi_map_pchip(P_try, u, taus_v, gammas_v, Ws)
-        F_try = float(np.abs(P_try - Pn_try).max())
-        if F_try < best["Finf"]:
-            best = dict(P=P_try, Finf=F_try)
 
     return {"history": [best["Finf"]], "residual": (best["P"] -
             rp._phi_map_pchip(best["P"], u, taus_v, gammas_v, Ws)),
