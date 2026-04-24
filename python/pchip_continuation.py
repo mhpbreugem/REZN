@@ -356,8 +356,11 @@ def _solve_nk(taus, gammas, P_init, status_prefix=""):
     x0 = np.clip(P_init, 1e-9, 1-1e-9).reshape(-1)
 
     def _run_nk(start_vec):
+        # Stop NK once below F_TOL (acceptance threshold) rather than
+        # grinding to ABSTOL which is typically unachievable. Saves
+        # 40-60 iters per config.
         try:
-            s = newton_krylov(F, start_vec, f_tol=ABSTOL, rdiff=1e-8,
+            s = newton_krylov(F, start_vec, f_tol=F_TOL * 0.5, rdiff=1e-8,
                                method="lgmres", maxiter=80, verbose=False,
                                callback=cb)
         except NoConvergence as e:
