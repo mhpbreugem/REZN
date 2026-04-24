@@ -249,15 +249,24 @@ def solve_one(taus, gammas):
 
     best = None
     attempts = []
-    # Alternating-method ladder (FindRoot-style): start with Newton-Krylov.
-    # If NK doesn't make it (as happens for the cold seed at G=21), fall
-    # back to Anderson, and finally to Picard as a last resort.
-    attempts.append(("NK",   dict(solver="nk")))
-    for m in ANDERSON_WINDOWS:
-        attempts.append((f"A{m}", dict(solver="anderson", m_window=m,
-                                        maxiters=2000)))
-    attempts.append(("P1.0", dict(solver="picard", alpha=1.0, maxiters=3000)))
-    attempts.append(("P0.3", dict(solver="picard", alpha=0.3, maxiters=5000)))
+    # Seed (empty CACHE): Picard first to land inside the fixed-point basin,
+    # then NK to polish to machine precision. Picard is robust from cold at
+    # γ=500 (spectral radius tiny), reaching ~1e-12 in a handful of iters.
+    # Subsequent configs: NK first (warm-started → quadratic), Anderson as
+    # backup.
+    if len(CACHE) == 0:
+        attempts.append(("P1.0", dict(solver="picard", alpha=1.0, maxiters=3000)))
+        attempts.append(("NK",   dict(solver="nk")))
+        for m in ANDERSON_WINDOWS:
+            attempts.append((f"A{m}", dict(solver="anderson", m_window=m,
+                                            maxiters=2000)))
+    else:
+        attempts.append(("NK",   dict(solver="nk")))
+        for m in ANDERSON_WINDOWS:
+            attempts.append((f"A{m}", dict(solver="anderson", m_window=m,
+                                            maxiters=2000)))
+        attempts.append(("P1.0", dict(solver="picard", alpha=1.0, maxiters=3000)))
+        attempts.append(("P0.3", dict(solver="picard", alpha=0.3, maxiters=5000)))
 
     prefix = (f"τ=({taus[0]:.3f},{taus[1]:.3f},{taus[2]:.3f}) "
               f"γ=({gammas[0]:.3f},{gammas[1]:.3f},{gammas[2]:.3f})")
