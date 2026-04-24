@@ -301,6 +301,9 @@ def solve_anderson_pchip(G, taus, gammas, umax=2.0, Ws=1.0,
                               f"PhiI={diff:.3e} elapsed={_time.time()-t_start:.1f}s\n")
             except Exception:
                 pass
+        # Bail out on NaN/Inf — no point continuing the iteration.
+        if not np.isfinite(diff):
+            break
         if diff < abstol:
             x = Pnew.reshape(-1)
             break
@@ -347,6 +350,7 @@ def solve_picard_pchip(G, taus, gammas, umax=2.0, Ws=1.0,
             Pcur = Pnew
         else:
             Pcur = alpha * Pnew + (1 - alpha) * Pcur
+        Pcur = np.clip(Pcur, 1e-9, 1 - 1e-9)
         history.append(diff)
         if status_path is not None and (it % status_every == 0):
             try:
@@ -355,6 +359,9 @@ def solve_picard_pchip(G, taus, gammas, umax=2.0, Ws=1.0,
                               f"PhiI={diff:.3e} elapsed={_time.time()-t_start:.1f}s\n")
             except Exception:
                 pass
+        # Bail out on NaN/Inf — continuing will only burn CPU.
+        if not np.isfinite(diff):
+            break
         if diff < abstol:
             break
     F = _residual_array_pchip(Pcur, u, taus, gammas, Ws)

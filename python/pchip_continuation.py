@@ -306,6 +306,9 @@ def solve_one(taus, gammas):
         dt = time.time() - t0
         PhiI = res["history"][-1] if res["history"] else float("inf")
         Finf = float(np.abs(res["residual"]).max())
+        # Non-finite results shouldn't replace a real candidate
+        if not (np.isfinite(PhiI) and np.isfinite(Finf)):
+            PhiI = float("inf"); Finf = float("inf")
         # Acceptance: Finf (true fixed-point residual ||Φ(P)-P||∞) ≤ F_TOL.
         # PhiI oscillation in stiff regimes doesn't preclude acceptance.
         converged = (Finf < F_TOL)
@@ -315,7 +318,7 @@ def solve_one(taus, gammas):
                     init=("warm" if P_warm is not None else "cold"),
                     warm_from=(t_near, g_near))
         if best is None or (cand["converged"] and not best["converged"]) \
-           or (not best["converged"] and cand["PhiI"] < best["PhiI"]):
+           or (not best["converged"] and cand["Finf"] < best["Finf"]):
             best = cand
         if converged:
             break
@@ -344,8 +347,12 @@ def _solve_nk(taus, gammas, P_init):
                             maxiter=20, verbose=False)
     except NoConvergence as e:
         sol = np.asarray(e.args[0])
+    # Guard against non-finite solutions (can happen if GMRES hit a singular
+    # Jacobian). Fall back to the warm start rather than returning NaN.
+    if not np.all(np.isfinite(sol)):
+        sol = x0
     P_star = sol.reshape(G, G, G)
-    # Report the final Φ-iterate residual and one Picard "error" as PhiI.
+    P_star = np.clip(P_star, 1e-9, 1 - 1e-9)
     Pn = rp._phi_map_pchip(P_star, u, taus_v, gammas_v, Ws)
     Finf = float(np.abs(P_star - Pn).max())
     PhiI = Finf  # no Picard history; use Finf as a scalar
