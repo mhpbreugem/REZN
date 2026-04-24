@@ -26,21 +26,22 @@ import rezn_het as rh
 import rezn_pchip as rp
 
 
-G        = 11
-UMAX     = 2.0
+G        = 21
+UMAX     = 3.0
 TAU      = 3.0           # default τ for the γ sweep
 GAMMA    = 3.0           # default γ for the τ sweep
 ABSTOL   = 1e-4          # PhiI floor at G=11 PCHIP in stiff regions (τ>3.3,
                          # γ=3) is genuinely ~2-5e-4 — spectral radius very
                          # close to 1. Acceptance is primarily driven by
                          # Finf (true fixed-point residual) ≤ F_TOL below.
+                         # At G=21 the floor should be tighter; leave here.
 F_TOL    = 3e-3          # reject fake convergences where PhiI hit abstol
                          # but residual ||F||∞ is still large (branch jumps).
                          # G=11 PCHIP legitimately plateaus at Finf ~1-2e-3
                          # in stiff regions, so 3e-3 keeps real solutions
                          # but catches the τ=3.46 jump (Finf=0.19).
-CSV_OUT  = "/home/user/REZN/python/pchip_continuation_results.csv"
-CACHE_PKL = "/home/user/REZN/python/pchip_cache.pkl"
+CSV_OUT  = "/home/user/REZN/python/pchip_G21_forward.csv"
+CACHE_PKL = "/home/user/REZN/python/pchip_G21_cache.pkl"
 STATUS_PATH = "/home/user/REZN/python/sweep_status.txt"
 # Anderson windows to try. Anderson with window m≈6 usually works very
 # well; larger windows bring more memory-of-past iterates (better for
