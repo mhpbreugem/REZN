@@ -4,6 +4,8 @@ python/sweep_status.txt
 python/pchip_cache.pkl
 python/pchip_G21_cache.pkl
 python/pchip_G21_forward.csv
+python/pchip_G15_cache.pkl
+python/pchip_G15_forward.csv
 python/pchip_asym_cache.pkl
 python/pchip_asymmetric_results.csv
 python/pchip_backward_results.csv
