@@ -248,14 +248,23 @@ def solve_one(taus, gammas):
 
     best = None
     attempts = []
-    # Tolerances 1e-12 require many more iterations. NK dominates on
-    # stiff configs (quadratic convergence once in the basin).
-    attempts.append(("P1.0", dict(solver="picard", alpha=1.0, maxiters=3000)))
-    attempts.append(("NK",   dict(solver="nk")))
-    for m in ANDERSON_WINDOWS:
-        attempts.append((f"A{m}", dict(solver="anderson", m_window=m,
-                                        maxiters=2000)))
-    attempts.append(("P0.3", dict(solver="picard", alpha=0.3, maxiters=5000)))
+    # First solve (empty CACHE = no seed yet): full ladder including Picard
+    # to make the FP basin. Once the seed is in CACHE, every subsequent
+    # config gets only Newton-Krylov (warm-start → quadratic convergence to
+    # machine precision) with Anderson as a safety net. Picard is too slow
+    # at G=21 + ABSTOL=1e-12.
+    if len(CACHE) == 0:
+        attempts.append(("P1.0", dict(solver="picard", alpha=1.0, maxiters=3000)))
+        attempts.append(("NK",   dict(solver="nk")))
+        for m in ANDERSON_WINDOWS:
+            attempts.append((f"A{m}", dict(solver="anderson", m_window=m,
+                                            maxiters=2000)))
+        attempts.append(("P0.3", dict(solver="picard", alpha=0.3, maxiters=5000)))
+    else:
+        attempts.append(("NK",   dict(solver="nk")))
+        for m in ANDERSON_WINDOWS:
+            attempts.append((f"A{m}", dict(solver="anderson", m_window=m,
+                                            maxiters=2000)))
 
     prefix = (f"τ=({taus[0]:.3f},{taus[1]:.3f},{taus[2]:.3f}) "
               f"γ=({gammas[0]:.3f},{gammas[1]:.3f},{gammas[2]:.3f})")
@@ -309,14 +318,13 @@ def solve_one(taus, gammas):
 
 
 def _solve_nk(taus, gammas, P_init):
-    """Newton-Krylov on F(P)=P-Φ(P). Requires a warm-start; skip otherwise."""
-    if P_init is None:
-        return {"history": [], "residual": np.full((G,G,G), np.inf),
-                "P_star": np.full((G,G,G), 0.5)}
+    """Newton-Krylov on F(P)=P-Φ(P). Uses no-learning seed when no warm start."""
     u = np.linspace(-UMAX, UMAX, G)
     taus_v = rh._as_vec3(taus[0]) if len(set(taus))==1 else np.asarray(taus, float)
     gammas_v = rh._as_vec3(gammas[0]) if len(set(gammas))==1 else np.asarray(gammas, float)
     Ws = rh._as_vec3(1.0)
+    if P_init is None:
+        P_init = rh._nolearning_price(u, taus_v, gammas_v, Ws)
 
     def F(x):
         P = x.reshape(G, G, G)
@@ -325,9 +333,8 @@ def _solve_nk(taus, gammas, P_init):
 
     x0 = np.clip(P_init, 1e-9, 1-1e-9).reshape(-1)
     try:
-        sol = newton_krylov(F, x0, f_tol=max(ABSTOL, 1e-8),
-                            rdiff=1e-7, method="lgmres",
-                            maxiter=20, verbose=False)
+        sol = newton_krylov(F, x0, f_tol=ABSTOL, rdiff=1e-7,
+                            method="lgmres", maxiter=50, verbose=False)
     except NoConvergence as e:
         sol = np.asarray(e.args[0])
     # Guard against non-finite solutions (can happen if GMRES hit a singular
