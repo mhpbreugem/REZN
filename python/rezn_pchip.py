@@ -287,25 +287,31 @@ def solve_anderson_pchip(G, taus, gammas, umax=2.0, Ws=1.0,
     Xs = []
     Gs = []
     history = []
+    x_best = x.copy()
+    best_diff = float("inf")
     t_start = _time.time()
     for it in range(maxiters):
         Pcur = x.reshape(G, G, G)
         Pnew = _phi_map_pchip(Pcur, u, taus, gammas, Ws)
         g = Pnew.reshape(-1) - x
         diff = float(np.abs(g).max())
+        if np.isfinite(diff) and diff < best_diff:
+            best_diff = diff
+            x_best = Pnew.reshape(-1).copy()
         history.append(diff)
         if status_path is not None and (it % status_every == 0):
             try:
                 with open(status_path, "w") as _sf:
                     _sf.write(f"{status_prefix} iter={it+1}/{maxiters} "
-                              f"PhiI={diff:.3e} elapsed={_time.time()-t_start:.1f}s\n")
+                              f"PhiI={diff:.3e} best={best_diff:.3e} "
+                              f"elapsed={_time.time()-t_start:.1f}s\n")
             except Exception:
                 pass
-        # Bail out on NaN/Inf — no point continuing the iteration.
         if not np.isfinite(diff):
             break
         if diff < abstol:
             x = Pnew.reshape(-1)
+            x_best = x.copy(); best_diff = diff
             break
         Xs.append(x.copy()); Gs.append(g.copy())
         if len(Xs) > m_window + 1:
@@ -320,10 +326,10 @@ def solve_anderson_pchip(G, taus, gammas, umax=2.0, Ws=1.0,
             x_new = x + damping * g - (dX + damping * dG) @ gamma
         x = np.clip(x_new, 1e-9, 1 - 1e-9)
 
-    Pstar = x.reshape(G, G, G)
+    Pstar = x_best.reshape(G, G, G)
     F = _residual_array_pchip(Pstar, u, taus, gammas, Ws)
     return dict(P_star=Pstar, P0=P0, u=u, residual=F,
-                history=history, converged=(history and history[-1] < abstol),
+                history=history, converged=(best_diff < abstol),
                 taus=taus, gammas=gammas)
 
 
@@ -342,6 +348,11 @@ def solve_picard_pchip(G, taus, gammas, umax=2.0, Ws=1.0,
     else:
         Pcur = P0.copy()
     history = []
+    # Track best iterate seen (min PhiI) — Picard can oscillate near the
+    # numerical noise floor; returning the last iterate misses a much
+    # tighter intermediate solution.
+    P_best = Pcur.copy()
+    best_diff = float("inf")
     t_start = _time.time()
     for it in range(maxiters):
         Pnew = _phi_map_pchip(Pcur, u, taus, gammas, Ws)
@@ -351,22 +362,26 @@ def solve_picard_pchip(G, taus, gammas, umax=2.0, Ws=1.0,
         else:
             Pcur = alpha * Pnew + (1 - alpha) * Pcur
         Pcur = np.clip(Pcur, 1e-9, 1 - 1e-9)
+        if np.isfinite(diff) and diff < best_diff:
+            best_diff = diff
+            P_best = Pcur.copy()
         history.append(diff)
         if status_path is not None and (it % status_every == 0):
             try:
                 with open(status_path, "w") as _sf:
                     _sf.write(f"{status_prefix} iter={it+1}/{maxiters} "
-                              f"PhiI={diff:.3e} elapsed={_time.time()-t_start:.1f}s\n")
+                              f"PhiI={diff:.3e} best={best_diff:.3e} "
+                              f"elapsed={_time.time()-t_start:.1f}s\n")
             except Exception:
                 pass
-        # Bail out on NaN/Inf — continuing will only burn CPU.
         if not np.isfinite(diff):
             break
         if diff < abstol:
+            P_best = Pcur.copy(); best_diff = diff
             break
-    F = _residual_array_pchip(Pcur, u, taus, gammas, Ws)
-    return dict(P_star=Pcur, P0=P0, u=u, residual=F,
-                history=history, converged=(history[-1] < abstol),
+    F = _residual_array_pchip(P_best, u, taus, gammas, Ws)
+    return dict(P_star=P_best, P0=P0, u=u, residual=F,
+                history=history, converged=(best_diff < abstol),
                 taus=taus, gammas=gammas)
 
 

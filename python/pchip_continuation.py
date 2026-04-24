@@ -30,15 +30,12 @@ G        = 15
 UMAX     = 2.0           # density 3.5 points per SD (between G=11 and G=21)
 TAU      = 3.0           # default τ for the γ sweep
 GAMMA    = 3.0           # default γ for the τ sweep
-ABSTOL   = 1e-8          # Picard-step tolerance. FD-Newton can't reach
-                         # 1e-12 because the FD Jacobian has noise ~1e-6
-                         # from the PCHIP+contour Φ evaluation. Subsequent
-                         # warm-started configs can hit tighter.
-F_TOL    = 1e-3          # Accept Finf ≤ 1e-3 for G=15 PCHIP. Picard alone
-                         # stalls at ~1-5e-4 in stiff regions; NK's FD
-                         # Jacobian oscillates above that floor. 1e-3 is
-                         # still << 1-R² signal (~1e-3 to 0.3) so captures
-                         # PR structure without wasting time fighting noise.
+ABSTOL   = 1e-12         # Picard-step tolerance. With solvers now returning
+                         # min-residual iterate seen, Picard can bottom out
+                         # at whatever the Φ-evaluation noise floor allows
+                         # (~1e-13 for smooth PCHIP + contour).
+F_TOL    = 1e-10         # Acceptance for true fixed-point residual. With
+                         # the min-iterate return, we should see this.
 CSV_OUT  = "/home/user/REZN/python/pchip_G15_forward.csv"
 CACHE_PKL = "/home/user/REZN/python/pchip_G15_cache.pkl"
 STATUS_PATH = "/home/user/REZN/python/sweep_status.txt"
@@ -263,14 +260,13 @@ def solve_one(taus, gammas):
             attempts.append((f"A{m}", dict(solver="anderson", m_window=m,
                                             maxiters=2000)))
     else:
-        # Warm-started configs: Picard → Anderson. NK removed from the
-        # post-seed ladder because its FD-Jacobian oscillates above the
-        # Picard floor and adds 3-5 min per config without helping.
-        attempts.append(("P1.0", dict(solver="picard", alpha=1.0, maxiters=500)))
+        # Warm-started configs: long Picard (tracks best iterate), Anderson
+        # backup. 20000 iters lets Picard ride the linear-convergence curve
+        # down to the noise floor even when ρ is close to 1.
+        attempts.append(("P1.0", dict(solver="picard", alpha=1.0, maxiters=20000)))
         for m in ANDERSON_WINDOWS:
             attempts.append((f"A{m}", dict(solver="anderson", m_window=m,
-                                            maxiters=500)))
-        attempts.append(("P0.3", dict(solver="picard", alpha=0.3, maxiters=1500)))
+                                            maxiters=2000)))
 
     prefix = (f"τ=({taus[0]:.3f},{taus[1]:.3f},{taus[2]:.3f}) "
               f"γ=({gammas[0]:.3f},{gammas[1]:.3f},{gammas[2]:.3f})")
