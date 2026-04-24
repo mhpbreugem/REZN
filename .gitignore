@@ -3,7 +3,11 @@ python/*.log
 python/sweep_status.txt
 python/pchip_cache.pkl
 python/pchip_G21_cache.pkl
+python/pchip_G21_forward.csv
 python/pchip_asym_cache.pkl
+python/pchip_asymmetric_results.csv
+python/pchip_backward_results.csv
+python/pchip_continuation_results.csv
 python/pchip_G11_cache_snap.pkl
 python/sweep_asym_status.txt
 python/sweep_asym_status.txt
