@@ -265,7 +265,8 @@ def _residual_array_pchip(Pg, u, taus, gammas, Ws):
 
 def solve_anderson_pchip(G, taus, gammas, umax=2.0, Ws=1.0,
                           maxiters=500, abstol=1e-13, m_window=6,
-                          P_init=None, damping=1.0):
+                          P_init=None, damping=1.0,
+                          status_path=None, status_every=50, status_prefix=""):
     """Anderson-accelerated fixed-point iteration on the PCHIP Φ map.
 
     At each step we store the last m_window iterates and fixed-point
@@ -274,6 +275,7 @@ def solve_anderson_pchip(G, taus, gammas, umax=2.0, Ws=1.0,
         x_{n+1} = x_n + damping * g_n - (ΔX + damping*ΔG) γ_n
     where γ_n minimises ‖g_n - ΔG γ_n‖.
     """
+    import time as _time
     u = np.linspace(-umax, umax, G)
     taus = rh._as_vec3(taus)
     gammas = rh._as_vec3(gammas)
@@ -285,12 +287,20 @@ def solve_anderson_pchip(G, taus, gammas, umax=2.0, Ws=1.0,
     Xs = []
     Gs = []
     history = []
+    t_start = _time.time()
     for it in range(maxiters):
         Pcur = x.reshape(G, G, G)
         Pnew = _phi_map_pchip(Pcur, u, taus, gammas, Ws)
         g = Pnew.reshape(-1) - x
         diff = float(np.abs(g).max())
         history.append(diff)
+        if status_path is not None and (it % status_every == 0):
+            try:
+                with open(status_path, "w") as _sf:
+                    _sf.write(f"{status_prefix} iter={it+1}/{maxiters} "
+                              f"PhiI={diff:.3e} elapsed={_time.time()-t_start:.1f}s\n")
+            except Exception:
+                pass
         if diff < abstol:
             x = Pnew.reshape(-1)
             break
@@ -316,7 +326,9 @@ def solve_anderson_pchip(G, taus, gammas, umax=2.0, Ws=1.0,
 
 def solve_picard_pchip(G, taus, gammas, umax=2.0, Ws=1.0,
                        maxiters=3000, abstol=1e-13, alpha=1.0,
-                       P_init=None):
+                       P_init=None,
+                       status_path=None, status_every=50, status_prefix=""):
+    import time as _time
     u = np.linspace(-umax, umax, G)
     taus = rh._as_vec3(taus)
     gammas = rh._as_vec3(gammas)
@@ -327,7 +339,8 @@ def solve_picard_pchip(G, taus, gammas, umax=2.0, Ws=1.0,
     else:
         Pcur = P0.copy()
     history = []
-    for _ in range(maxiters):
+    t_start = _time.time()
+    for it in range(maxiters):
         Pnew = _phi_map_pchip(Pcur, u, taus, gammas, Ws)
         diff = float(np.abs(Pnew - Pcur).max())
         if alpha == 1.0:
@@ -335,6 +348,13 @@ def solve_picard_pchip(G, taus, gammas, umax=2.0, Ws=1.0,
         else:
             Pcur = alpha * Pnew + (1 - alpha) * Pcur
         history.append(diff)
+        if status_path is not None and (it % status_every == 0):
+            try:
+                with open(status_path, "w") as _sf:
+                    _sf.write(f"{status_prefix} iter={it+1}/{maxiters} "
+                              f"PhiI={diff:.3e} elapsed={_time.time()-t_start:.1f}s\n")
+            except Exception:
+                pass
         if diff < abstol:
             break
     F = _residual_array_pchip(Pcur, u, taus, gammas, Ws)

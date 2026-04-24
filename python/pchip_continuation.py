@@ -38,6 +38,7 @@ F_TOL    = 3e-3          # reject fake convergences where PhiI hit abstol
                          # in stiff regions, so 3e-3 keeps real solutions
                          # but catches the τ=3.46 jump (Finf=0.19).
 CSV_OUT  = "/home/user/REZN/python/pchip_continuation_results.csv"
+STATUS_PATH = "/home/user/REZN/python/sweep_status.txt"
 # Anderson windows to try. Anderson with window m≈6 usually works very
 # well; larger windows bring more memory-of-past iterates (better for
 # slow modes) but can be unstable.
@@ -240,6 +241,8 @@ def solve_one(taus, gammas):
     # stall on a spectral-radius≈1 mode.
     attempts.append(("NK", dict(solver="nk")))
 
+    prefix = (f"τ=({taus[0]:.3f},{taus[1]:.3f},{taus[2]:.3f}) "
+              f"γ=({gammas[0]:.3f},{gammas[1]:.3f},{gammas[2]:.3f})")
     for tag, opts in attempts:
         t0 = time.time()
         try:
@@ -247,14 +250,22 @@ def solve_one(taus, gammas):
                 res = rp.solve_picard_pchip(G, taus, gammas, umax=UMAX,
                                             maxiters=opts["maxiters"],
                                             abstol=ABSTOL, alpha=opts["alpha"],
-                                            P_init=P_warm)
+                                            P_init=P_warm,
+                                            status_path=STATUS_PATH,
+                                            status_every=25,
+                                            status_prefix=f"{prefix} | {tag}")
             elif opts["solver"] == "anderson":
                 res = rp.solve_anderson_pchip(G, taus, gammas, umax=UMAX,
                                               maxiters=opts["maxiters"],
                                               abstol=ABSTOL,
                                               m_window=opts["m_window"],
-                                              damping=1.0, P_init=P_warm)
+                                              damping=1.0, P_init=P_warm,
+                                              status_path=STATUS_PATH,
+                                              status_every=25,
+                                              status_prefix=f"{prefix} | {tag}")
             else:  # newton-krylov
+                with open(STATUS_PATH, "w") as _sf:
+                    _sf.write(f"{prefix} | {tag} (newton-krylov, no iter info)\n")
                 res = _solve_nk(taus, gammas, P_warm)
         except Exception as e:
             print(f"    {tag} error: {e}")
