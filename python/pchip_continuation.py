@@ -120,9 +120,9 @@ def _preload_from_csv(csv_path, fieldnames):
     print(f"[preload] {len(good)} clean rows from CSV ({bad} rejected)")
     sys.stdout.flush()
 
-    # If CACHE is already populated (pickle fast-path), skip re-solve.
-    # Otherwise rebuild it from scratch.
-    if len(CACHE) >= max(1, len(good) // 2):
+    # If CACHE has any entries from the pickle, use them and skip re-solve.
+    # The predictor will handle missing neighbors via linear extrapolation.
+    if len(CACHE) > 0:
         print(f"  [cache hit] skipping re-solve, CACHE has {len(CACHE)} entries")
         sys.stdout.flush()
         return good
@@ -259,18 +259,20 @@ def solve_one(taus, gammas):
 
     best = None
     attempts = []
-    # Attempt 1: plain Picard α=1 (works for seed and nearby configs)
-    attempts.append(("P1.0", dict(solver="picard", alpha=1.0, maxiters=2000)))
-    # Attempts 2-4: Anderson with growing windows
+    # Ladder is ordered by expected time-to-solution at this configuration's
+    # stiffness. P1.0 usually resolves easy configs in <500 iters. If it
+    # plateaus, NK with a good warm start typically converges in ~1s.
+    # Anderson variants and damped Picard are backstops.
+    # Attempt 1: short Picard (fast for easy configs)
+    attempts.append(("P1.0", dict(solver="picard", alpha=1.0, maxiters=500)))
+    # Attempt 2: Newton-Krylov (quick with warm start — O(30 Φ evals))
+    attempts.append(("NK", dict(solver="nk")))
+    # Attempts 3-5: Anderson with growing windows
     for m in ANDERSON_WINDOWS:
         attempts.append((f"A{m}", dict(solver="anderson", m_window=m,
-                                        maxiters=ANDERSON_MAXITER)))
-    # Attempt 5: damped Picard
-    attempts.append(("P0.3", dict(solver="picard", alpha=0.3, maxiters=5000)))
-    # Attempt 6: Newton-Krylov (matrix-free inexact Newton w/ GMRES) —
-    # expensive but robust against stiff fixed points where Picard/Anderson
-    # stall on a spectral-radius≈1 mode.
-    attempts.append(("NK", dict(solver="nk")))
+                                        maxiters=400)))
+    # Attempt 6: damped Picard, trimmed to 1500 iters
+    attempts.append(("P0.3", dict(solver="picard", alpha=0.3, maxiters=1500)))
 
     prefix = (f"τ=({taus[0]:.3f},{taus[1]:.3f},{taus[2]:.3f}) "
               f"γ=({gammas[0]:.3f},{gammas[1]:.3f},{gammas[2]:.3f})")
