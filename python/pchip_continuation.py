@@ -255,7 +255,8 @@ def solve_one(taus, gammas):
     # Subsequent configs: NK first (warm-started → quadratic), Anderson as
     # backup.
     if len(CACHE) == 0:
-        attempts.append(("P1.0", dict(solver="picard", alpha=1.0, maxiters=3000)))
+        # Short Picard (land in the basin) → NK (polish to machine precision)
+        attempts.append(("P1.0", dict(solver="picard", alpha=1.0, maxiters=200)))
         attempts.append(("NK",   dict(solver="nk")))
         for m in ANDERSON_WINDOWS:
             attempts.append((f"A{m}", dict(solver="anderson", m_window=m,
