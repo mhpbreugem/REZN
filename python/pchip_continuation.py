@@ -352,25 +352,47 @@ def _solve_nk(taus, gammas, P_init, status_prefix=""):
             pass
 
     x0 = np.clip(P_init, 1e-9, 1-1e-9).reshape(-1)
-    # rdiff optimum = sqrt(eps_F) where eps_F is the noise in F evaluation.
-    # Our Φ map has PCHIP + contour quadrature noise ~1e-13, so optimum is
-    # sqrt(1e-13) ≈ 3e-7. Use 5e-7 for a little extra margin.
-    try:
-        sol = newton_krylov(F, x0, f_tol=ABSTOL, rdiff=1e-8,
-                            method="lgmres", maxiter=80, verbose=False,
-                            callback=cb)
-    except NoConvergence as e:
-        sol = np.asarray(e.args[0])
-    # Guard against non-finite solutions (can happen if GMRES hit a singular
-    # Jacobian). Fall back to the warm start rather than returning NaN.
-    if not np.all(np.isfinite(sol)):
-        sol = x0
-    P_star = sol.reshape(G, G, G)
-    P_star = np.clip(P_star, 1e-9, 1 - 1e-9)
+
+    def _run_nk(start_vec):
+        try:
+            s = newton_krylov(F, start_vec, f_tol=ABSTOL, rdiff=1e-8,
+                               method="lgmres", maxiter=80, verbose=False,
+                               callback=cb)
+        except NoConvergence as e:
+            s = np.asarray(e.args[0])
+        if not np.all(np.isfinite(s)):
+            s = start_vec
+        return s
+
+    sol = _run_nk(x0)
+    P_star = np.clip(sol.reshape(G, G, G), 1e-9, 1 - 1e-9)
     Pn = rp._phi_map_pchip(P_star, u, taus_v, gammas_v, Ws)
     Finf = float(np.abs(P_star - Pn).max())
-    PhiI = Finf  # no Picard history; use Finf as a scalar
-    return {"history": [PhiI], "residual": (P_star - Pn), "P_star": P_star}
+    PhiI = Finf
+    best = dict(P=P_star.copy(), Finf=Finf)
+
+    # If NK didn't reach ABSTOL, perturb in LOGIT space by σ=1e-10 and retry.
+    # The noise dislodges the FD-Jacobian from a spurious noise floor without
+    # changing the actual solution meaningfully.
+    rng = np.random.default_rng(12345)
+    for attempt in range(3):
+        if best["Finf"] < ABSTOL:
+            break
+        L = np.log(best["P"] / (1.0 - best["P"]))
+        sigma = 1e-10 * (10 ** attempt)  # 1e-10, 1e-9, 1e-8
+        L_perturbed = L + rng.standard_normal(L.shape) * sigma
+        P_perturbed = 1.0 / (1.0 + np.exp(-L_perturbed))
+        nk_iter[0] = 0  # reset the status counter for callback reporting
+        sol = _run_nk(P_perturbed.reshape(-1))
+        P_try = np.clip(sol.reshape(G, G, G), 1e-9, 1 - 1e-9)
+        Pn_try = rp._phi_map_pchip(P_try, u, taus_v, gammas_v, Ws)
+        F_try = float(np.abs(P_try - Pn_try).max())
+        if F_try < best["Finf"]:
+            best = dict(P=P_try, Finf=F_try)
+
+    return {"history": [best["Finf"]], "residual": (best["P"] -
+            rp._phi_map_pchip(best["P"], u, taus_v, gammas_v, Ws)),
+            "P_star": best["P"]}
 
 
 def one_minus_R2_het(Pg, u, taus, gammas):
