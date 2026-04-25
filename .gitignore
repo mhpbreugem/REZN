@@ -10,6 +10,8 @@ python/pchip_G11logit_cache.pkl
 python/pchip_G11logit_forward.csv
 python/pchip_G9_cache.pkl
 python/pchip_G9_forward.csv
+python/pchip_G11u25_cache.pkl
+python/pchip_G11u25_forward.csv
 python/run_overnight.out
 python/run_overnight.log
 python/pchip_asym_cache.pkl

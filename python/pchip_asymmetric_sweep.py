@@ -21,14 +21,14 @@ import rezn_pchip as rp
 
 
 G           = 11
-UMAX        = 2.0
+UMAX        = 2.5
 GAMMAS_ASYM = (5.0, 3.0, 1.0)
 ABSTOL      = 1e-4
 F_TOL       = 3e-3
 
 TAU_LO      = 0.5
-TAU_HI      = 2.0
-TAU_STEP    = 0.05             # coarse for speed
+TAU_HI      = 5.0
+TAU_STEP    = 0.5              # 10 points
 
 CSV_OUT     = "/home/user/REZN/python/pchip_asymmetric_results.csv"
 STATUS_PATH = "/home/user/REZN/python/sweep_asym_status.txt"

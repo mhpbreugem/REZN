@@ -11,7 +11,7 @@ python3 -u pchip_continuation.py >> run_overnight.log 2>&1
 echo "[stage 1 done $(date)]" | tee -a run_overnight.log
 
 # Update plot_branches.py to read from G=11 logit CSV (or copy snapshot)
-cp pchip_G9_forward.csv pchip_continuation_results.csv
+cp pchip_G11u25_forward.csv pchip_continuation_results.csv
 
 echo "=== STAGE 2: backward post-jump sweep ===" | tee -a run_overnight.log
 date | tee -a run_overnight.log
@@ -27,15 +27,16 @@ echo "[stage 3 done $(date)]" | tee -a run_overnight.log
 
 echo "=== STAGE 4: plots ===" | tee -a run_overnight.log
 date | tee -a run_overnight.log
-python3 -u plot_paper.py >> run_overnight.log 2>&1
-python3 -u plot_branches.py >> run_overnight.log 2>&1
+python3 -u plot_workhorse.py >> run_overnight.log 2>&1
+python3 -u plot_paper.py >> run_overnight.log 2>&1 || true
+python3 -u plot_branches.py >> run_overnight.log 2>&1 || true
 echo "[stage 4 done $(date)]" | tee -a run_overnight.log
 
 echo "=== ALL STAGES COMPLETE $(date) ===" | tee -a run_overnight.log
 
 # Commit and push the final plots
 cd /home/user/REZN
-git add python/plot_*.png python/pchip_G9_forward.csv python/pchip_continuation_results.csv python/pchip_backward_results.csv python/pchip_asymmetric_results.csv 2>/dev/null || true
+git add python/plot_*.png python/fig*.png python/pchip_G11u25_forward.csv python/pchip_continuation_results.csv python/pchip_backward_results.csv python/pchip_asymmetric_results.csv 2>/dev/null || true
 git commit -m "Overnight run: G=11 logit-PCHIP sweeps + smooth plots" 2>/dev/null || true
 for i in 1 2 3 4; do
   git push origin claude/rarar-without-nt-I8tiz 2>&1 && break
