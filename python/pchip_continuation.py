@@ -34,9 +34,9 @@ ABSTOL   = 1e-11         # Picard-step tolerance. FD-Jacobian noise floor in
                          # our stack is ~1e-10; 1e-11 is an ambitious target
                          # that may only be reachable via continuation warm
                          # start (not cold).
-F_TOL    = 1e-5          # Realistic floor: stiff γ configs plateau around
-                         # 1-10e-6 at G=11 with logit-PCHIP. Still 10^2× the
-                         # 1-R² signal (~1e-3) so PR features are well-resolved.
+F_TOL    = 1e-7          # Tight acceptance for SMOOTH plots. Stiff configs
+                         # may fail to meet this; those rows are flagged
+                         # conv=0 and excluded from plot routines.
 CSV_OUT  = "/home/user/REZN/python/pchip_G11logit_forward.csv"
 CACHE_PKL = "/home/user/REZN/python/pchip_G11logit_cache.pkl"
 STATUS_PATH = "/home/user/REZN/python/sweep_status.txt"
@@ -262,13 +262,13 @@ def solve_one(taus, gammas):
             attempts.append((f"A{m}", dict(solver="anderson", m_window=m,
                                             maxiters=2000)))
     else:
-        # Warm-started configs: NK first (quadratic from close warm start),
-        # then Anderson (superlinear polish), Picard as safety net.
+        # Warm-started configs: NK first, Anderson polish, long Picard for
+        # the stiff cases where ρ ~ 1 and we need 10000+ iters.
         attempts.append(("NK",   dict(solver="nk")))
         for m in ANDERSON_WINDOWS:
             attempts.append((f"A{m}", dict(solver="anderson", m_window=m,
-                                            maxiters=2000)))
-        attempts.append(("P1.0", dict(solver="picard", alpha=1.0, maxiters=5000)))
+                                            maxiters=5000)))
+        attempts.append(("P1.0", dict(solver="picard", alpha=1.0, maxiters=15000)))
 
     prefix = (f"τ=({taus[0]:.3f},{taus[1]:.3f},{taus[2]:.3f}) "
               f"γ=({gammas[0]:.3f},{gammas[1]:.3f},{gammas[2]:.3f})")
