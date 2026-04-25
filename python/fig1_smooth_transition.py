@@ -53,10 +53,10 @@ def main():
             w.writerow([f"{g}"] + [f"{table[r,c]:.6e}" for c in range(len(TAUS))])
     print(f"wrote {csv_path}")
 
-    # Heatmap
+    # B&W heatmap: greyscale, white→dark grey, vmax = 0.15
     fig, ax = plt.subplots(figsize=(5.5, 6.5))
     cmap = mcolors.LinearSegmentedColormap.from_list(
-        "white_to_red", ["#ffffff", "#fde0dd", "#fa9fb5", "#c51b8a", "#7a0177"])
+        "white_to_grey", ["#ffffff", "#d9d9d9", "#969696", "#525252", "#000000"])
     im = ax.imshow(table, aspect="auto", cmap=cmap, vmin=0.0, vmax=0.15,
                     origin="upper")
     ax.set_xticks(range(len(TAUS)));   ax.set_xticklabels([f"{t}" for t in TAUS])
@@ -77,7 +77,7 @@ def main():
     cbar = fig.colorbar(im, ax=ax, shrink=0.8, label=r"$1-R^2$")
     fig.tight_layout()
     png_path = os.path.join(OUT, "fig1_smooth_transition.png")
-    fig.savefig(png_path, dpi=150)
+    fig.savefig(png_path, dpi=180)
     print(f"wrote {png_path}")
 
 

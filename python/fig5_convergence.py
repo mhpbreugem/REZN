@@ -46,18 +46,24 @@ def main():
     print(f"  iters={len(res_a['history'])}  "
           f"final ‖Φ-I‖∞ = {res_a['history'][-1]:.3e}", flush=True)
 
-    # Best-so-far envelope (monotone) for clean comparison
-    h_p = np.minimum.accumulate(res_p["history"])
-    h_a = np.minimum.accumulate(res_a["history"])
+    h_p = np.asarray(res_p["history"])
+    h_a = np.asarray(res_a["history"])
+    env_p = np.minimum.accumulate(h_p)
+    env_a = np.minimum.accumulate(h_a)
 
     fig, ax = plt.subplots(figsize=(7, 4.5))
-    ax.semilogy(h_p, lw=1.8, color="#a83232",
+    # Raw histories, faint grey
+    ax.semilogy(h_p, lw=0.6, color="0.5", alpha=0.5)
+    ax.semilogy(h_a, lw=0.6, color="0.5", alpha=0.5)
+    # Best-so-far envelopes: solid (Anderson) vs dashed (Picard); both black.
+    ax.semilogy(env_p, lw=1.8, color="black", linestyle="--",
                  label=r"Picard, $\alpha=0.3$")
-    ax.semilogy(h_a, lw=1.8, color="#1f4e8c",
+    ax.semilogy(env_a, lw=1.8, color="black", linestyle="-",
                  label=r"Anderson, $m=6$")
     ax.set_xlabel("iteration")
-    ax.set_ylabel(r"best $\|P - \Phi(P)\|_\infty$ so far")
-    ax.set_title(rf"Convergence at $\gamma={GAMMA}$, $\tau={TAU}$, $G={G}$")
+    ax.set_ylabel(r"$\|P - \Phi(P)\|_\infty$")
+    ax.set_title(rf"Convergence at $\gamma={GAMMA}$, $\tau={TAU}$, $G={G}$"
+                  "\n(faint grey: raw residual; bold: best-so-far envelope)")
     ax.grid(True, which="both", alpha=0.3)
     ax.legend(loc="upper right")
     fig.tight_layout()
