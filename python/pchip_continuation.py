@@ -223,7 +223,11 @@ def _linear_extrapolate(taus, gammas):
     # Allow w in [-1, 2]: modest extrapolation in either direction +
     # any interpolation. Cap to avoid overshoot when the step is wide.
     w = (target - x1) / (x2 - x1)
-    if w < -1.0 or w > 2.0:
+    # Disabled extrapolation: only allow interpolation between e1 and e2.
+    # Extrapolation in logit space at saturating prices overshoots —
+    # warm starts produced Finf ~ 0.3 at boundary configs. Fall back to
+    # nearest-cache via the caller.
+    if w < 0.0 or w > 1.0:
         return None
 
     LP1 = np.log(e1["P_star"] / (1 - e1["P_star"]))
@@ -272,13 +276,16 @@ def solve_one(taus, gammas):
     else:
         # Warm-started configs: analytic Newton first (exact Jacobian,
         # quadratic from a good warm start), then NK fallback (FD-Jacobian),
-        # Anderson polish, long Picard for the stiff cases.
+        # Anderson polish, short Picard for stiff cases. Per-config time
+        # cap is implicit in the maxiters: NA 8 × ~35s + NK 40 × ~10s +
+        # Anderson 1000 × ~50ms × 3 windows + Picard 1500 × 50ms ≈
+        # 4-7 minutes per stuck config.
         attempts.append(("NA",   dict(solver="newton_analytic")))
         attempts.append(("NK",   dict(solver="nk")))
         for m in ANDERSON_WINDOWS:
             attempts.append((f"A{m}", dict(solver="anderson", m_window=m,
-                                            maxiters=5000)))
-        attempts.append(("P1.0", dict(solver="picard", alpha=1.0, maxiters=15000)))
+                                            maxiters=1000)))
+        attempts.append(("P1.0", dict(solver="picard", alpha=1.0, maxiters=1500)))
 
     prefix = (f"τ=({taus[0]:.3f},{taus[1]:.3f},{taus[2]:.3f}) "
               f"γ=({gammas[0]:.3f},{gammas[1]:.3f},{gammas[2]:.3f})")
@@ -309,7 +316,7 @@ def solve_one(taus, gammas):
                             else np.asarray(gammas, float))
                 res = pj.solve_newton_analytic(
                         G, taus_v, gammas_v, umax=UMAX,
-                        P_init=P_warm, maxiters=15, abstol=F_TOL,
+                        P_init=P_warm, maxiters=8, abstol=F_TOL,
                         lgmres_tol=1e-6, lgmres_maxiter=40,
                         status_path=STATUS_PATH, status_every=1,
                         status_prefix=f"{prefix} | {tag}")
