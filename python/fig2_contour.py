@@ -25,6 +25,7 @@ import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
 
 import rezn_het as rh
+from fig_export import save_png_pdf_tex
 
 
 TAU      = 2.0
@@ -166,9 +167,7 @@ def main():
                   r"and $T^*$ profile along the arc",
                   y=1.005)
     fig.tight_layout()
-    png_path = os.path.join(OUT, "fig2_contour.png")
-    fig.savefig(png_path, dpi=200, bbox_inches="tight")
-    print(f"wrote {png_path}")
+    save_png_pdf_tex(fig, os.path.join(OUT, "fig2_contour"))
 
 
 if __name__ == "__main__":

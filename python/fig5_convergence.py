@@ -17,6 +17,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 import rezn_pchip as rp
+from fig_export import save_png_pdf_tex
 
 
 G       = 11
@@ -67,9 +68,7 @@ def main():
     ax.grid(True, which="both", alpha=0.3)
     ax.legend(loc="upper right")
     fig.tight_layout()
-    png = os.path.join(OUT, "fig5_convergence.png")
-    fig.savefig(png, dpi=150)
-    print(f"wrote {png}")
+    save_png_pdf_tex(fig, os.path.join(OUT, "fig5_convergence"))
 
 
 if __name__ == "__main__":

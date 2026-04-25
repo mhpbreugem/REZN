@@ -24,6 +24,7 @@ from matplotlib.colors import LogNorm
 from matplotlib.ticker import LogFormatter
 
 import rezn_het as rh
+from fig_export import save_png_pdf_tex
 
 
 GAMMAS = np.logspace(-1, 2, 25)         # 0.1 .. 100, 25 points
@@ -88,9 +89,7 @@ def main():
     ax.grid(True, which="both", linestyle=":", alpha=0.35)
 
     fig.tight_layout()
-    png = os.path.join(OUT, "fig1_smooth_transition.png")
-    fig.savefig(png, dpi=200)
-    print(f"wrote {png}")
+    save_png_pdf_tex(fig, os.path.join(OUT, "fig1_smooth_transition"))
 
 
 if __name__ == "__main__":
