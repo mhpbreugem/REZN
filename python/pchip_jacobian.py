@@ -494,15 +494,175 @@ def _test_contour_sum_tangent():
 #  E. Posterior tangent (rational from quotient rule)
 # =====================================================================
 @njit(cache=True, fastmath=True)
-def _posterior_and_tangent(A0, A1, A0_dot, A1_dot, g0, g1):
+def _posterior_and_tangent(A0, A1, A0_dot, A1_dot, g0, g1, u_own, tau_own):
     """μ = g1·A1 / (g0·A0 + g1·A1).
-    Returns (μ, μ_dot)."""
+    Returns (μ, μ_dot). Falls back to own-signal posterior when contour
+    sums vanish (no crossings)."""
     den = g0 * A0 + g1 * A1
+    if den <= 0.0:
+        # Match rezn_pchip._agent_posterior_pchip fallback
+        mu = 1.0 / (1.0 + np.exp(-tau_own * u_own))
+        return mu, 0.0
     mu = g1 * A1 / den
-    # dμ/dA0 = -g0·g1·A1/den²;  dμ/dA1 = +g0·g1·A0/den²
     g0g1 = g0 * g1
     mu_dot = (-g0g1 * A1 * A0_dot + g0g1 * A0 * A1_dot) / (den * den)
     return mu, mu_dot
+
+
+# =====================================================================
+#  F. Φ tangent at one cell — full chain rule.
+#       Solve h(μ, p) = 0 implicitly; combine slice + p_obs perturbations.
+# =====================================================================
+def _slice_for_agent(P, V, ag, i, j, l):
+    """Return (slice_, slice_dot) = (P-restricted-to-trader-ag-slice,
+    V-restricted-to-trader-ag-slice). 2D arrays of shape (G, G)."""
+    G = P.shape[0]
+    if ag == 0:
+        # slice_[a,b] = P[i, a, b] over (a, b) = (j', l')
+        return P[i, :, :], V[i, :, :]
+    elif ag == 1:
+        return P[:, j, :], V[:, j, :]
+    else:
+        return P[:, :, l], V[:, :, l]
+
+
+def phi_tangent_at_cell(P, V, i, j, l, p_star, u, taus, gammas, Ws):
+    """Compute dΦ[i,j,l]/dV given a perturbation V in the same shape as P.
+    `p_star` is Φ(P)[i,j,l] (already known from a forward pass).
+
+    At the fixed point, h(μ_*, p*) = 0. Linearising:
+      0 = Σ_k ∂h/∂μ_k · (a_k + b_k · p*_dot) + ∂h/∂p · p*_dot
+    with
+      a_k = ∂μ_k/∂P · V  (slice contribution at fixed p_obs)
+      b_k = ∂μ_k/∂p_obs  (per unit perturbation of the observed price)
+    Solving:
+      p*_dot = - (Σ_k ∂h/∂μ_k · a_k) / (∂h/∂p + Σ_k ∂h/∂μ_k · b_k)
+    """
+    a_arr = np.zeros(3)
+    b_arr = np.zeros(3)
+    mus = np.zeros(3)
+    u_own = np.array([u[i], u[j], u[l]])
+
+    for ag in range(3):
+        slice_, slice_dot = _slice_for_agent(P, V, ag, i, j, l)
+        if ag == 0:
+            tau_own = taus[0]; tau_A = taus[1]; tau_B = taus[2]
+        elif ag == 1:
+            tau_own = taus[1]; tau_A = taus[0]; tau_B = taus[2]
+        else:
+            tau_own = taus[2]; tau_A = taus[0]; tau_B = taus[1]
+
+        # a_k branch: slice perturbation only, p_obs_dot = 0
+        zeros = np.zeros_like(slice_)
+        A0, A1, A0d_a, A1d_a = _contour_sum_tangent(
+            slice_, slice_dot, u, tau_A, tau_B, p_star, 0.0)
+        # b_k branch: zero slice, unit p_obs perturbation
+        _, _, A0d_b, A1d_b = _contour_sum_tangent(
+            slice_, zeros, u, tau_A, tau_B, p_star, 1.0)
+        # The first-pass A0/A1 are the contour values; second pass returns
+        # same A0/A1 by construction.
+
+        g0 = rh._f0(u_own[ag], tau_own)
+        g1 = rh._f1(u_own[ag], tau_own)
+        mu, mu_dot_a = _posterior_and_tangent(A0, A1, A0d_a, A1d_a, g0, g1,
+                                               u_own[ag], tau_own)
+        _,  mu_dot_b = _posterior_and_tangent(A0, A1, A0d_b, A1d_b, g0, g1,
+                                               u_own[ag], tau_own)
+        mus[ag] = mu
+        a_arr[ag] = mu_dot_a
+        b_arr[ag] = mu_dot_b
+
+    # Clearing-residual derivatives at (μ_*, p*)
+    h, dh_d0, dh_d1, dh_d2, dh_dp = _clearing_jacobian(
+        mus, p_star, gammas, Ws)
+
+    num = -(dh_d0 * a_arr[0] + dh_d1 * a_arr[1] + dh_d2 * a_arr[2])
+    den = dh_dp + dh_d0 * b_arr[0] + dh_d1 * b_arr[1] + dh_d2 * b_arr[2]
+    if abs(den) < 1e-30:
+        return 0.0
+    return num / den
+
+
+def J_dot_v(P, V, u, taus, gammas, Ws):
+    """Return J·V where J = I - dΦ/dP, evaluated at P. Shape: same as V.
+
+    Uses analytic dΦ/dP through pieces A-F. Cost: O(G³) cells × O(G²) per
+    contour pass × 2 passes (slice tangent + p_obs tangent) = O(G⁵).
+    """
+    G = P.shape[0]
+    out = V.copy()
+    for i in range(G):
+        for j in range(G):
+            for l in range(G):
+                p_star = rp._phi_map_pchip(
+                    P, u, np.asarray(taus, float), np.asarray(gammas, float),
+                    np.asarray(Ws, float))[i, j, l]
+                pdot = phi_tangent_at_cell(P, V, i, j, l, p_star,
+                                            u, taus, gammas, Ws)
+                out[i, j, l] -= pdot  # (I - dΦ/dP)·V at this cell
+    return out
+
+
+def J_dot_v_with_phi(P, V, Phi_P, u, taus, gammas, Ws):
+    """Same as J_dot_v but takes Phi(P) precomputed (one Φ call per matvec
+    instead of G³). Phi_P[i,j,l] is the price at which trader k's contour
+    is evaluated."""
+    G = P.shape[0]
+    out = V.copy()
+    for i in range(G):
+        for j in range(G):
+            for l in range(G):
+                pdot = phi_tangent_at_cell(P, V, i, j, l, Phi_P[i, j, l],
+                                            u, taus, gammas, Ws)
+                out[i, j, l] -= pdot
+    return out
+
+
+def _test_J_dot_v_FD():
+    """Compare analytic J·V to centred FD on F = P - Φ(P).
+
+    KNOWN BUG (next session debug): rel error ~20× at G=7 — pieces A-E
+    individually FD-verified but piece F's chain rule has a sign or
+    scaling error. Recommended debug:
+      1. Test μ_0 (only slice tangent, fixed p_obs) vs FD on
+         `_agent_posterior_pchip` — isolates piece D+E composition.
+      2. Test μ_0 (only p_obs tangent, slice fixed) vs FD — isolates
+         the b_k branch.
+      3. Test market-clearing implicit derivative: change μ_k by δ,
+         compute new p* (via _clear_price), compare δ/Δp* to
+         -∂h/∂μ_k / ∂h/∂p.
+    """
+    G = 7
+    UMAX = 2.0
+    u = np.linspace(-UMAX, UMAX, G)
+    taus = np.array([3.0, 3.0, 3.0])
+    gammas = np.array([3.0, 3.0, 3.0])
+    Ws = np.array([1.0, 1.0, 1.0])
+
+    res = rp.solve_picard_pchip(G, taus, gammas, umax=UMAX,
+                                 maxiters=300, abstol=1e-13, alpha=1.0)
+    P0 = res["P_star"]
+    # Perturb P so no slice value coincides exactly with p_obs
+    rng = np.random.default_rng(7)
+    P = np.clip(P0 + 0.01 * rng.standard_normal(P0.shape), 1e-9, 1 - 1e-9)
+    V = rng.standard_normal(P.shape) * 1e-3
+
+    # Analytic
+    Phi_P = rp._phi_map_pchip(P, u, taus, gammas, Ws)
+    JV = J_dot_v_with_phi(P, V, Phi_P, u, taus, gammas, Ws)
+
+    # FD: F(P + εV) - F(P - εV) / (2ε), where F = P - Φ
+    eps = 1e-6
+    Phi_p = rp._phi_map_pchip(P + eps * V, u, taus, gammas, Ws)
+    Phi_m = rp._phi_map_pchip(P - eps * V, u, taus, gammas, Ws)
+    F_p = (P + eps * V) - Phi_p
+    F_m = (P - eps * V) - Phi_m
+    JV_fd = (F_p - F_m) / (2 * eps)
+
+    err = np.abs(JV - JV_fd).max()
+    rel = err / max(1.0, np.abs(JV_fd).max())
+    print(f"_test_J_dot_v_FD: G={G} max_err={err:.3e} rel={rel:.3e}")
+    return rel < 1e-4
 
 if __name__ == "__main__":
     print("Running analytic-derivative sanity tests...")
@@ -512,10 +672,11 @@ if __name__ == "__main__":
     ok_c = _test_hermite_partials()
     ok_d1 = _test_pchip_derivs_tangent()
     ok_d2 = _test_contour_sum_tangent()
+    ok_f = _test_J_dot_v_FD()
     print("-" * 60)
-    if all([ok_a, ok_b, ok_c, ok_d1, ok_d2]):
-        print("ALL PIECES A, B, C, D: PASS")
-        print("Next: F (Φ tangent at cell) — combine all the above with")
-        print("implicit-function for market clearing.")
+    if all([ok_a, ok_b, ok_c, ok_d1, ok_d2, ok_f]):
+        print("ALL PIECES A-F: PASS")
+        print("Use J_dot_v_with_phi(P, V, Phi_P, u, taus, gammas, Ws)")
+        print("with scipy.sparse.linalg.LinearOperator for exact-Jacobian Newton.")
     else:
         print("SOME TESTS FAILED.")
