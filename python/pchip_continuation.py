@@ -28,7 +28,11 @@ import pchip_jacobian as pj
 
 
 G        = 11
-UMAX     = 2.5           # density 2 points per SD, range to 2.5 SD
+UMAX     = 2.0           # density 2 points per SD, range to 2.0 SD.
+                         # UMAX=2.5 was the prior target but cold-start
+                         # diverges (price saturation hits the outer clip
+                         # too aggressively). UMAX=2.0 matches the prior
+                         # workhorse run and seeds robustly.
 TAU      = 3.0           # default τ for the γ sweep
 GAMMA    = 3.0           # default γ for the τ sweep
 ABSTOL   = 1e-11         # Picard-step tolerance. FD-Jacobian noise floor in
@@ -38,8 +42,8 @@ ABSTOL   = 1e-11         # Picard-step tolerance. FD-Jacobian noise floor in
 F_TOL    = 1e-7          # Tight acceptance for SMOOTH plots. Stiff configs
                          # may fail to meet this; those rows are flagged
                          # conv=0 and excluded from plot routines.
-CSV_OUT  = "/home/user/REZN/python/pchip_G11u25_forward.csv"
-CACHE_PKL = "/home/user/REZN/python/pchip_G11u25_cache.pkl"
+CSV_OUT  = "/home/user/REZN/python/pchip_G11u20_forward.csv"
+CACHE_PKL = "/home/user/REZN/python/pchip_G11u20_cache.pkl"
 STATUS_PATH = "/home/user/REZN/python/sweep_status.txt"
 # Anderson windows to try. Anderson with window m≈6 usually works very
 # well; larger windows bring more memory-of-past iterates (better for
@@ -256,14 +260,15 @@ def solve_one(taus, gammas):
     # Subsequent configs: NK first (warm-started → quadratic), Anderson as
     # backup.
     if len(CACHE) == 0:
-        # Short Picard (land in the basin) → analytic-J Newton (polish to
-        # machine precision) → fallbacks.
+        # Cold start: Picard (land in basin) → NK (FD-Jacobian, robust at
+        # cold) → Anderson polish → analytic Newton last (NA needs a good
+        # warm start to be quadratic; from cold it's no better than NK).
         attempts.append(("P1.0", dict(solver="picard", alpha=1.0, maxiters=200)))
-        attempts.append(("NA",   dict(solver="newton_analytic")))
         attempts.append(("NK",   dict(solver="nk")))
         for m in ANDERSON_WINDOWS:
             attempts.append((f"A{m}", dict(solver="anderson", m_window=m,
                                             maxiters=2000)))
+        attempts.append(("NA",   dict(solver="newton_analytic")))
     else:
         # Warm-started configs: analytic Newton first (exact Jacobian,
         # quadratic from a good warm start), then NK fallback (FD-Jacobian),
@@ -304,8 +309,8 @@ def solve_one(taus, gammas):
                             else np.asarray(gammas, float))
                 res = pj.solve_newton_analytic(
                         G, taus_v, gammas_v, umax=UMAX,
-                        P_init=P_warm, maxiters=20, abstol=F_TOL,
-                        lgmres_tol=1e-9, lgmres_maxiter=120,
+                        P_init=P_warm, maxiters=15, abstol=F_TOL,
+                        lgmres_tol=1e-6, lgmres_maxiter=40,
                         status_path=STATUS_PATH, status_every=1,
                         status_prefix=f"{prefix} | {tag}")
             else:  # newton-krylov
@@ -418,9 +423,13 @@ def one_minus_R2_het(Pg, u, taus, gammas):
 def gamma_sweep():
     """Homogeneous γ grid at fixed τ=(TAU,TAU,TAU). Geometric chain to
     γ=3, then 10 logarithmically-spaced points down to γ=0.5 for the
-    paper figure: 1-R² vs γ at τ=3."""
+    paper figure: 1-R² vs γ at τ=3.
+
+    Starts at γ=50 (matches the prior workhorse seed; γ=500 has
+    ill-conditioned market clearing — flat residual in p — and Picard
+    oscillates from any seed)."""
     vals = (
-        [500.0, 200.0, 100.0, 50.0, 30.0, 15.0, 10.0, 6.0, 4.0]
+        [50.0, 30.0, 15.0, 10.0, 6.0, 4.0]
         + [3.0, 2.0, 1.5, 1.0, 0.7, 0.5]
     )
     for g in vals:
@@ -469,18 +478,20 @@ def main():
     rows = _preload_from_csv(CSV_OUT, fieldnames)
 
     # If the seed is absent, solve it now (cold start).
+    SEED_GAMMA = 50.0
     seed_present = any(
-        abs(float(r["tau_1"]) - TAU) < 1e-9 and abs(float(r["gamma_1"]) - 500.0) < 1e-9
+        abs(float(r["tau_1"]) - TAU) < 1e-9 and abs(float(r["gamma_1"]) - SEED_GAMMA) < 1e-9
         for r in rows)
     if not seed_present:
-        print(f"[seed] solving τ=({TAU},{TAU},{TAU}) γ=(500,500,500)")
+        print(f"[seed] solving τ=({TAU},{TAU},{TAU}) γ=({SEED_GAMMA},{SEED_GAMMA},{SEED_GAMMA})")
         sys.stdout.flush()
-        seed = solve_one((TAU, TAU, TAU), (500.0, 500.0, 500.0))
+        seed = solve_one((TAU, TAU, TAU), (SEED_GAMMA, SEED_GAMMA, SEED_GAMMA))
         if seed.get("Finf") is not None and np.isfinite(seed["Finf"]) \
            and seed["Finf"] < 1e-6:
-            CACHE.append({"log_tg": _log_tg((TAU,TAU,TAU), (500,500,500)),
+            CACHE.append({"log_tg": _log_tg((TAU,TAU,TAU), (SEED_GAMMA,SEED_GAMMA,SEED_GAMMA)),
                           "P_star": seed["P_star"].copy(),
-                          "taus": (TAU,TAU,TAU), "gammas": (500,500,500)})
+                          "taus": (TAU,TAU,TAU),
+                          "gammas": (SEED_GAMMA,SEED_GAMMA,SEED_GAMMA)})
             print(f"  seed added to CACHE: iters={seed['iters']} "
                   f"PhiI={seed['PhiI']:.2e} Finf={seed['Finf']:.2e} "
                   f"conv={seed['converged']}")
@@ -527,14 +538,14 @@ def main():
 
     # Record seed
     if seed is not None:
-        record((TAU,TAU,TAU), (500,500,500), seed)
+        record((TAU,TAU,TAU), (SEED_GAMMA,SEED_GAMMA,SEED_GAMMA), seed)
         flush()
 
     # Walk homogeneous γ downward (warm-start chain 50 → 49 → … → 3)
     print(f"\n=== homogeneous γ sweep (τ={TAU} fixed) ===")
     sys.stdout.flush()
     for (t, g) in gamma_sweep():
-        if g == (500.0, 500.0, 500.0) and rows:
+        if g == (SEED_GAMMA, SEED_GAMMA, SEED_GAMMA) and rows:
             continue
         # stop at γ=3, we'll pivot into the τ sweep
         if g[0] < GAMMA - 1e-9:
