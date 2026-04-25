@@ -530,18 +530,21 @@ def phi_tangent_at_cell(P, V, i, j, l, p_star, u, taus, gammas, Ws):
     """Compute dΦ[i,j,l]/dV given a perturbation V in the same shape as P.
     `p_star` is Φ(P)[i,j,l] (already known from a forward pass).
 
-    At the fixed point, h(μ_*, p*) = 0. Linearising:
-      0 = Σ_k ∂h/∂μ_k · (a_k + b_k · p*_dot) + ∂h/∂p · p*_dot
-    with
-      a_k = ∂μ_k/∂P · V  (slice contribution at fixed p_obs)
-      b_k = ∂μ_k/∂p_obs  (per unit perturbation of the observed price)
-    Solving:
-      p*_dot = - (Σ_k ∂h/∂μ_k · a_k) / (∂h/∂p + Σ_k ∂h/∂μ_k · b_k)
+    The Φ map is EXPLICIT (not implicit in the output p*):
+      1. p_obs = P[i,j,l]  — treated as a parameter.
+      2. μ_k computed via contour at this p_obs.
+      3. Market-clearing: solve Σ x_k(μ_k, p*) = 0 for p*.
+
+    So the chain rule is:
+      dΦ[i,j,l]/dV = -(Σ_k ∂h/∂μ_k · dμ_k/dV) / ∂h/∂p
+    where dμ_k/dV = (slice contribution) + (∂μ_k/∂p_obs) · V[i,j,l],
+    NOT a self-consistent equation in p*_dot.
     """
-    a_arr = np.zeros(3)
-    b_arr = np.zeros(3)
     mus = np.zeros(3)
+    mu_dots = np.zeros(3)
     u_own = np.array([u[i], u[j], u[l]])
+    p_obs = P[i, j, l]
+    p_obs_dot = V[i, j, l]
 
     for ag in range(3):
         slice_, slice_dot = _slice_for_agent(P, V, ag, i, j, l)
@@ -552,35 +555,24 @@ def phi_tangent_at_cell(P, V, i, j, l, p_star, u, taus, gammas, Ws):
         else:
             tau_own = taus[2]; tau_A = taus[0]; tau_B = taus[1]
 
-        # a_k branch: slice perturbation only, p_obs_dot = 0
-        zeros = np.zeros_like(slice_)
-        A0, A1, A0d_a, A1d_a = _contour_sum_tangent(
-            slice_, slice_dot, u, tau_A, tau_B, p_star, 0.0)
-        # b_k branch: zero slice, unit p_obs perturbation
-        _, _, A0d_b, A1d_b = _contour_sum_tangent(
-            slice_, zeros, u, tau_A, tau_B, p_star, 1.0)
-        # The first-pass A0/A1 are the contour values; second pass returns
-        # same A0/A1 by construction.
-
+        # Single combined tangent: slice_dot AND p_obs_dot=V[i,j,l]
+        A0, A1, A0d, A1d = _contour_sum_tangent(
+            slice_, slice_dot, u, tau_A, tau_B, p_obs, p_obs_dot)
         g0 = rh._f0(u_own[ag], tau_own)
         g1 = rh._f1(u_own[ag], tau_own)
-        mu, mu_dot_a = _posterior_and_tangent(A0, A1, A0d_a, A1d_a, g0, g1,
-                                               u_own[ag], tau_own)
-        _,  mu_dot_b = _posterior_and_tangent(A0, A1, A0d_b, A1d_b, g0, g1,
-                                               u_own[ag], tau_own)
+        mu, mu_dot = _posterior_and_tangent(A0, A1, A0d, A1d, g0, g1,
+                                             u_own[ag], tau_own)
         mus[ag] = mu
-        a_arr[ag] = mu_dot_a
-        b_arr[ag] = mu_dot_b
+        mu_dots[ag] = mu_dot
 
     # Clearing-residual derivatives at (μ_*, p*)
     h, dh_d0, dh_d1, dh_d2, dh_dp = _clearing_jacobian(
         mus, p_star, gammas, Ws)
 
-    num = -(dh_d0 * a_arr[0] + dh_d1 * a_arr[1] + dh_d2 * a_arr[2])
-    den = dh_dp + dh_d0 * b_arr[0] + dh_d1 * b_arr[1] + dh_d2 * b_arr[2]
-    if abs(den) < 1e-30:
+    if abs(dh_dp) < 1e-30:
         return 0.0
-    return num / den
+    # dΦ = -Σ_k ∂h/∂μ_k · μ_k_dot / ∂h/∂p
+    return -(dh_d0 * mu_dots[0] + dh_d1 * mu_dots[1] + dh_d2 * mu_dots[2]) / dh_dp
 
 
 def J_dot_v(P, V, u, taus, gammas, Ws):
@@ -621,17 +613,41 @@ def J_dot_v_with_phi(P, V, Phi_P, u, taus, gammas, Ws):
 def _test_J_dot_v_FD():
     """Compare analytic J·V to centred FD on F = P - Φ(P).
 
-    KNOWN BUG (next session debug): rel error ~20× at G=7 — pieces A-E
-    individually FD-verified but piece F's chain rule has a sign or
-    scaling error. Recommended debug:
-      1. Test μ_0 (only slice tangent, fixed p_obs) vs FD on
-         `_agent_posterior_pchip` — isolates piece D+E composition.
-      2. Test μ_0 (only p_obs tangent, slice fixed) vs FD — isolates
-         the b_k branch.
-      3. Test market-clearing implicit derivative: change μ_k by δ,
-         compute new p* (via _clear_price), compare δ/Δp* to
-         -∂h/∂μ_k / ∂h/∂p.
-    """
+    KNOWN BUG (next session debug): a few cells (centre, well-behaved like
+    (3,3,3) and (2,3,4)) match FD to 1e-7 RELATIVE precision. Other cells
+    disagree wildly. A Newton step using J fails to reduce ||F|| (test
+    with G=7 from a Picard P with Finf=1.5e-6: one Newton step gives
+    Finf=2.3e-6, no improvement).
+
+    Per-cell debugging confirmed:
+      - Slice→μ tangent (a_k branch) is correct (1e-9 vs FD).
+      - p_obs→μ tangent (b_k branch) is correct (1e-9 vs FD).
+      - Single-cell dΦ/dV at (3,3,3) and (2,3,4) is correct.
+      - Single-cell dΦ/dV at (4,4,4) and other near-boundary cells differs
+        by 2-10× from FD. FD itself is wildly eps-sensitive at those cells
+        (FD jumps from -0.6 at eps=1e-9 to +1.6 at eps=1e-5), so unclear
+        whether analytic or FD is "right" there.
+
+    The Newton-step failure suggests a SYSTEMATIC bug, not just
+    boundary-cell noise. Likely candidates:
+      1. The TYPE of perturbation: market clearing in `_clear_price` uses
+         bisection. Implicit derivative dp*/dμ_k assumes the bisection
+         picked the same root branch in P and P+εV. If the bisection
+         changes branches due to the perturbation, my analytic dp*/dμ
+         is wrong (it linearises around the wrong branch).
+      2. Possibly missing tangent contribution from p_obs IN THE FIRST
+         CONTOUR-SUM CALL (we now pass p_obs_dot=V[i,j,l] in piece F's
+         single combined call — verified analytically but maybe scaling).
+
+    NEXT STEPS for the bugfix:
+      A. Test piece F at MANY cells with a non-symmetric perturbation
+         direction — find specifically WHICH cells disagree. Pattern may
+         reveal the bug.
+      B. Replace `_clear_price` (bisection) with a Newton solver in F
+         eval, so the implicit derivative is well-defined. OR use
+         analytic Newton-derivative dp*/dμ_k at the converged price.
+      C. Try Picard-Newton hybrid: take Newton step but cap the step
+         size by Picard-step magnitude to limit divergence."""
     G = 7
     UMAX = 2.0
     u = np.linspace(-UMAX, UMAX, G)
