@@ -26,7 +26,12 @@ def load_homo3(path):
     with open(path) as f:
         for r in csv.DictReader(f):
             try:
-                if int(r["converged"]) != 1: continue
+                # Accept rows that solved to reasonable precision; conv=1 is
+                # F_TOL-strict but post-jump rows often plateau at 1e-5.
+                try:
+                    if float(r["Finf"]) > 1e-3: continue
+                except Exception:
+                    if int(r["converged"]) != 1: continue
                 if not (abs(float(r["gamma_1"])-3.0)<1e-9
                         and abs(float(r["gamma_2"])-3.0)<1e-9
                         and abs(float(r["gamma_3"])-3.0)<1e-9): continue
@@ -43,7 +48,12 @@ def load_asym(path):
     with open(path) as f:
         for r in csv.DictReader(f):
             try:
-                if int(r["converged"]) != 1: continue
+                # Accept rows that solved to reasonable precision; conv=1 is
+                # F_TOL-strict but post-jump rows often plateau at 1e-5.
+                try:
+                    if float(r["Finf"]) > 1e-3: continue
+                except Exception:
+                    if int(r["converged"]) != 1: continue
                 out.append((float(r["tau_1"]), float(r["oneR2_het"]),
                             float(r["pr_gap"]), float(r["p_star"])))
             except Exception:
