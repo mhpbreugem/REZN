@@ -15,7 +15,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-FWD = "/home/user/REZN/python/pchip_G11u25_forward.csv"
+FWD = "/home/user/REZN/python/pchip_G11u20_forward.csv"
 ASYM = "/home/user/REZN/python/pchip_asymmetric_results.csv"
 
 OUT_FIG1 = "/home/user/REZN/python/fig1_branches.png"
