@@ -26,8 +26,8 @@ import rezn_het as rh
 import rezn_pchip as rp
 
 
-G        = 11
-UMAX     = 2.0           # density 2.5 points per SD
+G        = 9
+UMAX     = 2.0           # density 2 points per SD
 TAU      = 3.0           # default τ for the γ sweep
 GAMMA    = 3.0           # default γ for the τ sweep
 ABSTOL   = 1e-11         # Picard-step tolerance. FD-Jacobian noise floor in
@@ -37,8 +37,8 @@ ABSTOL   = 1e-11         # Picard-step tolerance. FD-Jacobian noise floor in
 F_TOL    = 1e-7          # Tight acceptance for SMOOTH plots. Stiff configs
                          # may fail to meet this; those rows are flagged
                          # conv=0 and excluded from plot routines.
-CSV_OUT  = "/home/user/REZN/python/pchip_G11logit_forward.csv"
-CACHE_PKL = "/home/user/REZN/python/pchip_G11logit_cache.pkl"
+CSV_OUT  = "/home/user/REZN/python/pchip_G9_forward.csv"
+CACHE_PKL = "/home/user/REZN/python/pchip_G9_cache.pkl"
 STATUS_PATH = "/home/user/REZN/python/sweep_status.txt"
 # Anderson windows to try. Anderson with window m≈6 usually works very
 # well; larger windows bring more memory-of-past iterates (better for
@@ -400,12 +400,11 @@ def one_minus_R2_het(Pg, u, taus, gammas):
 # ---------------- Build γ grid ----------------------------------------
 
 def gamma_sweep():
-    """Homogeneous γ grid at fixed τ=(TAU,TAU,TAU), unit-size steps."""
+    """Homogeneous γ grid at fixed τ=(TAU,TAU,TAU)."""
     vals = (
-        # Dense near pure-CARA so each γ step is small (good warm start)
-        [500.0, 400.0, 300.0, 250.0, 200.0, 150.0, 120.0, 100.0, 80.0, 60.0]
-        + list(np.arange(50.0, 1.0 - 1e-9, -1.0))        # 50, 49, ..., 2, 1
-        + [0.8, 0.6, 0.5, 0.4, 0.3, 0.2, 0.15, 0.1]
+        # Walk down geometrically from pure-CARA to γ=3
+        [500.0, 200.0, 100.0, 50.0, 30.0, 20.0, 15.0, 10.0, 7.0, 5.0, 4.0]
+        + list(np.arange(3.5, GAMMA - 1e-9, -0.5))        # 3.5, 3.0
     )
     for g in vals:
         yield (TAU, TAU, TAU), (float(g), float(g), float(g))
@@ -415,7 +414,7 @@ def tau_sweep():
     """Very fine homogeneous τ grid, push up from τ=3 (γ-sweep anchor):
       pass A: 3.00 → 5.00 in steps of +0.01 (201 points).
     Warm-start chain from each previous solution."""
-    vals = np.arange(3.0, 5.0 + 1e-9, 0.01)
+    vals = np.arange(3.0, 5.0 + 1e-9, 0.05)
     for t in vals:
         yield (float(t), float(t), float(t)), (GAMMA, GAMMA, GAMMA)
 

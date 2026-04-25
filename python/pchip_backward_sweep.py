@@ -36,7 +36,7 @@ GAMMA     = 3.0
 ABSTOL    = 1e-4
 F_TOL     = 3e-3
 TAU_STOP  = 2.00          # walk τ down to this value (or until tracking fails)
-TAU_STEP  = 0.01
+TAU_STEP  = 0.05
 MAX_FAIL  = 3             # stop after this many consecutive failures
 
 CACHE_PKL    = "/home/user/REZN/python/pchip_cache.pkl"
