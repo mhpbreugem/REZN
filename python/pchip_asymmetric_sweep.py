@@ -21,7 +21,7 @@ import rezn_pchip as rp
 
 
 G           = 11
-UMAX        = 2.5
+UMAX        = 2.0
 GAMMAS_ASYM = (5.0, 3.0, 1.0)
 ABSTOL      = 1e-4
 F_TOL       = 3e-3
