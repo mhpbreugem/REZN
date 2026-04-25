@@ -67,7 +67,7 @@ Tests in __main__ verify A, B, C against finite differences.
 """
 from __future__ import annotations
 import numpy as np
-from numba import njit
+from numba import njit, prange
 
 # Re-use primitives from existing modules
 import rezn_het as rh
@@ -539,19 +539,20 @@ def _slice_for_agent(P, V, ag, i, j, l):
         return P[:, :, l], V[:, :, l]
 
 
-@njit(cache=True)
+@njit(cache=True, parallel=True)
 def _J_dot_v_kernel(P, V, Phi_P, u, taus, gammas, Ws):
     """Numba-compiled Jacobian-vector product kernel.
 
-    Returns out = (I - dΦ/dP) · V at every cell.
+    Returns out = (I - dΦ/dP) · V at every cell. Parallelised over the
+    outer index i.
     """
     G = P.shape[0]
     out = V.copy()
     EPS_OUTER = 1e-9
-    # Buffers for slice / slice_dot (shared across cells; rewritten per cell)
-    slice_buf = np.empty((G, G))
-    slice_dot_buf = np.empty((G, G))
-    for i in range(G):
+    for i in prange(G):
+        # Per-thread buffers (numba-friendly under prange)
+        slice_buf = np.empty((G, G))
+        slice_dot_buf = np.empty((G, G))
         for j in range(G):
             for l in range(G):
                 p_star = Phi_P[i, j, l]
