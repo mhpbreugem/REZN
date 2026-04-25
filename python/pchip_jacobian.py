@@ -139,6 +139,194 @@ def _hermite_partials(t, y0, y1, m0, m1, h):
 
 
 # =====================================================================
+#  D1. Tangent of Fritsch-Carlson PCHIP derivative computation.
+#       Given a 1D array `y` and tangent `y_dot`, compute m_dot such
+#       that PCHIP slopes m -> m + ε·m_dot when y -> y + ε·y_dot.
+# =====================================================================
+@njit(cache=True, fastmath=True)
+def _pchip_derivs_tangent(y, y_dot, u):
+    """Forward-mode tangent of `_pchip_derivs`. Same shape as input."""
+    G = y.shape[0]
+    m_dot = np.zeros(G)
+    s = np.empty(G - 1)
+    s_dot = np.empty(G - 1)
+    h = np.empty(G - 1)
+    for k in range(G - 1):
+        h[k] = u[k + 1] - u[k]
+        s[k] = (y[k + 1] - y[k]) / h[k]
+        s_dot[k] = (y_dot[k + 1] - y_dot[k]) / h[k]
+
+    for k in range(1, G - 1):
+        if s[k - 1] * s[k] <= 0.0:
+            m_dot[k] = 0.0
+        else:
+            w1 = 2.0 * h[k] + h[k - 1]
+            w2 = h[k] + 2.0 * h[k - 1]
+            # m = (w1+w2) / D, with D = w1/s_{k-1} + w2/s_k
+            D = w1 / s[k - 1] + w2 / s[k]
+            # dD = -w1·s_dot_{k-1}/s_{k-1}² - w2·s_dot_k/s_k²
+            D_dot = -w1 * s_dot[k - 1] / (s[k - 1] * s[k - 1]) \
+                    - w2 * s_dot[k] / (s[k] * s[k])
+            # m = N/D so m_dot = -N·D_dot/D² = -m·D_dot/D
+            N = w1 + w2
+            m_dot[k] = -(N / (D * D)) * D_dot
+
+    # Left endpoint
+    h0, h1 = h[0], h[1]
+    d = ((2.0 * h0 + h1) * s[0] - h0 * s[1]) / (h0 + h1)
+    if d * s[0] <= 0.0:
+        m_dot[0] = 0.0
+    elif (s[0] * s[1] <= 0.0) and (abs(d) > abs(3.0 * s[0])):
+        m_dot[0] = 3.0 * s_dot[0]
+    else:
+        m_dot[0] = ((2.0 * h0 + h1) * s_dot[0] - h0 * s_dot[1]) / (h0 + h1)
+
+    # Right endpoint
+    hG2, hG3 = h[G - 2], h[G - 3]
+    d = ((2.0 * hG2 + hG3) * s[G - 2] - hG2 * s[G - 3]) / (hG2 + hG3)
+    if d * s[G - 2] <= 0.0:
+        m_dot[G - 1] = 0.0
+    elif (s[G - 2] * s[G - 3] <= 0.0) and (abs(d) > abs(3.0 * s[G - 2])):
+        m_dot[G - 1] = 3.0 * s_dot[G - 2]
+    else:
+        m_dot[G - 1] = ((2.0 * hG2 + hG3) * s_dot[G - 2]
+                        - hG2 * s_dot[G - 3]) / (hG2 + hG3)
+    return m_dot
+
+
+# =====================================================================
+#  D2. Derivatives of likelihood weights f0, f1 w.r.t. u.
+# =====================================================================
+@njit(cache=True, fastmath=True)
+def _df0_du(u, tau):
+    return -tau * (u + 0.5) * rh._f0(u, tau)
+
+
+@njit(cache=True, fastmath=True)
+def _df1_du(u, tau):
+    return -tau * (u - 0.5) * rh._f1(u, tau)
+
+
+# =====================================================================
+#  D3. Tangent of the logit-space contour sum.
+#       Given (slice in P-space, perturbation slice_dot, p_obs, p_obs_dot)
+#       returns (A0, A1, A0_dot, A1_dot).
+#
+#  Logit-space conversion:
+#       L[a,b] = log(slice[a,b] / (1 - slice[a,b]))
+#       L_dot[a,b] = slice_dot[a,b] / (slice[a,b] * (1 - slice[a,b]))
+#       lp_obs = log(p_obs/(1-p_obs))
+#       lp_obs_dot = p_obs_dot / (p_obs * (1-p_obs))
+# =====================================================================
+@njit(cache=True)
+def _contour_sum_tangent(slice_, slice_dot, u, tau_A, tau_B,
+                          p_obs, p_obs_dot):
+    G = u.shape[0]
+    A0 = 0.0; A1 = 0.0
+    A0_dot = 0.0; A1_dot = 0.0
+
+    EPS = 1e-15
+    L = np.empty_like(slice_)
+    L_dot = np.empty_like(slice_)
+    for a in range(G):
+        for b in range(G):
+            pab = max(EPS, min(1.0 - EPS, slice_[a, b]))
+            L[a, b] = np.log(pab / (1.0 - pab))
+            L_dot[a, b] = slice_dot[a, b] / (pab * (1.0 - pab))
+
+    pc = max(EPS, min(1.0 - EPS, p_obs))
+    lp_obs = np.log(pc / (1.0 - pc))
+    lp_obs_dot = p_obs_dot / (pc * (1.0 - pc))
+
+    # ----- Pass A: rows -----
+    for a in range(G):
+        row = L[a]
+        row_dot = L_dot[a]
+        ua = u[a]
+        m_row = rp._pchip_derivs(row, u)
+        m_row_dot = _pchip_derivs_tangent(row, row_dot, u)
+        for k in range(G - 1):
+            y0 = row[k]; y1 = row[k + 1]
+            d0 = y0 - lp_obs; d1 = y1 - lp_obs
+            h_step = u[k + 1] - u[k]
+            if d0 * d1 < 0.0:
+                t = rp._pchip_root_in_segment(y0, y1, m_row[k], m_row[k + 1],
+                                                h_step, lp_obs)
+                if t < 0.0:
+                    continue
+                ub = u[k] + t * h_step
+                # Implicit derivative of t* w.r.t. (y0,y1,m0,m1, lp_obs)
+                Hy0, Hy1, Hm0, Hm1, Ht = _hermite_partials(
+                    t, y0, y1, m_row[k], m_row[k + 1], h_step)
+                t_dot = -(Hy0 * row_dot[k] + Hy1 * row_dot[k + 1]
+                           + Hm0 * m_row_dot[k] + Hm1 * m_row_dot[k + 1]
+                           - lp_obs_dot) / Ht
+                ub_dot = h_step * t_dot
+                # Contributions and tangents
+                f0a = rh._f0(ua, tau_A); f1a = rh._f1(ua, tau_A)
+                f0b = rh._f0(ub, tau_B); f1b = rh._f1(ub, tau_B)
+                A0 += f0a * f0b
+                A1 += f1a * f1b
+                A0_dot += f0a * _df0_du(ub, tau_B) * ub_dot
+                A1_dot += f1a * _df1_du(ub, tau_B) * ub_dot
+            elif d0 == 0.0 and d1 != 0.0:
+                ub = u[k]
+                f0a = rh._f0(ua, tau_A); f1a = rh._f1(ua, tau_A)
+                A0 += f0a * rh._f0(ub, tau_B)
+                A1 += f1a * rh._f1(ub, tau_B)
+            elif k == G - 2 and d1 == 0.0:
+                ub = u[k + 1]
+                f0a = rh._f0(ua, tau_A); f1a = rh._f1(ua, tau_A)
+                A0 += f0a * rh._f0(ub, tau_B)
+                A1 += f1a * rh._f1(ub, tau_B)
+
+    # ----- Pass B: columns -----
+    for b in range(G):
+        ub_grid = u[b]
+        col = np.empty(G)
+        col_dot = np.empty(G)
+        for i in range(G):
+            col[i] = L[i, b]
+            col_dot[i] = L_dot[i, b]
+        m_col = rp._pchip_derivs(col, u)
+        m_col_dot = _pchip_derivs_tangent(col, col_dot, u)
+        for k in range(G - 1):
+            y0 = col[k]; y1 = col[k + 1]
+            d0 = y0 - lp_obs; d1 = y1 - lp_obs
+            h_step = u[k + 1] - u[k]
+            if d0 * d1 < 0.0:
+                t = rp._pchip_root_in_segment(y0, y1, m_col[k], m_col[k + 1],
+                                                h_step, lp_obs)
+                if t < 0.0:
+                    continue
+                ua = u[k] + t * h_step
+                Hy0, Hy1, Hm0, Hm1, Ht = _hermite_partials(
+                    t, y0, y1, m_col[k], m_col[k + 1], h_step)
+                t_dot = -(Hy0 * col_dot[k] + Hy1 * col_dot[k + 1]
+                           + Hm0 * m_col_dot[k] + Hm1 * m_col_dot[k + 1]
+                           - lp_obs_dot) / Ht
+                ua_dot = h_step * t_dot
+                f0a = rh._f0(ua, tau_A); f1a = rh._f1(ua, tau_A)
+                f0b = rh._f0(ub_grid, tau_B); f1b = rh._f1(ub_grid, tau_B)
+                A0 += f0a * f0b
+                A1 += f1a * f1b
+                A0_dot += _df0_du(ua, tau_A) * f0b * ua_dot
+                A1_dot += _df1_du(ua, tau_A) * f1b * ua_dot
+            elif d0 == 0.0 and d1 != 0.0:
+                ua = u[k]
+                f0b = rh._f0(ub_grid, tau_B); f1b = rh._f1(ub_grid, tau_B)
+                A0 += rh._f0(ua, tau_A) * f0b
+                A1 += rh._f1(ua, tau_A) * f1b
+            elif k == G - 2 and d1 == 0.0:
+                ua = u[k + 1]
+                f0b = rh._f0(ub_grid, tau_B); f1b = rh._f1(ub_grid, tau_B)
+                A0 += rh._f0(ua, tau_A) * f0b
+                A1 += rh._f1(ua, tau_A) * f1b
+
+    return 0.5 * A0, 0.5 * A1, 0.5 * A0_dot, 0.5 * A1_dot
+
+
+# =====================================================================
 #  Sanity tests (compare analytic vs FD on simple inputs)
 # =====================================================================
 def _test_demand_derivs():
@@ -239,53 +427,82 @@ def _test_hermite_partials():
     return fail == 0
 
 
+def _test_pchip_derivs_tangent():
+    """FD-check m_dot against (m(y+ε·y_dot) - m(y-ε·y_dot))/(2ε)."""
+    rng = np.random.default_rng(3)
+    fail = 0; total = 0
+    for trial in range(20):
+        G = 11
+        u = np.linspace(-2, 2, G)
+        # smooth data (sigmoid of τ·u with random offset)
+        y = 1.0 / (1.0 + np.exp(-3 * (u - rng.uniform(-0.5, 0.5))))
+        y_dot = rng.standard_normal(G) * 0.1
+        m_dot = _pchip_derivs_tangent(y, y_dot, u)
+        eps = 1e-7
+        m_plus  = rp._pchip_derivs(y + eps * y_dot, u)
+        m_minus = rp._pchip_derivs(y - eps * y_dot, u)
+        fd = (m_plus - m_minus) / (2 * eps)
+        for i in range(G):
+            total += 1
+            err = abs(m_dot[i] - fd[i]) / max(1.0, abs(fd[i]))
+            if err > 1e-5:
+                fail += 1
+    print(f"_test_pchip_derivs_tangent: {total-fail}/{total} PASS")
+    return fail == 0
+
+
+def _test_contour_sum_tangent():
+    """FD-check (A0_dot, A1_dot) against centered FD of `_contour_sum_pchip`."""
+    rng = np.random.default_rng(4)
+    fail = 0; total = 0
+    for trial in range(10):
+        G = 11
+        u = np.linspace(-2, 2, G)
+        # smooth slice that has crossings: sigmoid of (u_a + u_b - offset)
+        offset = rng.uniform(-0.5, 0.5)
+        slice_ = np.zeros((G, G))
+        for a in range(G):
+            for b in range(G):
+                slice_[a, b] = 1.0 / (1.0 + np.exp(-1.5 * (u[a] + u[b] - offset)))
+        slice_dot = rng.standard_normal((G, G)) * 0.01
+        p_obs = 0.55
+        p_obs_dot = rng.uniform(-0.01, 0.01)
+        tau_A, tau_B = 3.0, 3.0
+
+        A0, A1, A0d, A1d = _contour_sum_tangent(
+            slice_, slice_dot, u, tau_A, tau_B, p_obs, p_obs_dot)
+
+        eps = 1e-6
+        A0p, A1p = rp._contour_sum_pchip(
+            slice_ + eps * slice_dot, u, tau_A, tau_B, p_obs + eps * p_obs_dot)
+        A0m, A1m = rp._contour_sum_pchip(
+            slice_ - eps * slice_dot, u, tau_A, tau_B, p_obs - eps * p_obs_dot)
+        fd0 = (A0p - A0m) / (2 * eps)
+        fd1 = (A1p - A1m) / (2 * eps)
+        total += 2
+        err0 = abs(A0d - fd0) / max(1.0, abs(fd0))
+        err1 = abs(A1d - fd1) / max(1.0, abs(fd1))
+        if err0 > 1e-3:
+            fail += 1; print(f"FAIL A0 trial={trial} ana={A0d:.4e} fd={fd0:.4e} err={err0:.2e}")
+        if err1 > 1e-3:
+            fail += 1; print(f"FAIL A1 trial={trial} ana={A1d:.4e} fd={fd1:.4e} err={err1:.2e}")
+    print(f"_test_contour_sum_tangent: {total-fail}/{total} PASS")
+    return fail == 0
+
+
 # =====================================================================
-#  D, E, F: contour-sum, posterior, Φ tangent — TODO for next session
+#  E. Posterior tangent (rational from quotient rule)
 # =====================================================================
-# The next session should:
-#
-# 1. Implement `_contour_sum_tangent(slice_, slice_dot, u, tau_A, tau_B,
-#                                    p_obs, p_obs_dot)`:
-#    - Returns (A0, A1, dA0, dA1) where dA0, dA1 are tangent updates for
-#      the given slice perturbation `slice_dot` and `p_obs_dot`.
-#    - Mirror the logic in `_contour_sum_pchip` but, for each crossing,
-#      compute the perturbation in u_b (or u_a, depending on the pass)
-#      using the implicit derivative of `_pchip_root_in_segment`.
-#    - Sum tangent contributions for both f0 and f1 weights.
-#    - **In LOGIT space**: the slice is `L = log(p/(1-p))` of the 2D
-#      slice, and `lp_obs = logit(p_obs)`. Convert tangents accordingly:
-#      d(L_ab)/d(P_ab) = 1 / (P_ab(1-P_ab))  for chain rule back.
-#
-# 2. Implement `_posterior_tangent(...)`:
-#    - μ = g1·A1 / (g0·A0 + g1·A1).
-#    - dμ/dA0 = -g1·g0·A1 / (g0·A0 + g1·A1)²
-#    - dμ/dA1 =  g1·g0·A0 / (g0·A0 + g1·A1)²
-#
-# 3. Implement `phi_tangent_at_cell(P, V, i, j, l, taus, gammas, Ws, u)`:
-#    - For each trader k, compute (μ_k, dμ_k) using slices of (P, V).
-#    - Solve market clearing using `_clear_price` to get p* (already
-#      satisfies h(μ_*, p*) = 0).
-#    - Newton: dp*/d(input) = -(∂h/∂input)/(∂h/∂p) at the solution.
-#    - Combine via chain rule:
-#      dΦ[i,j,l]/dV = Σ_k (-∂h/∂μ_k / ∂h/∂p) · dμ_k(V) + ...
-#    - Note p_obs in the contour for trader k is precisely Φ[i,j,l] = p*,
-#      so when V perturbs P[i,j,l] there is a term through p_obs as well.
-#
-# 4. Implement `phi_and_tangent_full(P, V) -> (Phi, dPhi)`:
-#    - Loop over all (i, j, l) calling `phi_tangent_at_cell`.
-#    - This is O(G^3) cells, each with O(G^2) contour work → O(G^5)
-#      total. At G=11, that's ~150k operations, comparable to one full
-#      Φ evaluation.
-#
-# 5. `J_dot_v(P, V) = V - phi_and_tangent_full(P, V)[1]`.
-#
-# 6. `linear_operator(P)`: returns scipy.sparse.linalg.LinearOperator
-#    with the J_dot_v matvec.
-#
-# 7. Custom Newton in pchip_continuation.py:
-#    - `delta = lgmres(LinearOperator, -F, atol=1e-13, rtol=1e-12)[0]`
-#    - `x_new = x + delta` (with line search if needed).
-#    - Iterate to ||F|| < 1e-12.
+@njit(cache=True, fastmath=True)
+def _posterior_and_tangent(A0, A1, A0_dot, A1_dot, g0, g1):
+    """μ = g1·A1 / (g0·A0 + g1·A1).
+    Returns (μ, μ_dot)."""
+    den = g0 * A0 + g1 * A1
+    mu = g1 * A1 / den
+    # dμ/dA0 = -g0·g1·A1/den²;  dμ/dA1 = +g0·g1·A0/den²
+    g0g1 = g0 * g1
+    mu_dot = (-g0g1 * A1 * A0_dot + g0g1 * A0 * A1_dot) / (den * den)
+    return mu, mu_dot
 
 if __name__ == "__main__":
     print("Running analytic-derivative sanity tests...")
@@ -293,10 +510,12 @@ if __name__ == "__main__":
     ok_a = _test_demand_derivs()
     ok_b = _test_clearing_jacobian()
     ok_c = _test_hermite_partials()
+    ok_d1 = _test_pchip_derivs_tangent()
+    ok_d2 = _test_contour_sum_tangent()
     print("-" * 60)
-    if ok_a and ok_b and ok_c:
-        print("ALL PIECES A, B, C: PASS")
-        print("Next session: implement D (contour tangent), E (posterior")
-        print("tangent), F (Φ tangent at cell). See module docstring.")
+    if all([ok_a, ok_b, ok_c, ok_d1, ok_d2]):
+        print("ALL PIECES A, B, C, D: PASS")
+        print("Next: F (Φ tangent at cell) — combine all the above with")
+        print("implicit-function for market clearing.")
     else:
-        print("SOME TESTS FAILED. Review derivatives before proceeding.")
+        print("SOME TESTS FAILED.")
