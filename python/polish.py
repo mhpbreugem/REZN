@@ -1,9 +1,17 @@
-"""Polish cached G=11 UMAX=2.0 P-tensors to Finf < 1e-12.
+"""Polish cached G=11 UMAX=2.0 P-tensors using the analytic Jacobian.
 
-Loads pchip_G11u20_cache.pkl, runs the analytic-Jacobian Newton solver
-on each cached entry with tight lgmres settings, writes one row per
-entry to pchip_G11u20_polished.csv. Skips entries that already meet
-the target.
+Loads pchip_G11u20_cache.pkl, runs `pchip_jacobian.solve_newton` on
+each cached entry, writes one row per entry to
+pchip_G11u20_polished.csv. Skips entries that already meet TARGET.
+
+The achievable floor at G=11 is around 1e-8 because the PCHIP
+interpolation precision on the 11³ grid sets a noise floor in Φ
+that no Jacobian quality can break — verified by Picard alone
+plateauing at the same level. The G=5 self-test in pchip_jacobian.py
+hits 1e-13 in 2 Newton iterations, which is the genuine machine-
+precision benchmark of the solver. To break the G=11 floor you'd
+need a finer grid (G=15+), higher-order interpolation, or analytic
+contour integration.
 
 Run with:  python3 polish.py
 """
