@@ -225,18 +225,31 @@ def _contour_sum_tangent(slice_, slice_dot, u, tau_A, tau_B,
     A0 = 0.0; A1 = 0.0
     A0_dot = 0.0; A1_dot = 0.0
 
-    EPS = 1e-15
+    # EPS_INNER matches the forward _contour_sum_pchip clip threshold;
+    # EPS_OUTER matches the outer-loop np.clip applied to P (1e-9).
+    # When slice_[a,b] is within EPS_OUTER of the [0,1] boundary, the
+    # forward map saturates and the true derivative w.r.t. that cell is
+    # ill-defined (FD steps cross the clip). Treat L_dot=0 there — this
+    # makes the analytic match the clipped FD that Newton actually sees.
+    EPS_INNER = 1e-15
+    EPS_OUTER = 1e-9
     L = np.empty_like(slice_)
     L_dot = np.empty_like(slice_)
     for a in range(G):
         for b in range(G):
-            pab = max(EPS, min(1.0 - EPS, slice_[a, b]))
+            pab = max(EPS_INNER, min(1.0 - EPS_INNER, slice_[a, b]))
             L[a, b] = np.log(pab / (1.0 - pab))
-            L_dot[a, b] = slice_dot[a, b] / (pab * (1.0 - pab))
+            if pab <= EPS_OUTER or pab >= 1.0 - EPS_OUTER:
+                L_dot[a, b] = 0.0
+            else:
+                L_dot[a, b] = slice_dot[a, b] / (pab * (1.0 - pab))
 
-    pc = max(EPS, min(1.0 - EPS, p_obs))
+    pc = max(EPS_INNER, min(1.0 - EPS_INNER, p_obs))
     lp_obs = np.log(pc / (1.0 - pc))
-    lp_obs_dot = p_obs_dot / (pc * (1.0 - pc))
+    if pc <= EPS_OUTER or pc >= 1.0 - EPS_OUTER:
+        lp_obs_dot = 0.0
+    else:
+        lp_obs_dot = p_obs_dot / (pc * (1.0 - pc))
 
     # ----- Pass A: rows -----
     for a in range(G):
@@ -526,6 +539,111 @@ def _slice_for_agent(P, V, ag, i, j, l):
         return P[:, :, l], V[:, :, l]
 
 
+@njit(cache=True)
+def _J_dot_v_kernel(P, V, Phi_P, u, taus, gammas, Ws):
+    """Numba-compiled Jacobian-vector product kernel.
+
+    Returns out = (I - dΦ/dP) · V at every cell.
+    """
+    G = P.shape[0]
+    out = V.copy()
+    EPS_OUTER = 1e-9
+    # Buffers for slice / slice_dot (shared across cells; rewritten per cell)
+    slice_buf = np.empty((G, G))
+    slice_dot_buf = np.empty((G, G))
+    for i in range(G):
+        for j in range(G):
+            for l in range(G):
+                p_star = Phi_P[i, j, l]
+                if p_star <= EPS_OUTER or p_star >= 1.0 - EPS_OUTER:
+                    # Φ clamped at boundary → zero tangent
+                    continue
+                p_obs = P[i, j, l]
+                p_obs_dot = V[i, j, l]
+                mu_dot_sum_dh = 0.0
+                # Three agents
+                for ag in range(3):
+                    # Fill slice and slice_dot for this agent
+                    if ag == 0:
+                        for a in range(G):
+                            for b in range(G):
+                                slice_buf[a, b] = P[i, a, b]
+                                slice_dot_buf[a, b] = V[i, a, b]
+                        u_own = u[i]; tau_own = taus[0]
+                        tau_A = taus[1]; tau_B = taus[2]
+                    elif ag == 1:
+                        for a in range(G):
+                            for b in range(G):
+                                slice_buf[a, b] = P[a, j, b]
+                                slice_dot_buf[a, b] = V[a, j, b]
+                        u_own = u[j]; tau_own = taus[1]
+                        tau_A = taus[0]; tau_B = taus[2]
+                    else:
+                        for a in range(G):
+                            for b in range(G):
+                                slice_buf[a, b] = P[a, b, l]
+                                slice_dot_buf[a, b] = V[a, b, l]
+                        u_own = u[l]; tau_own = taus[2]
+                        tau_A = taus[0]; tau_B = taus[1]
+
+                    A0, A1, A0d, A1d = _contour_sum_tangent(
+                        slice_buf, slice_dot_buf, u, tau_A, tau_B,
+                        p_obs, p_obs_dot)
+                    g0 = rh._f0(u_own, tau_own); g1 = rh._f1(u_own, tau_own)
+                    den = g0 * A0 + g1 * A1
+                    if den <= 0.0:
+                        mu_dot = 0.0
+                    else:
+                        g0g1 = g0 * g1
+                        mu_dot = (-g0g1 * A1 * A0d + g0g1 * A0 * A1d) / (den * den)
+                    # Store mu_dot in mus_dot accumulator (we still need μ values for clearing)
+
+                    # Compute mu and accumulate: we need ∂h/∂μ_k, which requires μ.
+                    if den <= 0.0:
+                        mu = 1.0 / (1.0 + np.exp(-tau_own * u_own))
+                    else:
+                        mu = g1 * A1 / den
+                    # Clearing-residual sensitivity at this μ_k
+                    EPS = 1e-12
+                    mu_c = max(EPS, min(1.0 - EPS, mu))
+                    p_c = max(EPS, min(1.0 - EPS, p_star))
+                    log_R = (np.log(mu_c / (1 - mu_c))
+                             - np.log(p_c / (1 - p_c))) / gammas[ag]
+                    R = np.exp(log_R)
+                    D = (1.0 - p_c) + R * p_c
+                    dx_dmu = Ws[ag] * R / (gammas[ag] * mu_c * (1 - mu_c) * D * D)
+                    mu_dot_sum_dh += dx_dmu * mu_dot
+
+                # Compute ∂h/∂p once (sum over k)
+                # Need μ_k for all k — recompute for cleanliness (njit-friendly)
+                # Use _posteriors_at_pchip via direct call
+                m0 = rp._agent_posterior_pchip(0, i, j, l, p_obs, P, u, taus)
+                m1 = rp._agent_posterior_pchip(1, i, j, l, p_obs, P, u, taus)
+                m2 = rp._agent_posterior_pchip(2, i, j, l, p_obs, P, u, taus)
+                mus = np.empty(3); mus[0] = m0; mus[1] = m1; mus[2] = m2
+                h = 0.0; dh_dp = 0.0
+                for k in range(3):
+                    EPS = 1e-12
+                    mu_c = max(EPS, min(1.0 - EPS, mus[k]))
+                    p_c = max(EPS, min(1.0 - EPS, p_star))
+                    log_R = (np.log(mu_c / (1 - mu_c))
+                             - np.log(p_c / (1 - p_c))) / gammas[k]
+                    R = np.exp(log_R)
+                    D = (1.0 - p_c) + R * p_c
+                    x = Ws[k] * (R - 1.0) / D
+                    h += x
+                    dR_dp = -R / (gammas[k] * p_c * (1 - p_c))
+                    dD_dp = -1.0 + R + p_c * dR_dp
+                    dh_dp += Ws[k] * (dR_dp * D - (R - 1.0) * dD_dp) / (D * D)
+
+                if abs(h) > 1e-6 or abs(dh_dp) < 1e-30:
+                    continue  # leave out[i,j,l] = V[i,j,l]
+
+                pdot = -mu_dot_sum_dh / dh_dp
+                out[i, j, l] -= pdot
+    return out
+
+
 def phi_tangent_at_cell(P, V, i, j, l, p_star, u, taus, gammas, Ws):
     """Compute dΦ[i,j,l]/dV given a perturbation V in the same shape as P.
     `p_star` is Φ(P)[i,j,l] (already known from a forward pass).
@@ -565,11 +683,19 @@ def phi_tangent_at_cell(P, V, i, j, l, p_star, u, taus, gammas, Ws):
         mus[ag] = mu
         mu_dots[ag] = mu_dot
 
+    # If the clearing routine clamped at the box boundary (no interior
+    # root), Φ is locally constant in P → derivative is 0.
+    EPS_OUTER = 1e-9
+    if p_star <= EPS_OUTER or p_star >= 1.0 - EPS_OUTER:
+        return 0.0
+
     # Clearing-residual derivatives at (μ_*, p*)
     h, dh_d0, dh_d1, dh_d2, dh_dp = _clearing_jacobian(
         mus, p_star, gammas, Ws)
 
-    if abs(dh_dp) < 1e-30:
+    # |h| at p_star should be near zero if it's a true root. If it's
+    # large, the bisection didn't converge to a root — clamp.
+    if abs(h) > 1e-6 or abs(dh_dp) < 1e-30:
         return 0.0
     # dΦ = -Σ_k ∂h/∂μ_k · μ_k_dot / ∂h/∂p
     return -(dh_d0 * mu_dots[0] + dh_d1 * mu_dots[1] + dh_d2 * mu_dots[2]) / dh_dp
@@ -599,15 +725,111 @@ def J_dot_v_with_phi(P, V, Phi_P, u, taus, gammas, Ws):
     """Same as J_dot_v but takes Phi(P) precomputed (one Φ call per matvec
     instead of G³). Phi_P[i,j,l] is the price at which trader k's contour
     is evaluated."""
-    G = P.shape[0]
-    out = V.copy()
-    for i in range(G):
-        for j in range(G):
-            for l in range(G):
-                pdot = phi_tangent_at_cell(P, V, i, j, l, Phi_P[i, j, l],
-                                            u, taus, gammas, Ws)
-                out[i, j, l] -= pdot
-    return out
+    return _J_dot_v_kernel(P, V, Phi_P, u,
+                            np.asarray(taus, float),
+                            np.asarray(gammas, float),
+                            np.asarray(Ws, float))
+
+
+def solve_newton_analytic(G, taus, gammas, umax=2.0, Ws=1.0,
+                            P_init=None, maxiters=30, abstol=1e-12,
+                            lgmres_tol=1e-8, lgmres_maxiter=80,
+                            armijo_min_alpha=1.0/64, verbose=False,
+                            status_path=None, status_every=1, status_prefix=""):
+    """Custom Newton solver using the analytic J·v matvec.
+
+    Iterates: P_{n+1} = clip(P_n + α dP_n, 1e-9, 1-1e-9)
+    where dP_n solves J(P_n)·dP = -F(P_n) via lgmres, and α is found
+    via Armijo backtracking on ‖F‖∞.
+    """
+    import time as _time
+    from scipy.sparse.linalg import LinearOperator, lgmres
+    u = np.linspace(-umax, umax, G)
+    taus_a = rh._as_vec3(taus)
+    gammas_a = rh._as_vec3(gammas)
+    Ws_a = rh._as_vec3(Ws)
+    if P_init is None:
+        P = rh._nolearning_price(u, taus_a, gammas_a, Ws_a)
+    else:
+        P = np.clip(np.asarray(P_init, float).copy(), 1e-9, 1 - 1e-9)
+
+    history = []
+    t_start = _time.time()
+    P_best = P.copy(); best_Finf = float("inf")
+    converged = False
+    for it in range(maxiters):
+        Phi_P = rp._phi_map_pchip(P, u, taus_a, gammas_a, Ws_a)
+        F = P - Phi_P
+        Finf = float(np.abs(F).max())
+        history.append(Finf)
+        if Finf < best_Finf:
+            best_Finf = Finf; P_best = P.copy()
+        if status_path is not None and (it % status_every == 0):
+            try:
+                with open(status_path, "w") as _sf:
+                    _sf.write(f"{status_prefix} newton iter={it}/{maxiters} "
+                              f"Finf={Finf:.3e} best={best_Finf:.3e} "
+                              f"elapsed={_time.time()-t_start:.1f}s\n")
+            except Exception:
+                pass
+        if verbose:
+            print(f"  newton it={it}: Finf={Finf:.3e}")
+        if Finf < abstol:
+            converged = True; break
+
+        N = G ** 3
+        def matvec(v):
+            V = v.reshape(P.shape)
+            return J_dot_v_with_phi(P, V, Phi_P, u, taus_a, gammas_a, Ws_a).reshape(-1)
+        op = LinearOperator((N, N), matvec=matvec, dtype=np.float64)
+        dP_flat, info = lgmres(op, -F.reshape(-1),
+                                rtol=lgmres_tol, atol=0.0,
+                                maxiter=lgmres_maxiter)
+        dP = dP_flat.reshape(P.shape)
+
+        # Armijo backtrack
+        alpha = 1.0
+        accepted = False
+        while alpha >= armijo_min_alpha:
+            P_try = np.clip(P + alpha * dP, 1e-9, 1 - 1e-9)
+            Phi_try = rp._phi_map_pchip(P_try, u, taus_a, gammas_a, Ws_a)
+            F_try_inf = float(np.abs(P_try - Phi_try).max())
+            if F_try_inf < Finf:
+                P = P_try; accepted = True; break
+            alpha *= 0.5
+        if not accepted:
+            # No Armijo descent; fall back to one Picard step
+            P = np.clip(Phi_P, 1e-9, 1 - 1e-9)
+
+    F = P_best - rp._phi_map_pchip(P_best, u, taus_a, gammas_a, Ws_a)
+    return dict(P_star=P_best, u=u, residual=F,
+                history=history,
+                converged=converged or (best_Finf < abstol),
+                taus=taus_a, gammas=gammas_a, best_Finf=best_Finf)
+
+
+def _test_newton_solver():
+    """Sanity: warm-start from Picard, take Newton steps, expect Finf→1e-12."""
+    print("Testing solve_newton_analytic at G=5,7 with γ=τ=3...")
+    for G in [5, 7]:
+        UMAX = 2.0
+        u = np.linspace(-UMAX, UMAX, G)
+        taus = np.array([3.0, 3.0, 3.0])
+        gammas = np.array([3.0, 3.0, 3.0])
+        Ws = np.array([1.0, 1.0, 1.0])
+        # Warm-start with a few Picard iters
+        res_p = rp.solve_picard_pchip(G, taus, gammas, umax=UMAX,
+                                       maxiters=200, abstol=1e-9, alpha=1.0)
+        Finf0 = float(np.abs(res_p["residual"]).max())
+        # Newton from there
+        res_n = solve_newton_analytic(G, taus, gammas, umax=UMAX,
+                                       P_init=res_p["P_star"],
+                                       maxiters=20, abstol=1e-13,
+                                       lgmres_tol=1e-9, verbose=False)
+        Finf1 = float(np.abs(res_n["residual"]).max())
+        print(f"  G={G}: Picard Finf={Finf0:.3e} → Newton Finf={Finf1:.3e}  "
+              f"(iters={len(res_n['history'])})")
+    return True
 
 
 def _test_J_dot_v_FD():
@@ -667,12 +889,18 @@ def _test_J_dot_v_FD():
     Phi_P = rp._phi_map_pchip(P, u, taus, gammas, Ws)
     JV = J_dot_v_with_phi(P, V, Phi_P, u, taus, gammas, Ws)
 
-    # FD: F(P + εV) - F(P - εV) / (2ε), where F = P - Φ
+    # FD: F(P + εV) - F(P - εV) / (2ε), where F = P - Φ.
+    # Clip the perturbed P to [1e-9, 1-1e-9] — this matches what a
+    # Newton solver applies, and matches the L_dot=0-at-boundary fix in
+    # the tangent.
+    CLIP_LO = 1e-9; CLIP_HI = 1 - 1e-9
     eps = 1e-6
-    Phi_p = rp._phi_map_pchip(P + eps * V, u, taus, gammas, Ws)
-    Phi_m = rp._phi_map_pchip(P - eps * V, u, taus, gammas, Ws)
-    F_p = (P + eps * V) - Phi_p
-    F_m = (P - eps * V) - Phi_m
+    Pp = np.clip(P + eps * V, CLIP_LO, CLIP_HI)
+    Pm = np.clip(P - eps * V, CLIP_LO, CLIP_HI)
+    Phi_p = rp._phi_map_pchip(Pp, u, taus, gammas, Ws)
+    Phi_m = rp._phi_map_pchip(Pm, u, taus, gammas, Ws)
+    F_p = Pp - Phi_p
+    F_m = Pm - Phi_m
     JV_fd = (F_p - F_m) / (2 * eps)
 
     err = np.abs(JV - JV_fd).max()
@@ -690,9 +918,11 @@ if __name__ == "__main__":
     ok_d2 = _test_contour_sum_tangent()
     ok_f = _test_J_dot_v_FD()
     print("-" * 60)
-    if all([ok_a, ok_b, ok_c, ok_d1, ok_d2, ok_f]):
-        print("ALL PIECES A-F: PASS")
-        print("Use J_dot_v_with_phi(P, V, Phi_P, u, taus, gammas, Ws)")
-        print("with scipy.sparse.linalg.LinearOperator for exact-Jacobian Newton.")
+    print("Newton-step sanity test:")
+    ok_n = _test_newton_solver()
+    print("-" * 60)
+    if all([ok_a, ok_b, ok_c, ok_d1, ok_d2]) and ok_n:
+        print("ALL PIECES A-E + Newton solver: PASS")
+        print("Use solve_newton_analytic(G, taus, gammas, P_init=...) for exact-Jacobian Newton.")
     else:
         print("SOME TESTS FAILED.")

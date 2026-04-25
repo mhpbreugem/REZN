@@ -24,6 +24,7 @@ from scipy.optimize import newton_krylov, NoConvergence
 
 import rezn_het as rh
 import rezn_pchip as rp
+import pchip_jacobian as pj
 
 
 G        = 11
@@ -255,15 +256,19 @@ def solve_one(taus, gammas):
     # Subsequent configs: NK first (warm-started → quadratic), Anderson as
     # backup.
     if len(CACHE) == 0:
-        # Short Picard (land in the basin) → NK (polish to machine precision)
+        # Short Picard (land in the basin) → analytic-J Newton (polish to
+        # machine precision) → fallbacks.
         attempts.append(("P1.0", dict(solver="picard", alpha=1.0, maxiters=200)))
+        attempts.append(("NA",   dict(solver="newton_analytic")))
         attempts.append(("NK",   dict(solver="nk")))
         for m in ANDERSON_WINDOWS:
             attempts.append((f"A{m}", dict(solver="anderson", m_window=m,
                                             maxiters=2000)))
     else:
-        # Warm-started configs: NK first, Anderson polish, long Picard for
-        # the stiff cases where ρ ~ 1 and we need 10000+ iters.
+        # Warm-started configs: analytic Newton first (exact Jacobian,
+        # quadratic from a good warm start), then NK fallback (FD-Jacobian),
+        # Anderson polish, long Picard for the stiff cases.
+        attempts.append(("NA",   dict(solver="newton_analytic")))
         attempts.append(("NK",   dict(solver="nk")))
         for m in ANDERSON_WINDOWS:
             attempts.append((f"A{m}", dict(solver="anderson", m_window=m,
@@ -292,6 +297,17 @@ def solve_one(taus, gammas):
                                               status_path=STATUS_PATH,
                                               status_every=25,
                                               status_prefix=f"{prefix} | {tag}")
+            elif opts["solver"] == "newton_analytic":
+                taus_v = (rh._as_vec3(taus[0]) if len(set(taus))==1
+                          else np.asarray(taus, float))
+                gammas_v = (rh._as_vec3(gammas[0]) if len(set(gammas))==1
+                            else np.asarray(gammas, float))
+                res = pj.solve_newton_analytic(
+                        G, taus_v, gammas_v, umax=UMAX,
+                        P_init=P_warm, maxiters=20, abstol=F_TOL,
+                        lgmres_tol=1e-9, lgmres_maxiter=120,
+                        status_path=STATUS_PATH, status_every=1,
+                        status_prefix=f"{prefix} | {tag}")
             else:  # newton-krylov
                 res = _solve_nk(taus, gammas, P_warm,
                                 status_prefix=f"{prefix} | {tag}")
