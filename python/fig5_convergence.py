@@ -25,7 +25,7 @@ TAU     = 2.0
 GAMMA   = 0.5
 UMAX    = 2.0
 N_ITERS = 300
-OUT     = os.path.join(os.path.dirname(__file__), "plots")
+OUT     = os.path.join(os.path.dirname(os.path.dirname(__file__)), "figures")
 
 
 def main():

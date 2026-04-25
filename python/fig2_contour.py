@@ -33,7 +33,7 @@ G_FINE   = 400
 UMAX     = 2.0
 U1_FIXED = 1.0
 U2_REAL, U3_REAL = -1.0, 1.0
-OUT      = os.path.join(os.path.dirname(__file__), "plots")
+OUT      = os.path.join(os.path.dirname(os.path.dirname(__file__)), "figures")
 
 
 def _slice_no_learning(u1, u_grid, taus, gammas, Ws):

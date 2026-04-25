@@ -31,7 +31,7 @@ GAMMAS = np.logspace(-1, 2, 25)         # 0.1 .. 100, 25 points
 TAUS   = np.linspace(0.3, 3.5, 17)      # 0.3 .. 3.5, 17 points
 G      = 30
 UMAX   = 2.0
-OUT    = os.path.join(os.path.dirname(__file__), "plots")
+OUT    = os.path.join(os.path.dirname(os.path.dirname(__file__)), "figures")
 
 
 def main():
