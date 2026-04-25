@@ -59,29 +59,34 @@ def main():
                         + [f"{table[r, c]:.6e}" for c in range(len(TAUS))])
     print(f"wrote {csv_path}")
 
-    # Filled contour with log-spaced levels
+    # Pure black/white contour lines, no fill — Econometrica style.
     T_grid, G_grid = np.meshgrid(TAUS, GAMMAS)
 
     fig, ax = plt.subplots(figsize=(7, 5.5))
-    levels = np.logspace(-6, np.log10(0.3), 25)
-    cs = ax.contourf(T_grid, G_grid, table, levels=levels,
-                      cmap="Greys", norm=LogNorm(vmin=1e-6, vmax=0.3),
-                      extend="both")
-    # Labelled contour lines at decade ticks
-    line_levels = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1]
-    cl = ax.contour(T_grid, G_grid, table, levels=line_levels,
-                     colors="black", linewidths=0.9)
-    ax.clabel(cl, inline=True, fontsize=8, fmt=lambda v: f"{v:g}")
+
+    # Decade contour lines
+    decade_levels = [1e-4, 1e-3, 1e-2, 1e-1]
+    cl_dec = ax.contour(T_grid, G_grid, table, levels=decade_levels,
+                         colors="black", linewidths=1.1)
+    ax.clabel(cl_dec, inline=True, fontsize=9,
+               fmt=lambda v: f"{v:g}")
+
+    # Intermediate (half-decade) lines, lighter
+    half_levels = [3e-4, 3e-3, 3e-2, 0.05, 0.15, 0.2]
+    cl_h = ax.contour(T_grid, G_grid, table, levels=half_levels,
+                      colors="black", linewidths=0.6, linestyles=":")
+    ax.clabel(cl_h, inline=True, fontsize=8,
+              fmt=lambda v: f"{v:g}")
+
     ax.set_yscale("log")
+    ax.set_xlim(TAUS.min(), TAUS.max())
+    ax.set_ylim(GAMMAS.min(), GAMMAS.max())
     ax.set_xlabel(r"signal precision $\tau$")
     ax.set_ylabel(r"risk aversion $\gamma$  (log scale)")
-    ax.set_title(r"$1 - R^2$ of logit$(p)$ vs $T^* = \sum_k \tau_k u_k$"
+    ax.set_title(r"Iso-curves of $1 - R^2$ for logit$(p)$ vs $T^*$"
                   "  (no-learning, exact)")
+    ax.grid(True, which="both", linestyle=":", alpha=0.35)
 
-    cbar = fig.colorbar(cs, ax=ax,
-                         ticks=[1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1],
-                         format=LogFormatter(base=10),
-                         label=r"$1 - R^2$  (log scale)")
     fig.tight_layout()
     png = os.path.join(OUT, "fig1_smooth_transition.png")
     fig.savefig(png, dpi=200)
