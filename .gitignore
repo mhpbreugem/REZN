@@ -1,6 +1,7 @@
 python/sweep_restart.log
 python/*.log
 python/sweep_status.txt
+python/polish_status.txt
 python/pchip_cache.pkl
 python/pchip_G21_cache.pkl
 python/pchip_G21_forward.csv
