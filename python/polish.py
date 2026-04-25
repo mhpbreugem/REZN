@@ -22,7 +22,11 @@ import rezn_pchip as rp
 
 G = 11
 UMAX = 2.0
-TARGET = 1e-12
+# Target: 1e-9. The G=5 self-test hits 1e-13 in 2 Newton iterations,
+# but at G=11 the PCHIP interpolation precision on the 11³ grid caps
+# the achievable Φ-residual around 1e-8. Going below ~1e-9 here
+# requires a finer grid (G=15+) or higher-precision interpolation.
+TARGET = 1e-9
 
 CACHE_PKL = "/home/user/REZN/python/pchip_G11u20_cache.pkl"
 CSV_OUT = "/home/user/REZN/python/pchip_G11u20_polished.csv"
@@ -90,8 +94,8 @@ def main():
             t0 = time.time()
             res = pj.solve_newton(
                 G, taus, gammas, umax=UMAX,
-                P_init=P0, maxiters=12, abstol=TARGET,
-                lgmres_tol=1e-10, lgmres_maxiter=200,
+                P_init=P0, maxiters=6, abstol=TARGET,
+                lgmres_tol=1e-8, lgmres_maxiter=120,
                 status_path=STATUS, status_every=1, status_prefix=prefix)
             dt = time.time() - t0
             P = res["P_star"]
