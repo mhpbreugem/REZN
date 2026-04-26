@@ -8,28 +8,27 @@
 \begin{tikzpicture}
 \begin{axis}[
     width=8cm, height=8cm,
-    xmin=2.5, xmax=10.5,
+    xmode=log,
+    xmin=3, xmax=100,
     ymin=-0.001, ymax=0.15,
-    xtick={3,4,5,6,7,8,9,10},
+    xtick={3,5,10,20,50,100},
+    xticklabels={3,5,10,20,50,100},
+    ytick={0,0.05,0.1,0.15},
+    yticklabels={0,0.05,0.10,0.15},
     xlabel={number of agents $K$},
     ylabel={$1 - R^2$},
     title={Number of agents ($K$)},
-    grid=both,
-    grid style={line width=.1pt, draw=gray!20},
-    major grid style={line width=.2pt, draw=gray!50},
-    legend style={
-        at={(0.5,1.18)}, anchor=south, legend columns=-1,
-        column sep=10pt, fill=none, draw=none, font=\footnotesize
-    },
+    legend pos=north east,
+    legend style={fill=none, draw=none, font=\footnotesize},
     smooth,
 ]
-\addplot[green, solid, very thick] coordinates {(3,0.108924) (4,0.0961452) (5,0.0866528) (6,0.0778281) (7,0.0708531) (8,0.0649077) (9,0.0596315) (10,0.0553081)};
+\addplot[green, solid, very thick] coordinates {(3,0.109178) (4,0.0958134) (5,0.0865751) (6,0.0783497) (7,0.0707117) (8,0.0646354) (10,0.0554253) (12,0.0484828) (15,0.0403457) (20,0.031554) (25,0.0261146) (30,0.0221748) (40,0.0171101) (50,0.0138688) (70,0.0101266) (100,0.00714989)};
 \addlegendentry{$\gamma = 0.2$};
-\addplot[red, dashed, very thick] coordinates {(3,0.0292679) (4,0.0259495) (5,0.0226182) (6,0.0199532) (7,0.0177942) (8,0.0160277) (9,0.0145606) (10,0.0133588)};
+\addplot[red, dashed, very thick] coordinates {(3,0.0293472) (4,0.0259576) (5,0.022585) (6,0.0199823) (7,0.0176312) (8,0.0159871) (10,0.0133234) (12,0.0115196) (15,0.00937897) (20,0.00718887) (25,0.00592334) (30,0.00501196) (40,0.00380161) (50,0.00306656) (70,0.00221179) (100,0.00156485)};
 \addlegendentry{$\gamma = 1.0$};
-\addplot[blue, dotted, very thick] coordinates {(3,0.00232998) (4,0.00212078) (5,0.00189358) (6,0.00170017) (7,0.00153623) (8,0.00139245) (9,0.00127363) (10,0.00117476)};
+\addplot[blue, dotted, very thick] coordinates {(3,0.00233439) (4,0.00213071) (5,0.00189004) (6,0.00169423) (7,0.00151417) (8,0.00139052) (10,0.00116948) (12,0.00102266) (15,0.000834464) (20,0.000644923) (25,0.000532463) (30,0.000451329) (40,0.000342064) (50,0.000276427) (70,0.000199014) (100,0.000141052)};
 \addlegendentry{$\gamma = 5.0$};
-\addplot[black, dash dot, ultra thick] coordinates {(3,0) (4,0) (5,0) (6,0) (7,0) (8,0) (9,0) (10,0)};
+\addplot[black, dash dot, ultra thick] coordinates {(3,0) (4,0) (5,0) (6,0) (7,0) (8,0) (10,0) (12,0) (15,0) (20,0) (25,0) (30,0) (40,0) (50,0) (70,0) (100,0)};
 \addlegendentry{$\gamma = \infty\;(\text{CARA})$};
 \end{axis}
 \end{tikzpicture}
