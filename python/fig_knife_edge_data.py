@@ -41,7 +41,7 @@ GAMMAS  = [(0.2, "0.2",      "green",  "solid"),
             (1.0, "1.0",      "red",    "dashed"),
             (5.0, "5.0",      "blue",   "dotted"),
             (1e3, "\\infty", "black",  "dash dot")]
-TAUS    = np.logspace(np.log10(0.1), np.log10(10.0), 30)
+TAUS    = np.logspace(np.log10(0.1), np.log10(10.0), 60)
 OUT     = os.path.join(os.path.dirname(os.path.dirname(__file__)),
                          "figures")
 
@@ -218,7 +218,7 @@ def main():
         "    major grid style={line width=.2pt, draw=gray!50},\n"
         "    legend pos=north west,\n"
         "    legend style={font=\\footnotesize},\n"
-        "    smooth,\n"
+        "    no markers,\n"
         "]\n"
         + "\n".join(addplots) + "\n"
         "\\end{axis}\n"
