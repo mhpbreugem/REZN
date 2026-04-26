@@ -18,7 +18,7 @@ GAMMAS  = [(0.3, "0.3",      "green",  "solid",     "very thick"),
             (1.0, "1.0",      "red",    "dashed",    "very thick"),
             (3.0, "3.0",      "blue",   "dotted",    "very thick"),
             (1e3, "\\infty", "black",  "dash dot",  "ultra thick")]
-TAUS    = np.logspace(np.log10(0.1), np.log10(100.0), 50)
+TAUS    = np.logspace(np.log10(0.1), np.log10(25.0), 40)
 OUT     = os.path.join(os.path.dirname(os.path.dirname(__file__)),
                          "figures")
 
@@ -128,12 +128,12 @@ _TEX_HEAD = r"""\documentclass[border=2pt]{standalone}
 \begin{axis}[
     width=8cm, height=8cm,
     xmode=log,
-    xmin=0.1, xmax=100,
-    ymin=-0.005, ymax=1.02,
-    xtick={0.1,0.2,0.5,1,2,5,10,20,50,100},
-    xticklabels={0.1,0.2,0.5,1,2,5,10,20,50,100},
-    ytick={0,0.25,0.5,0.75,1},
-    yticklabels={0,0.25,0.50,0.75,1.00},
+    xmin=0.1, xmax=25,
+    ymin=-0.001, ymax=0.15,
+    xtick={0.1,0.2,0.5,1,2,5,10,20},
+    xticklabels={0.1,0.2,0.5,1,2,5,10,20},
+    ytick={0,0.05,0.1,0.15},
+    yticklabels={0,0.05,0.10,0.15},
     xlabel={signal precision $\tau$},
     ylabel={$1 - R^2$},
     title={Signal precision ($\tau$)},
