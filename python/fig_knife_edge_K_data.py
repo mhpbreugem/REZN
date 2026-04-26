@@ -21,9 +21,9 @@ from numba import njit, prange
 
 
 # Spec
-GAMMAS  = [(0.2, "0.2",      "green",  "solid",     "very thick"),
+GAMMAS  = [(0.3, "0.3",      "green",  "solid",     "very thick"),
             (1.0, "1.0",      "red",    "dashed",    "very thick"),
-            (5.0, "5.0",      "blue",   "dotted",    "very thick"),
+            (3.0, "3.0",      "blue",   "dotted",    "very thick"),
             (1e3, "\\infty", "black",  "dash dot",  "ultra thick")]
 KS      = [3, 4, 5, 6, 7, 8, 10, 12, 15, 20, 25, 30, 40, 50, 70, 100]
 TAU     = 2.0
