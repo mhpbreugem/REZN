@@ -17,8 +17,10 @@
     grid=both,
     grid style={line width=.1pt, draw=gray!20},
     major grid style={line width=.2pt, draw=gray!50},
-    legend pos=north east,
-    legend style={fill=none, draw=none, font=\footnotesize},
+    legend style={
+        at={(0.5,1.18)}, anchor=south, legend columns=-1,
+        column sep=10pt, fill=none, draw=none, font=\footnotesize
+    },
     smooth,
 ]
 \addplot[green, solid, very thick] coordinates {(3,0.108924) (4,0.0961452) (5,0.0866528) (6,0.0778281) (7,0.0708531) (8,0.0649077) (9,0.0596315) (10,0.0553081)};

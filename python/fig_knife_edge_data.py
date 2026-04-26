@@ -138,8 +138,10 @@ _TEX_HEAD = r"""\documentclass[border=2pt]{standalone}
     grid=both,
     grid style={line width=.1pt, draw=gray!20},
     major grid style={line width=.2pt, draw=gray!50},
-    legend pos=north west,
-    legend style={fill=none, draw=none, font=\footnotesize},
+    legend style={
+        at={(0.5,1.18)}, anchor=south, legend columns=-1,
+        column sep=10pt, fill=none, draw=none, font=\footnotesize
+    },
     smooth,
 ]
 """
