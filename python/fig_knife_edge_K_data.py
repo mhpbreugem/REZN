@@ -25,9 +25,9 @@ GAMMAS  = [(0.2, "0.2",      "green",  "solid",     "very thick"),
             (1.0, "1.0",      "red",    "dashed",    "very thick"),
             (5.0, "5.0",      "blue",   "dotted",    "very thick"),
             (1e3, "\\infty", "black",  "dash dot",  "ultra thick")]
-KS      = list(range(3, 11))            # 3..10 inclusive
+KS      = [3, 4, 5, 6, 7, 8, 10, 12, 15, 20, 25, 30, 40, 50, 70, 100]
 TAU     = 2.0
-N_MC    = 400_000                       # MC sample size per (γ, K)
+N_MC    = 200_000                       # MC sample size per (γ, K)
 SEED    = 12345
 OUT     = os.path.join(os.path.dirname(os.path.dirname(__file__)),
                          "figures")
@@ -111,19 +111,18 @@ _TEX_HEAD = r"""\documentclass[border=2pt]{standalone}
 \begin{tikzpicture}
 \begin{axis}[
     width=8cm, height=8cm,
-    xmin=2.5, xmax=10.5,
+    xmode=log,
+    xmin=3, xmax=100,
     ymin=-0.001, ymax=0.15,
-    xtick={3,4,5,6,7,8,9,10},
+    xtick={3,5,10,20,50,100},
+    xticklabels={3,5,10,20,50,100},
+    ytick={0,0.05,0.1,0.15},
+    yticklabels={0,0.05,0.10,0.15},
     xlabel={number of agents $K$},
     ylabel={$1 - R^2$},
     title={Number of agents ($K$)},
-    grid=both,
-    grid style={line width=.1pt, draw=gray!20},
-    major grid style={line width=.2pt, draw=gray!50},
-    legend style={
-        at={(0.5,1.18)}, anchor=south, legend columns=-1,
-        column sep=10pt, fill=none, draw=none, font=\footnotesize
-    },
+    legend pos=north east,
+    legend style={fill=none, draw=none, font=\footnotesize},
     smooth,
 ]
 """

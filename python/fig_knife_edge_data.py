@@ -129,19 +129,16 @@ _TEX_HEAD = r"""\documentclass[border=2pt]{standalone}
     width=8cm, height=8cm,
     xmode=log,
     xmin=0.1, xmax=10,
-    ymin=-0.001, ymax=0.13,
+    ymin=-0.001, ymax=0.15,
     xtick={0.1,0.2,0.5,1,2,5,10},
     xticklabels={0.1,0.2,0.5,1,2,5,10},
+    ytick={0,0.05,0.1,0.15},
+    yticklabels={0,0.05,0.10,0.15},
     xlabel={signal precision $\tau$},
     ylabel={$1 - R^2$},
     title={Signal precision ($\tau$)},
-    grid=both,
-    grid style={line width=.1pt, draw=gray!20},
-    major grid style={line width=.2pt, draw=gray!50},
-    legend style={
-        at={(0.5,1.18)}, anchor=south, legend columns=-1,
-        column sep=10pt, fill=none, draw=none, font=\footnotesize
-    },
+    legend pos=north west,
+    legend style={fill=none, draw=none, font=\footnotesize},
     smooth,
 ]
 """
