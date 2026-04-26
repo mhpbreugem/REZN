@@ -37,9 +37,9 @@ from numba import njit, prange
 
 # ---- Setup -----------------------------------------------------------------
 N_GH    = 80                              # Gauss-Hermite nodes per state
-GAMMAS  = [(0.2, "0.2",      "green",  "solid"),
+GAMMAS  = [(0.5, "0.5",      "green",  "solid"),
             (1.0, "1.0",      "red",    "dashed"),
-            (5.0, "5.0",      "blue",   "dotted"),
+            (2.0, "2.0",      "blue",   "dotted"),
             (1e3, "\\infty", "black",  "dash dot")]
 TAUS    = np.logspace(np.log10(0.1), np.log10(10.0), 60)
 OUT     = os.path.join(os.path.dirname(os.path.dirname(__file__)),
