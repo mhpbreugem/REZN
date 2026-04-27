@@ -17,9 +17,9 @@ import numpy as np
 
 # ---- spec ---------------------------------------------------------------
 TAU      = 2.0
-GAMMAS   = [(0.2, "0.2", "green",  "solid"),
+GAMMAS   = [(0.25, "0.25", "green",  "solid"),
             (1.0, "1.0", "red",    "dashed"),
-            (5.0, "5.0", "blue",   "dotted")]
+            (4.0, "4", "blue",   "dotted")]
 OUT      = os.path.join(os.path.dirname(os.path.dirname(__file__)),
                           "figures")
 DATA_CSV = os.path.join(OUT, "fig8_value_info_data.csv")
@@ -61,9 +61,9 @@ _TEX = r"""\documentclass[border=2pt]{standalone}
 %(addplots)s
 \addplot[thin, color=black, dotted]
     coordinates {(0,0)(%(cmax).4f,0)};
-\addlegendentry{$\gamma = 0.2$}
+\addlegendentry{$\gamma = 0.25$}
 \addlegendentry{$\gamma = 1$}
-\addlegendentry{$\gamma = 5$}
+\addlegendentry{$\gamma = 4$}
 \addlegendentry{CARA}
 \end{axis}
 \end{tikzpicture}

@@ -9,7 +9,7 @@ Spec:
     edges where logit blows up).
   • Weighted regression of logit(P) on T*=τ Σ u_k, weight per cell
     w = ½(Π f₁(u_k) + Π f₀(u_k)).
-  • γ ∈ {0.2, 1, 5} plus a flat CARA reference at y=0.
+  • γ ∈ {0.25, 1, 4} plus a flat CARA reference at y=0.
   • τ on a 30-point log grid [0.1, 10].
 
 Output: figures/fig2_knife_edge.{tex,pdf,png}
@@ -26,9 +26,9 @@ G       = 30
 UMAX    = 4.0
 P_LO    = 1e-4              # cell filter — drop saturated cells
 P_HI    = 1 - P_LO
-GAMMAS  = [(0.2, "0.2", "green",  "solid"),
+GAMMAS  = [(0.25, "0.25", "green",  "solid"),
             (1.0, "1.0", "red",    "dashed"),
-            (5.0, "5.0", "blue",   "dotted")]
+            (4.0, "4", "blue",   "dotted")]
 TAUS    = np.logspace(np.log10(0.1), np.log10(5.0), 30)
 OUT     = os.path.join(os.path.dirname(os.path.dirname(__file__)),
                           "figures")
@@ -161,9 +161,9 @@ _TEX = r"""\documentclass[border=2pt]{standalone}
 %(addplots)s
 \addplot[ultra thick, color=black, dashdotted]
     coordinates {(0.1,0)(5,0)};
-\addlegendentry{$\gamma = 0.2$}
+\addlegendentry{$\gamma = 0.25$}
 \addlegendentry{$\gamma = 1$}
-\addlegendentry{$\gamma = 5$}
+\addlegendentry{$\gamma = 4$}
 \addlegendentry{CARA}
 \end{axis}
 \end{tikzpicture}

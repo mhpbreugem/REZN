@@ -39,9 +39,9 @@ from numba import njit, prange
 # ---- spec ---------------------------------------------------------------
 G       = 15
 UMAX    = 4.0
-GAMMAS  = [(0.2, "0.2", "green",  "solid"),
+GAMMAS  = [(0.25, "0.25", "green",  "solid"),
             (1.0, "1.0", "red",    "dashed"),
-            (5.0, "5.0", "blue",   "dotted")]
+            (4.0, "4", "blue",   "dotted")]
 TAUS    = [0.1, 0.2, 0.5, 1.0, 2.0, 3.0, 5.0]
 P_LO    = 0.01           # tight filter — drops cells where bisection
 P_HI    = 1 - P_LO       # is at the [0.002, 0.998] clip and demands blow up
@@ -178,9 +178,9 @@ _TEX = r"""\documentclass[border=2pt]{standalone}
 %(addplots)s
 \addplot[ultra thick, color=black, dashdotted]
     coordinates {(0.08,0)(8,0)};
-\addlegendentry{$\gamma = 0.2$}
+\addlegendentry{$\gamma = 0.25$}
 \addlegendentry{$\gamma = 1$}
-\addlegendentry{$\gamma = 5$}
+\addlegendentry{$\gamma = 4$}
 \addlegendentry{CARA}
 \end{axis}
 \end{tikzpicture}

@@ -1,6 +1,6 @@
 """Figure 10 — 1−R² vs K (number of agents).
 
-Sweeps K=3..10 at fixed τ=1, γ ∈ {0.2, 1, 5} plus CARA.
+Sweeps K=3..10 at fixed τ=1, γ ∈ {0.25, 1, 4} plus CARA.
 
 Implementation: Monte Carlo (N=400k stratified samples per (γ, K))
 draws u₁..u_K from the equal-mixture prior, solves market clearing
@@ -26,9 +26,9 @@ from numba import njit, prange
 
 # ---- spec ---------------------------------------------------------------
 TAU     = 1.0
-GAMMAS  = [(0.2, "0.2", "green",  "solid"),
+GAMMAS  = [(0.25, "0.25", "green",  "solid"),
             (1.0, "1.0", "red",    "dashed"),
-            (5.0, "5.0", "blue",   "dotted")]
+            (4.0, "4", "blue",   "dotted")]
 KS      = list(range(3, 11))
 N_MC    = 400_000
 SEED    = 13579
@@ -151,9 +151,9 @@ _TEX = r"""\documentclass[border=2pt]{standalone}
 %(addplots)s
 \addplot[ultra thick, color=black, dashdotted]
     coordinates {(2.5,0)(10.5,0)};
-\addlegendentry{$\gamma = 0.2$}
+\addlegendentry{$\gamma = 0.25$}
 \addlegendentry{$\gamma = 1$}
-\addlegendentry{$\gamma = 5$}
+\addlegendentry{$\gamma = 4$}
 \addlegendentry{CARA}
 \end{axis}
 \end{tikzpicture}
