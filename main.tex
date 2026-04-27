@@ -793,22 +793,32 @@ Grossman--Stiglitz paradox all depend on it.
 
 \subsection{Trade volume}
 
-Under CARA full revelation, all agents reach the same posterior at the
-clearing price (Proposition~\ref{prop:cara}). With identical posteriors,
-the demand of each agent is exactly zero: nobody is willing to take a
-position because nobody disagrees with the price. Equilibrium volume is
-zero. This is the no-trade outcome of \citet{Milgrom1982}.
+Under CARA at the rational-expectations equilibrium, all agents reach the
+same posterior $\Lam(\Tstar)$ at the clearing price
+(Proposition~\ref{prop:cara}). With identical posteriors, the demand of
+each agent is exactly zero: nobody is willing to take a position because
+nobody disagrees with the price. Equilibrium volume is zero --- the
+no-trade outcome of \citet{Milgrom1982}. The same is not true at the
+\emph{no-learning} CARA equilibrium, where the price is the
+equally-weighted log-odds average and each demand
+$x_{k}=\tau(u_{k}-\bar u)/\alpha$ is nonzero almost surely; but this
+no-trade-theorem violation disappears as soon as agents update on prices,
+because the REE collapses all CARA posteriors to a common value.
 
-Under CRRA, posteriors differ (Proposition~\ref{prop:ree}). Each agent
-trades against the others to the extent her posterior differs from the
-clearing price. Aggregate volume,
-$V_{\mathrm{vol}}=\tfrac12\sum_{k=1}^{K}|x_{k}|$, is strictly positive.
+Under CRRA, posteriors differ (Proposition~\ref{prop:ree}) at \emph{both}
+the no-learning and the REE configurations. Each agent trades against the
+others to the extent her posterior differs from the clearing price.
+Aggregate volume, $V_{\mathrm{vol}}=\tfrac12\sum_{k=1}^{K}|x_{k}|$, is
+strictly positive at both configurations.
 
 \begin{proposition}[Positive trade]\label{prop:welfare}
-At the no-learning and at the contour-converged REE under CRRA with any
-$\gamma\in(0,\infty)$, the equilibrium trade volume is strictly positive on
-a set of signal realisations of full Lebesgue measure. Under CARA, the
-equilibrium volume is zero almost surely.
+Under CRRA preferences with any $\gamma\in(0,\infty)$, the equilibrium
+trade volume at both the no-learning and the contour-converged REE is
+strictly positive on a set of signal realisations of full Lebesgue
+measure. Under CARA at the REE, the equilibrium trade volume is zero
+almost surely; at the no-learning CARA equilibrium with homogeneous
+parameters, demands are $x_{k}=\tau(u_{k}-\bar u)/\alpha$ and aggregate
+volume is strictly positive.
 \end{proposition}
 
 Figure~\ref{fig:volume} reports trade volume as a function of $\gamma$ for
@@ -1016,16 +1026,23 @@ sufficient statistic.
 
 The conventional reading of \citet{GrossmanStiglitz1980} treats CARA as a
 neutral simplifying assumption. The results above suggest a different
-reading: CARA is not neutral. By aligning demand linearity with the
-log-odds aggregation of the Bayesian sufficient statistic, CARA delivers
-full revelation as a knife-edge consequence of functional form. The need
-for noise traders is therefore an artefact of CARA, not a property of
-rational expectations.
+reading: CARA is the engine of full revelation, not a neutral background
+choice. By aligning demand linearity with the log-odds aggregation of the
+Bayesian sufficient statistic, CARA delivers full revelation as a
+knife-edge consequence of functional form. Removing noise traders from a
+CARA economy makes the price reveal everything; removing noise traders
+from a CRRA economy leaves the price strictly partially revealing. The
+need for noise in the textbook framework is therefore an artefact of the
+preference choice, not a property of rational expectations.
 
-The point is not that CARA is wrong. CARA is, for many purposes, a useful
-modelling device. The point is that conclusions specific to CARA --- and
-in particular the claim that partial revelation requires noise --- should
-not be transported to the rational class as a whole.
+What CARA does, this paper argues, is line up the kernel of demand with
+the kernel of Bayesian inference; what CARA does \emph{not} do is force
+markets to reveal information generally. CARA is, for many purposes, a
+useful modelling device --- the linearity it confers makes
+no-arbitrage and beta-pricing identities clean. But conclusions specific
+to CARA, and in particular the conclusion that partial revelation
+requires noise, should not be transported to the rational class as a
+whole.
 
 \subsection{Connection to the existing literature}
 
@@ -1092,6 +1109,8 @@ CARA price is also the fully revealing price.}
 
 
 
+\subsection{Extensions}
+
 Several extensions are immediate. First, the binary asset can be replaced
 by a Gaussian or non-Gaussian payoff; the lognormal robustness exercise of
 Figure~\ref{fig:robust-lognormal} suggests that the qualitative picture is
@@ -1108,14 +1127,24 @@ of professional information production.
 \section{Conclusion}\label{sec:conclusion}
 
 Noise traders, as a primitive of the rational-expectations framework, are
-a modelling artefact of CARA preferences. Under any other CRRA preference,
-market clearing aggregates private posteriors in probability rather than
-log-odds space, the Bayesian sufficient statistic is no longer recoverable
-from the price, and the equilibrium is partially revealing without
-exogenous frictions. The implications --- positive trade volume, positive
-value of information, and a noise-free resolution of the Grossman--Stiglitz
-paradox --- follow as immediate consequences. CARA full revelation is the
-exception in the rational class; partial revelation is the rule.
+a modelling artefact of CARA preferences. Under CARA, demand is linear in
+log-odds, market clearing aggregates posteriors in log-odds, and the
+Bayesian sufficient statistic is itself a sum in log-odds; the alignment
+delivers full revelation in any no-noise economy with homogeneous
+parameters. Under any other CRRA preference, market clearing aggregates
+in probability space rather than log-odds, the Jensen gap between the two
+spaces is the size of the revelation failure, and the equilibrium is
+strictly partially revealing without exogenous frictions. The implications
+are immediate: trade volume is positive, the value of private information
+is positive, the Grossman--Stiglitz paradox dissolves within the rational
+class, and the limit of vanishing liquidity noise selects partial
+revelation rather than full revelation. CARA full revelation is the
+exception in the rational class; partial revelation is the rule. The
+remaining open question is whether the same alignment principle survives
+in dynamic and intermediated extensions, where preferences and learning
+interact in ways that the static binary model abstracts from. The
+contour-integration fixed point developed here is in principle extendable
+to those settings, and we leave that extension to future work.
 
 % =====================================================================
 \bibliographystyle{plainnat}
@@ -1187,64 +1216,164 @@ O(\tau^{5})$. Subtracting and using $\bar u^{3}=U_{1}^{3}/K^{3}$ yields
 \end{proof}
 
 \begin{proof}[Proof of Proposition~\ref{prop:smooth}]
-$1-R^{2}$ is a continuous functional of the price function in the $L^{2}$
-topology on the signal support. The price function under CRRA is continuous
-in $\gamma$ on $(0,\infty]$, and $\Lam(\Tstar/K)$ is the pointwise limit at
-$\gamma\to\infty$. Continuity follows from dominated convergence.
-Monotonicity is verified numerically over the parameter grid in
-Table~\ref{tab:smooth} and proved analytically in the small-$\tau$ limit
-via the Jensen-gap expansion of Proposition~\ref{prop:jensen}: the $\tau^{3}$
-coefficient is $\gamma$-independent in the leading order, but the
-higher-order CRRA corrections introduce a strictly negative derivative in
-$\gamma$.
+\emph{Continuity.} For each $\gamma\in(0,\infty]$ the no-learning
+equilibrium price $p_{\gamma}(u_{1},\ldots,u_{K})$ is the unique solution
+of the market-clearing equation
+$\sum_{k}x_{k}^{\gamma}(\Lam(\tau u_{k}),p)=0$, where $x_{k}^{\gamma}$
+denotes the CRRA demand of \eqref{eq:crra-demand} at parameter $\gamma$.
+The demand $x_{k}^{\gamma}$ is jointly continuous in $(\gamma,p)$ on the
+relevant domain and strictly decreasing in $p$, so by the implicit
+function theorem $p_{\gamma}$ is continuous in $\gamma$ uniformly in
+$(u_{1},\ldots,u_{K})$ over any compact subset of the signal support.
+The CARA limit follows from $\lim_{\gamma\to\infty}x_{k}^{\gamma}/\gamma
+=\logit\Lam(\tau u_{k})-\logit p$, which is the CARA demand up to the
+constant $\alpha^{-1}$. Continuity of $1-R^{2}(\Tstar;p_{\gamma})$ in
+$\gamma$ on $(0,\infty]$ then follows by dominated convergence applied
+to the joint distribution of $(\Tstar,p_{\gamma})$ on a compact signal
+support; the $\gamma=\infty$ value is $0$ by Proposition~\ref{prop:cara}.
+
+\emph{Monotonicity.} In the small-$\tau$ regime, the Jensen-gap expansion
+of Proposition~\ref{prop:jensen} extends to general $\gamma$ by replacing
+$\Lam(\tau u_{k})$ in the leading-order argument with the
+$\gamma$-specific posterior aggregator. The $\tau^{3}$ coefficient of
+$p_{\gamma}-p^{\mathrm{CARA}}$ is a strictly increasing function of
+$1/\gamma$ on $(0,\infty)$, so $1-R^{2}(\Tstar;p_{\gamma})$ is monotone in
+$\gamma$ in a small-$\tau$ neighbourhood. \todo{The full monotonicity
+claim across all $(\tau,\gamma)$ is currently established only
+numerically (Table~\ref{tab:smooth}); a clean analytical argument away
+from the small-$\tau$ regime would close this gap. A plausible route is
+to write $1-R^{2}$ as the variance of the residual after projecting
+$\Tstar$ on $\logit p_{\gamma}$ and to differentiate this variance with
+respect to $\gamma$ using the implicit-function-theorem expression for
+$\partial p_{\gamma}/\partial\gamma$.}
 \end{proof}
 
-\begin{proof}[Proof of Proposition~\ref{prop:ree}]
-Run the contour fixed-point solver of \eqref{eq:fixed-point} initialised at
-the no-learning price function $P^{0}[i,j,l]$ to convergence in the
-$\|\cdot\|_{\infty}$ norm. Compute the regression
+\begin{proof}[Proof of Proposition~\ref{prop:ree} (numerical verification)]
+The proof is constructive and numerical. Initialise the contour
+fixed point \eqref{eq:fixed-point} at the no-learning price function
+$P^{0}[i,j,l]$, computed exactly by solving market clearing pointwise.
+Run the iteration $P^{(n+1)}=\Phi(P^{(n)})$ with Anderson acceleration
+to convergence, $\|P^{(n+1)}-P^{(n)}\|_{\infty}<10^{-6}$, obtaining
+$P^{\star}$. Compute the regression
 $\logit P^{\star}[i,j,l]=\beta_{0}+\beta_{T}\Tstar_{ijl}+\beta_{1}u_{i}+
-\beta_{2}u_{j}+\beta_{3}u_{l}+\eta$ on the full $G^{3}$ grid. If the
-equilibrium were fully revealing, $\beta_{1}=\beta_{2}=\beta_{3}=0$. The
-numerical solution at $G=5$, $\tau=2$, $\gamma=0.5$ delivers
-$\beta_{1},\beta_{3}>0$ and dispersed posteriors as in
-Table~\ref{tab:posteriors}; refinement to $G\geq 100$ confirms the
-positivity is not a grid artefact.
+\beta_{2}u_{j}+\beta_{3}u_{l}+\eta_{ijl}$ on the full $G^{3}$ grid. If
+the equilibrium were fully revealing in the sense that
+$\logit P^{\star}$ is informationally equivalent to $\Tstar$, then
+$\beta_{1}=\beta_{2}=\beta_{3}=0$ would hold up to numerical tolerance.
+At $G=5,\tau=2,\gamma=0.5$ the converged solution delivers
+$\beta_{1},\beta_{3}>0$ uniformly above the residual noise floor and
+disagreement among the three posteriors as in Table~\ref{tab:posteriors}.
+Refinement to $G\in\{10,20,50,100\}$ confirms that the off-$\Tstar$
+coefficients are robust to grid resolution and that the deficit
+$1-R^{2}(\Tstar;\logit P^{\star})$ stabilises around $0.02$--$0.04$.
+\todo{An analytical proof, replacing the numerical verification, would
+require a fixed-point existence argument and a perturbation bound on
+the off-$\Tstar$ component of $\logit P^{\star}$ near the no-learning
+seed. A perturbation route: linearise $\Phi$ about the no-learning
+fixed-point, show that the linear operator preserves the off-$\Tstar$
+direction (because the contour-integration kernel inherits the curvature
+of $\Lam$), and conclude by a contraction-mapping argument on a small
+ball around $P^{0}$.}
 \end{proof}
 
 \begin{proof}[Proof of Proposition~\ref{prop:welfare}]
-At the CARA equilibrium, all posteriors equal the price
-(Proposition~\ref{prop:cara}), so $\logit\mu_{k}-\logit p=0$ for every $k$
-and the demand of \eqref{eq:cara-demand} is zero. At the CRRA equilibrium,
-posteriors disagree generically (Proposition~\ref{prop:ree}), so
-$\logit\mu_{k}-\logit p\neq 0$ and the demand of \eqref{eq:crra-demand} is
-nonzero almost surely. Aggregate volume is the average of $|x_{k}|$ over
-agents, which is therefore strictly positive on a full-measure set.
+\emph{No-learning equilibrium.} Under CARA at the no-learning equilibrium
+of Proposition~\ref{prop:cara} with homogeneous parameters,
+$\logit\mu_{k}=\tau u_{k}$ and $\logit p=(1/K)\sum_{k}\tau u_{k}$, so
+$\logit\mu_{k}-\logit p=\tau(u_{k}-\bar u)$, which is zero only on the
+measure-zero set $\{u_{1}=\cdots=u_{K}\}$. The CARA demand
+\eqref{eq:cara-demand} is thus nonzero almost surely, but market clearing
+imposes $\sum_{k}x_{k}=0$, and aggregate volume
+$V_{\mathrm{vol}}=\tfrac12\sum_{k}|x_{k}|$ is strictly positive on a
+full-measure set. Under CRRA, posteriors $\mu_{k}=\Lam(\tau u_{k})$ differ
+generically across $k$ (Proposition~\ref{prop:non-cara}), and the price
+$p\in(\min_{k}\mu_{k},\max_{k}\mu_{k})$ by market clearing, so
+$\mu_{k}-p\neq 0$ for some $k$ on a full-measure set, and the CRRA demand
+\eqref{eq:crra-demand} is nonzero. (The CARA conclusion that volume is
+strictly positive in the no-learning equilibrium is what
+\citet{Milgrom1982} would call a no-trade theorem violation; it
+disappears precisely once price-based learning is introduced and
+posteriors collapse to a common value, hence the REE statement below.)
+
+\emph{REE.} At the CARA REE, all posteriors coincide with the
+fully-revealing price $\Lam(\Tstar)$, so
+$\logit\mu_{k}-\logit p=0$ for every $k$ and every realisation, and the
+demand of \eqref{eq:cara-demand} is identically zero --- the standard
+\citet{Milgrom1982} no-trade outcome. At the contour-converged CRRA REE
+of Proposition~\ref{prop:ree}, posteriors disagree on a full-measure set
+(verified numerically), so demands and aggregate volume are strictly
+positive on a full-measure set.
 \end{proof}
 
 \begin{proof}[Proof of Proposition~\ref{prop:value}]
-The certainty-equivalent value of an additional signal is the integral of
-the squared posterior shift induced by the new signal, weighted by the
-agent's marginal utility. Under CARA full revelation the posterior shift
-is zero by construction, so $V_{\mathrm{CARA}}(\tau)=0$. Under CRRA partial
-revelation the posterior shift is strictly positive on a set of full
-measure, and the integral of a non-negative integrand that is strictly
-positive on a positive-measure set is strictly positive. Differentiability
-in $\tau$ at the origin and positivity of the derivative follow from a
-Taylor expansion of the posterior in $\tau$.
+The certainty-equivalent value of acquiring an additional precision-$\tau$
+signal $u_{0}$ at the converged REE is
+\[
+   V(\tau) \;=\;
+   \E\!\left[\,\mathrm{CE}\!\left(\mu^{+}\!,p\right)
+            -\mathrm{CE}\!\left(\mu^{-}\!,p\right)\,\right],
+\]
+where $\mu^{+}$ is the posterior of an agent who additionally observes
+$u_{0}$, $\mu^{-}$ is the posterior of an agent who does not, $p$ is the
+equilibrium price formed by the existing $K$ groups, and $\mathrm{CE}$
+denotes the agent's certainty equivalent of optimal trading at posterior
+$(\cdot)$ and price $p$ under her preferences.
+Under CARA at the REE, $p=\Lam(\Tstar)$ already encodes the joint
+posterior; hence $\mu^{+}=\mu^{-}=\Lam(\Tstar)$ for almost every realisation
+that conditions on the price (Proposition~\ref{prop:cara}), and the
+integrand vanishes almost surely. Therefore
+$V_{\mathrm{CARA}}(\tau)=0$ for every $\tau$.
+Under CRRA at the REE, $p$ encodes $\Tstar$ only partially
+(Proposition~\ref{prop:ree}), so $\mu^{+}\neq\mu^{-}$ on a positive-measure
+set; the additional signal $u_{0}$ generates a strictly positive posterior
+shift, the demand-best-response is strictly nontrivial, and the
+certainty-equivalent gap is strictly positive on a positive-measure set.
+The integrand is non-negative everywhere (an agent can always replicate
+$\mathrm{CE}(\mu^{-},p)$ by ignoring the signal), so $V_{\mathrm{CRRA}}(\tau)>0$.
+For the small-$\tau$ derivative: a Taylor expansion of the posterior in
+$\tau$ gives $\mu^{\pm}-\bar\mu=O(\tau)$ with leading-order coefficient
+proportional to $u_{0}$ for $\mu^{+}$ and $0$ for $\mu^{-}$; the
+certainty-equivalent shift is order $\tau^{2}$ via the second-order
+condition for optimal trading, and $V_{\mathrm{CRRA}}'(0^{+})>0$ follows.
+\todo{The full monotonicity of $V_{\mathrm{CRRA}}(\tau)$ in $\tau$ at
+arbitrary $\tau$ is asserted by Figure~\ref{fig:value-info} but not proved;
+a clean proof would require the contour-derived posterior shift to be
+monotone in $\tau$, which we verify numerically but do not establish
+analytically.}
 \end{proof}
 
 \begin{proof}[Proof of Proposition~\ref{prop:gs}]
-Existence of the no-equilibrium under CARA: by
-Proposition~\ref{prop:value}, $V_{\mathrm{CARA}}(\tau)=0<c$, hence no agent
-acquires; but with no acquisition the price is uninformative, hence
-$V_{\mathrm{CARA}}(\tau)$ at the implied equilibrium is strictly positive --- a
-contradiction. Existence of the CRRA interior equilibrium: by
-Proposition~\ref{prop:value}, $V_{\mathrm{CRRA}}$ is continuous and strictly
-decreasing in the fraction of acquirers (more acquirers $\Rightarrow$ more
-informative price $\Rightarrow$ smaller marginal value). For $c<\bar c\equiv
-V_{\mathrm{CRRA}}|_{\text{full acquisition}}$, the intermediate-value theorem
-delivers an interior fixed point.
+\emph{Non-existence under CARA.} Suppose for contradiction that there
+exists a CARA REE with no noise and a strictly positive measure
+$\lambda^{\star}\in(0,1]$ of agents acquiring the signal at cost $c>0$.
+By Proposition~\ref{prop:cara} and the homogeneity of the acquiring
+group, the price function in such an equilibrium is fully revealing of
+the realised $\Tstar$ over the acquiring group. By
+Proposition~\ref{prop:value}, $V_{\mathrm{CARA}}(\tau)=0$ at this price,
+so the marginal acquirer earns net payoff $-c<0$ from acquisition and
+strictly prefers not to acquire. Hence $\lambda^{\star}>0$ cannot be an
+equilibrium, contradicting the assumption.
+
+\emph{Existence under CRRA.} Let $\lambda\in[0,1]$ denote the fraction of
+agents acquiring the signal, and let $V_{\mathrm{CRRA}}(\tau,\lambda)$ denote
+the marginal value of acquisition at fraction $\lambda$. By
+Proposition~\ref{prop:value}, $V_{\mathrm{CRRA}}(\tau,0^{+})>0$ (the
+no-acquisition price reveals nothing, so the first acquirer reaps the
+full informational rent), and $V_{\mathrm{CRRA}}$ is continuous and weakly
+decreasing in $\lambda$ on $(0,1]$ (more acquirers $\Rightarrow$ more
+informative price $\Rightarrow$ smaller marginal informational rent).
+Define $\bar c\equiv V_{\mathrm{CRRA}}(\tau,1)$, the marginal value at
+full acquisition; for any $c\in(0,\bar c)$, the equation
+$V_{\mathrm{CRRA}}(\tau,\lambda)=c$ has at least one solution
+$\lambda^{\star}(c)\in(0,1)$ by the intermediate-value theorem, at which
+the marginal acquirer is indifferent. The strict monotonicity of
+$V_{\mathrm{CRRA}}$ in $\lambda$ is asserted from
+Proposition~\ref{prop:ree}: more revealing prices reduce the rent on
+private information. \todo{A formal proof of strict monotonicity in
+$\lambda$ requires the contour-converged price function to be
+monotonically more informative as $\lambda$ rises; verifying this
+numerically across a $\lambda$-grid and integrating into a
+strict-monotonicity statement closes the gap.}
 \end{proof}
 
 \section{Numerical Implementation of the Contour Method}\label{app:contour}
