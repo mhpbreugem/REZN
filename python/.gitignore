@@ -2,3 +2,6 @@ __pycache__/
 search_het_results.csv
 pchip_continuation_results.csv
 *.bak.tonight
+pchip_G11u20_forward.csv
+pchip_continuation_run.log
+sweep_status.txt
