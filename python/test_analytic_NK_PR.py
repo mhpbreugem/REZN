@@ -12,9 +12,9 @@ import rezn_het as rh
 import pchip_jacobian as pj
 
 G, UMAX, TAU, GAMMA = 11, 2.0, 3.4, 3.0
-MAXITERS = 40
-LGMRES_TOL = 1e-10
-LGMRES_MAXITER = 200
+MAXITERS = 10
+LGMRES_TOL = 1e-7
+LGMRES_MAXITER = 60
 ABSTOL = 1e-9
 
 u = np.linspace(-UMAX, UMAX, G)
