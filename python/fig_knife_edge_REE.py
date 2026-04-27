@@ -36,11 +36,11 @@ import rezn_pchip as rp
 G            = 15
 UMAX         = 2.0
 GAMMAS       = [(1.0, "1.0", "red", "dashed", "very thick")]
-TAUS         = np.logspace(np.log10(0.1), np.log10(20.0), 30)
+TAUS         = np.logspace(np.log10(0.1), np.log10(8.0), 25)
 N_GH         = 60
 ANDERSON_M   = 8
-MAXITERS     = 1500
-ABSTOL       = 1e-7
+MAXITERS     = 400
+ABSTOL       = 1e-6
 OUT          = os.path.join(os.path.dirname(os.path.dirname(__file__)),
                               "figures")
 
@@ -148,8 +148,10 @@ def main():
         gammas = np.array([gamma, gamma, gamma])
         ones3  = np.array([1.0, 1.0, 1.0])
         vals = np.empty(len(taus))
-        # Continuation: solve high τ first, then sweep down with warm-starts
-        order = np.argsort(taus)[::-1]
+        # Continuation: solve LOWEST τ first (cold start trivial), then
+        # sweep up with warm-starts. High-τ saturation is the danger
+        # zone — by the time we get there, P* is already in-basin.
+        order = np.argsort(taus)
         last_P = None
         for idx in order:
             tau = float(taus[idx])
@@ -162,6 +164,13 @@ def main():
                 P_init=last_P)
             P_star = res["P_star"]
             finf = float(np.abs(res["residual"]).max())
+            # Skip cells where the solver clearly didn't converge
+            if not np.isfinite(finf) or finf > 1e-2:
+                print(f"  τ={tau:7.3f}  iters={len(res['history']):4d}  "
+                       f"Finf={finf:.2e}  DIVERGED — keeping last_P, "
+                       f"using R²=NaN", flush=True)
+                vals[idx] = np.nan
+                continue
             R2 = _one_minus_R2(P_star, u_grid, tau)
             vals[idx] = R2
             last_P = P_star
@@ -182,7 +191,8 @@ def main():
     addplots = []
     for gamma, label, color, style, thick in GAMMAS:
         coords = " ".join(f"({tau:.6g},{v:.6g})"
-                           for tau, v in zip(TAUS, results[gamma]))
+                           for tau, v in zip(TAUS, results[gamma])
+                           if np.isfinite(v))
         addplots.append(
             f"\\addplot[{color}, {style}, {thick}] "
             f"coordinates {{{coords}}};\n"
@@ -190,7 +200,7 @@ def main():
     # CARA reference (closed-form: REE = no-learning = FR)
     addplots.append(
         "\\addplot[black, dash dot, ultra thick] "
-        "coordinates {(0.1,0) (20,0)};\n"
+        "coordinates {(0.1,0) (8,0)};\n"
         "\\addlegendentry{$\\gamma = \\infty\\;(\\text{CARA})$};")
 
     tex = (
@@ -205,10 +215,10 @@ def main():
         "\\begin{axis}[\n"
         "    width=8cm, height=8cm,\n"
         "    xmode=log,\n"
-        "    xmin=0.1, xmax=20,\n"
+        "    xmin=0.1, xmax=8,\n"
         "    ymin=-0.001, ymax=0.15,\n"
-        "    xtick={0.1,0.2,0.5,1,2,5,10,20},\n"
-        "    xticklabels={0.1,0.2,0.5,1,2,5,10,20},\n"
+        "    xtick={0.1,0.2,0.5,1,2,5,8},\n"
+        "    xticklabels={0.1,0.2,0.5,1,2,5,8},\n"
         "    ytick={0,0.05,0.1,0.15},\n"
         "    yticklabels={0,0.05,0.10,0.15},\n"
         "    xlabel={signal precision $\\tau$},\n"
