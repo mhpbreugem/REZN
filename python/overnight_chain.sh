@@ -17,3 +17,7 @@ python3 -u strict_PR_search_4.py >> overnight.log 2>&1
 echo "=== batch 4 done at $(date) ===" >> overnight.log
 
 echo "ALL BATCHES (1..4) DONE at $(date)" >> overnight.log
+python3 -u strict_PR_search_5.py >> overnight.log 2>&1
+echo "=== batch 5 done at $(date) ===" >> overnight.log
+
+echo "ALL BATCHES (1..5) DONE at $(date)" >> overnight.log
