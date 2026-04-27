@@ -85,53 +85,39 @@ def _f1(u, tau):
     return np.sqrt(tau / (2 * np.pi)) * np.exp(-tau * 0.5 * (u - 0.5)**2)
 
 
-def _one_minus_R2(P_star, u_grid, tau, n_gh=N_GH):
-    """Weighted 1-R² of logit(P) on T*=τΣu, prior ½(f₀³+f₁³).
+def _one_minus_R2(P_star, u_grid, tau):
+    """Weighted 1-R² on the discrete G×G×G grid with prior ½(f₀³+f₁³).
 
-    Uses GH quadrature: for each state v ∈ {0,1}, GH nodes at
-    (v−½) + ξ/√τ; combine on the diagonal v_i=v_j=v_l=v with prefactor
-    ½ each (matches the prescribed weight)."""
-    xi, w_raw = hermegauss(n_gh)
-    w = w_raw / np.sqrt(2 * np.pi)
-    # Build a single (N, 3) coordinate array covering both v=0 and v=1
-    coords = []
-    weights = []
-    Ts = []
-    for v in (0, 1):
-        u_node = (v - 0.5) + xi / np.sqrt(tau)   # shape (n_gh,)
-        # Triple GH nodes (i, j, l)
-        ii, jj, ll = np.meshgrid(np.arange(n_gh),
-                                   np.arange(n_gh),
-                                   np.arange(n_gh), indexing="ij")
-        ii = ii.ravel(); jj = jj.ravel(); ll = ll.ravel()
-        u_i = u_node[ii]; u_j = u_node[jj]; u_l = u_node[ll]
-        coords.append(np.stack([u_i, u_j, u_l], axis=-1))
-        weights.append(0.5 * w[ii] * w[jj] * w[ll])
-        Ts.append(tau * (u_i + u_j + u_l))
-    coords  = np.concatenate(coords, axis=0)
-    weights = np.concatenate(weights, axis=0)
-    Ts      = np.concatenate(Ts, axis=0)
-    # Restrict to inside the solver grid (extrapolation gets unstable for
-    # the steep saturated regions). For τ moderate, GH nodes mostly land
-    # inside [-UMAX, UMAX]; outside we drop with zero weight.
-    mask = ((coords[:, 0] >= u_grid[0]) & (coords[:, 0] <= u_grid[-1]) &
-             (coords[:, 1] >= u_grid[0]) & (coords[:, 1] <= u_grid[-1]) &
-             (coords[:, 2] >= u_grid[0]) & (coords[:, 2] <= u_grid[-1]))
-    coords  = coords[mask]
-    weights = weights[mask]
-    Ts      = Ts[mask]
-    # Evaluate P at each coord via tensor-product PCHIP
-    P_vals  = _interp3d_pchip(P_star, u_grid, coords)
-    Y       = np.log(P_vals / (1 - P_vals))
-    W       = weights.sum()
+    GH-on-PCHIP gave essentially zero weight at low τ because most GH
+    nodes land outside [-UMAX, UMAX] and were dropped. The grid sum
+    integrates against the *same* prior, just on the cells the solver
+    actually evaluated — fully stable and matches the no-learning
+    figure's regression.
+    """
+    G = P_star.shape[0]
+    P_clip = np.clip(P_star, 1e-12, 1 - 1e-12)
+    Y = np.log(P_clip / (1 - P_clip)).ravel()
+    Ts = np.empty(G ** 3)
+    Ws = np.empty(G ** 3)
+    f0_u = _f0(u_grid, tau)
+    f1_u = _f1(u_grid, tau)
+    k = 0
+    for i in range(G):
+        for j in range(G):
+            for l in range(G):
+                Ts[k] = tau * (u_grid[i] + u_grid[j] + u_grid[l])
+                Ws[k] = 0.5 * (f0_u[i] * f0_u[j] * f0_u[l]
+                                 + f1_u[i] * f1_u[j] * f1_u[l])
+                k += 1
+    W   = Ws.sum()
     if W <= 0.0:
         return 0.0
-    Y_m = (weights * Y).sum() / W
-    T_m = (weights * Ts).sum() / W
-    Syy = (weights * (Y - Y_m) ** 2).sum()
-    STT = (weights * (Ts - T_m) ** 2).sum()
-    SyT = (weights * (Y - Y_m) * (Ts - T_m)).sum()
-    if Syy <= 0.0 or STT <= 0.0:
+    Y_m = (Ws * Y).sum() / W
+    T_m = (Ws * Ts).sum() / W
+    Syy = (Ws * (Y - Y_m) ** 2).sum()
+    STT = (Ws * (Ts - T_m) ** 2).sum()
+    SyT = (Ws * (Y - Y_m) * (Ts - T_m)).sum()
+    if Syy <= 1e-30 or STT <= 1e-30:
         return 0.0
     return 1.0 - (SyT * SyT) / (Syy * STT)
 
