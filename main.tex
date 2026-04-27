@@ -15,8 +15,14 @@
 \usepackage{subcaption}
 \usepackage[round,authoryear]{natbib}
 \usepackage{setspace}
-\usepackage[hidelinks]{hyperref}
+\usepackage{xcolor}
+\usepackage[hidelinks,colorlinks=false]{hyperref}
 \usepackage{enumitem}
+
+% --- TODO markers (red, for items still outstanding) ---
+\definecolor{todoRed}{RGB}{200,0,0}
+\newcommand{\todo}[1]{{\color{todoRed}\textsf{\small[\textbf{TODO:} #1]}}}
+\newcommand{\todopar}[1]{\par\noindent{\color{todoRed}\textsf{\small\textbf{[TODO]} #1}}\par}
 
 % --- theorem environments ---
 \newtheorem{proposition}{Proposition}
@@ -57,25 +63,29 @@
 % =====================================================================
 \begin{abstract}
 \noindent
-A long tradition in financial economics treats noise traders as a structural
-prerequisite for partial revelation of information through prices: without
-exogenous shocks to supply or demand, prices fully aggregate private signals
-and the Grossman--Stiglitz paradox bites. This paper shows that the
-prerequisite is preference-specific. Full revelation in the canonical
-rational-expectations model is a knife-edge property of constant absolute risk
-aversion (CARA), driven by the alignment between CARA market clearing and the
-Bayesian sufficient statistic in log-odds space. Under any non-CARA preference
-in the constant relative risk aversion (CRRA) class, market clearing
-aggregates in probability space rather than log-odds, the Jensen gap between
-these two spaces becomes the source of revelation failure, and equilibrium is
-generically partially revealing without any noise. I formalise the mechanism
-analytically in a binary-state model with $K\geq 3$ informed groups, prove
-that CARA is the unique full-revelation preference class within CRRA, and
-verify numerically that partial revelation survives full rational-expectations
-learning via a contour-integration solution of the fixed point. The
-implications are immediate: information has positive value, trade volume is
-positive, and the Grossman--Stiglitz paradox is resolved within the rational
-class without recourse to liquidity or behavioural noise.
+The textbook resolution of the Grossman--Stiglitz paradox treats noise
+traders as a structural prerequisite for partial revelation of information
+through prices. This paper shows that the prerequisite is preference-specific.
+Full revelation in the canonical rational-expectations model is a knife-edge
+property of constant absolute risk aversion (CARA): demand under CARA is
+linear in the log-odds of the posterior, market clearing therefore averages
+in log-odds space, and the Bayesian sufficient statistic for the joint
+posterior \emph{is} a sum in log-odds space; the two coincide and prices
+reveal the statistic exactly. Any departure from CARA within the constant
+relative risk aversion (CRRA) class destroys the alignment. Market clearing
+under non-CARA CRRA preferences aggregates posteriors in probability space;
+the Jensen gap between probability- and log-odds-aggregation is the size of
+the revelation failure, and equilibrium is generically partially revealing
+without any noise. I formalise the mechanism in a binary-state model with
+$K\geq 3$ informed groups, derive a third-order asymptotic expansion of the
+Jensen gap, characterise the full rational-expectations equilibrium as a
+fixed point on the price function over a three-dimensional grid, solve it
+numerically by a contour-integration method, and show that partial
+revelation survives rational learning from prices. The implications follow
+immediately: trade volume is strictly positive, the value of private
+information is strictly positive and increasing in precision, and the
+Grossman--Stiglitz paradox is resolved within the rational class without
+recourse to liquidity or behavioural noise.
 \\[6pt]
 \noindent\textbf{Keywords:} rational expectations equilibrium, partial
 revelation, noise traders, CARA, CRRA, Grossman--Stiglitz paradox,
@@ -126,27 +136,43 @@ CARA is the boundary case in which the gap closes because the link from
 posteriors to demand is itself the inverse logistic --- a coincidence of
 functional form, not an economic primitive.
 
-The contributions of the paper are four. First, I show analytically that in
-a binary-state model with $K\geq 3$ groups, the CARA market-clearing
-condition aggregates private posteriors in log-odds for arbitrary
-heterogeneity in risk aversion, signal precision, and wealth, and is fully
-revealing of the Bayesian sufficient statistic when risk aversion is
-homogeneous (Proposition~\ref{prop:cara}). Heterogeneous risk aversion
-introduces a separate route to partial revelation, but the underlying
-log-odds aggregation is robust and continues to identify CARA as the
-boundary case. Second, I show that under any CRRA
-preference with $\gamma\neq\infty$ the no-learning equilibrium is partially
-revealing, and I derive the third-order asymptotic expansion of the Jensen
-gap (Propositions~\ref{prop:non-cara},~\ref{prop:jensen}). Third, I solve the
-full rational-expectations equilibrium numerically using a contour-integration
-fixed point that identifies the unknown price function $P[i,j,l]$ on a
-three-dimensional grid; the fixed point converges, and partial revelation
-survives at the equilibrium that is consistent with rational learning from
-prices (Proposition~\ref{prop:ree}). Fourth, I trace the welfare consequences
-and the resolution of the Grossman--Stiglitz paradox: under CRRA there is
-positive trade volume, the value of private information is strictly positive
-and increasing in precision, and the paradox dissolves without recourse to
-noise (Propositions~\ref{prop:welfare}--\ref{prop:gs}).
+The paper makes one conceptual and four formal contributions. The
+conceptual contribution is to recast the question of revelation in
+preference-theoretic rather than friction-theoretic terms: in any
+rational-expectations economy without noise, full revelation requires
+that the demand functional aggregate private posteriors linearly in
+log-odds, and CARA is the unique CRRA preference class for which this is
+the case. We refer to this requirement as the \emph{alignment principle}
+in Section~\ref{sec:agg-space}. Once stated cleanly, the noise-trader
+assumption appears as a device that perturbs CARA enough to break the
+alignment artificially; non-CARA preferences break the same alignment
+endogenously and at no modelling cost.
+
+Building on this principle, the paper makes four formal contributions.
+\emph{First}, in a binary-state model with $K\geq 3$ informed groups, I
+show that the CARA market-clearing condition aggregates private posteriors
+in log-odds for arbitrary heterogeneity in $(\alpha_{k},\tau_{k},W_{k})$
+and is fully revealing of the Bayesian sufficient statistic when risk
+aversion is homogeneous (Proposition~\ref{prop:cara}). The result extends,
+with weighted log-odds aggregation, to any signal distribution in the
+exponential family. \emph{Second}, I show that under any CRRA preference
+with $\gamma\in(0,\infty)$ the no-learning equilibrium is partially
+revealing, derive the third-order asymptotic expansion of the Jensen gap
+between the actual price and the fully-revealing benchmark
+(Propositions~\ref{prop:non-cara}--\ref{prop:jensen}), and prove that the
+revelation deficit is a continuous, strictly monotone function of $\gamma$
+that vanishes only at $\gamma=\infty$ (Proposition~\ref{prop:smooth}).
+\emph{Third}, I characterise the full rational-expectations equilibrium as
+a fixed point on the price function $P[i,j,l]$ over a three-dimensional
+grid, develop a contour-integration solution method, and verify
+numerically that partial revelation survives rational learning from prices
+(Proposition~\ref{prop:ree}). \emph{Fourth}, I trace the welfare
+consequences and the resolution of the Grossman--Stiglitz paradox: trade
+volume is strictly positive under any CRRA preference, the value of
+private information $V(\tau)$ is strictly positive for every $\tau>0$ and
+increasing in precision, and the paradox dissolves within the rational
+class without recourse to noise
+(Propositions~\ref{prop:welfare}--\ref{prop:gs}).
 
 \paragraph{Relation to the literature.}
 The closest precursor is \citet{DeMarzoSkiadas1998}, who establish that in the
@@ -174,8 +200,10 @@ move from CARA to log utility. Section~\ref{sec:ree} develops the contour
 method, states the rational-expectations result, and reports converged
 posteriors. Section~\ref{sec:welfare} treats welfare, the value of
 information, and the Grossman--Stiglitz paradox.
-Section~\ref{sec:mechanisms} dissects the three mechanisms that drive
-partial revelation under heterogeneity. Section~\ref{sec:discussion} relates
+Section~\ref{sec:mechanisms} dissects the mechanisms that drive
+partial revelation under heterogeneity, including a fourth channel within
+CARA itself that learning from prices fully neutralises.
+Section~\ref{sec:discussion} relates
 the results to the wider literature, and Section~\ref{sec:conclusion}
 concludes. All proofs are in Appendix~\ref{app:proofs}; the numerical
 implementation of the contour fixed point is in Appendix~\ref{app:contour}.
@@ -306,31 +334,56 @@ this equilibrium. Throughout, we focus on equilibria in which $p$ depends on
 the signal vector only through prices the agents can observe (a standard
 internal consistency requirement).
 
-\subsection{The aggregation space}
+\subsection{The aggregation space and the alignment principle}\label{sec:agg-space}
 
 The unifying observation of this paper is that no-learning equilibrium prices
 aggregate private posteriors in a space determined by the linearisation of
-demand. To make this precise, define the \emph{aggregation map}
-$\Phi:\R^{K}\to\R$ implicitly by the market-clearing condition: $\Phi$ is
-the function such that $\logit p = \Phi(\logit\mu_{1},\ldots,\logit\mu_{K})$
-or, equivalently, $p = \Psi(\mu_{1},\ldots,\mu_{K})$. Under CARA,
-\eqref{eq:cara-demand} and \eqref{eq:no-learning} imply
+demand, and that whether prices fully reveal private information reduces to
+whether that space coincides with the space in which the Bayesian sufficient
+statistic lives. To make this precise, define the \emph{aggregation map}
+$\Psi:[0,1]^{K}\to[0,1]$ implicitly by the market-clearing condition: $\Psi$
+returns the price $p$ that solves $\sum_{k}x_{k}(\mu_{k},p)=0$ given the
+posterior vector $(\mu_{1},\ldots,\mu_{K})$. Under CARA, demand is linear in
+$\logit\mu_{k}-\logit p$, and \eqref{eq:no-learning} solves to
 \begin{equation}
    \logit p \;=\; \sum_{k=1}^{K} w_{k}\,\logit\mu_{k},
    \qquad w_{k} \;\propto\; 1/\alpha_{k},
 \label{eq:agg-cara}
 \end{equation}
-which is a weighted average in log-odds space. Under log utility,
-\eqref{eq:crra-demand} with $\gamma=1$ implies
+which is a weighted average in log-odds space. Under log utility, demand
+$x_{k}=W_{k}(\mu_{k}-p)/[p(1-p)]$ is linear in $\mu_{k}-p$, and clearing
+delivers
 \begin{equation}
    p \;=\; \sum_{k=1}^{K} w_{k}\,\mu_{k},
    \qquad w_{k} \;\propto\; W_{k},
 \label{eq:agg-log}
 \end{equation}
-which is a weighted average in probability space. The Bayesian sufficient
-statistic \eqref{eq:Tstar} \emph{is} a sum in log-odds space. The CARA
-aggregator therefore matches the sufficient statistic exactly; the log-utility
-aggregator does not, and the gap is informational.
+a weighted average in probability space. The general CRRA case with
+$\gamma\in(0,\infty)$ interpolates between these limits but, for any finite
+$\gamma$, the implicit aggregator $\Psi$ is non-affine in log-odds.
+
+The Bayesian sufficient statistic for the joint posterior is, by
+\eqref{eq:Tstar}, a sum in log-odds space:
+$\logit\PP(v=1\mid u_{1},\ldots,u_{K})=\Tstar$. Whether the equilibrium
+price reveals the joint posterior therefore reduces to whether the
+aggregation space induced by demand is informationally equivalent to
+log-odds. The CARA aggregator \eqref{eq:agg-cara} matches the sufficient
+statistic exactly: $\logit p$ is a linear combination of $\logit\mu_{k}$,
+hence of $\tau_{k}u_{k}$, hence of the components of $\Tstar$. The log
+aggregator \eqref{eq:agg-log} does not, because the logistic transform of
+the average is not the average of the logistic transforms. We summarise
+this observation as the
+\begin{quote}
+\itshape Alignment principle. Full revelation of the Bayesian sufficient
+statistic in a no-noise equilibrium requires that the demand functional
+aggregate posteriors linearly in log-odds. Within the CRRA preference
+class, only $\gamma=\infty$ (CARA) satisfies this requirement; every
+other $\gamma$ produces an aggregator that is non-affine in log-odds and
+therefore strictly partially revealing.
+\end{quote}
+The remainder of Section~\ref{sec:no-learning} formalises both halves of
+this principle, and Section~\ref{sec:ree} verifies that the principle
+survives the introduction of price-based learning.
 
 % =====================================================================
 \section{The No-Learning Benchmark}\label{sec:no-learning}
@@ -376,6 +429,22 @@ informationally equivalent. The log-odds aggregation form generalises
 asset, and a parallel extension obtains for any signal distribution in the
 exponential family with CARA preferences (\citealp{BreonDrish2015}); the
 proof in Appendix~\ref{app:proofs} sketches this extension.
+
+\begin{remark}[CARA as the unique log-odds aggregator]\label{rem:unique-cara}
+Within the CRRA preference class indexed by $\gamma\in(0,\infty]$, the
+demand function is $x_{k}=W_{k}(R_{k}-1)/[(1-p)+R_{k}p]$ with
+$R_{k}=\exp([\logit\mu_{k}-\logit p]/\gamma)$, which is linear in
+$\logit\mu_{k}-\logit p$ if and only if $\gamma=\infty$, that is, in the
+CARA limit. Consequently, CARA is the unique CRRA preference whose
+no-learning aggregator $\Psi$ takes the form \eqref{eq:agg-cara} of a
+linear functional of log-odds, and so the unique CRRA preference for which
+\(\PP(v=1\mid p)=\PP(v=1\mid u_{1},\ldots,u_{K})\) for every realisation
+under homogeneous parameters. Every other $\gamma$ produces an aggregator
+that is non-affine in log-odds, and the consequences of that non-affineness
+are the subject of the next two subsections.
+\end{remark}
+
+\todopar{A formal uniqueness theorem extending the remark to a wider preference class --- e.g.\ HARA, or a general smooth concave $U$ with $U'''(W)/U''(W)\neq U''(W)/U'(W)\cdot\mathrm{const.}$ --- would strengthen the claim to ``CARA is the unique full-revelation preference'' across HARA, not only across CRRA. Outline of argument: CARA $\Leftrightarrow$ demand linear in $\logit\mu-\logit p$ on a binary asset $\Leftrightarrow$ FOC reduces to $\logit\mu-\logit p=\alpha x$. Any preference outside CARA fails the linearity step.}
 
 \subsection{Non-CARA implies partial revelation}
 
@@ -703,9 +772,14 @@ realisation are those of Table~\ref{tab:posteriors}.
 \begin{figure}[htbp]
    \centering
    \includegraphics[width=0.62\textwidth]{figures/fig4_posteriors.pdf}
-   \caption{(\emph{Forthcoming}.) Converged REE posteriors and prices across
-   a range of signal realisations under CARA and CRRA. Placeholder while the
-   $G\geq 100$ contour solver runs to publication tolerance.}
+   \caption{Converged REE posteriors and prices across a range of signal
+   realisations under CARA and CRRA.
+   \todo{Replace the placeholder figure once the $G\geq 100$ contour
+   solver in Julia returns. Required panels: (a) $\mu_{1},\mu_{2},\mu_{3}$
+   and $p$ as a function of $u_{1}$ at $u_{2}=u_{3}=0$; (b) the same as a
+   function of $\Tstar$ at fixed empirical third moment, illustrating
+   that CRRA posteriors and price track $\Tstar$ less than perfectly while
+   CARA traces the identity exactly.}}
    \label{fig:posteriors}
 \end{figure}
 
@@ -744,10 +818,12 @@ and converges to zero only in the CARA limit.
 \begin{figure}[htbp]
    \centering
    \includegraphics[width=0.62\textwidth]{figures/fig7_volume.pdf}
-   \caption{(\emph{Forthcoming}.) Aggregate trade volume as a function of
-   $\gamma$. Volume is strictly positive across $(0,\infty)$ and converges
-   to zero as $\gamma\to\infty$. Placeholder while the converged-REE volume
-   computation completes.}
+   \caption{Aggregate trade volume as a function of $\gamma$. Volume is
+   strictly positive across $(0,\infty)$ and converges to zero as
+   $\gamma\to\infty$.
+   \todo{Replace placeholder once the converged-REE volume sweep over
+   $\gamma\in[0.1,30]$ at $G\geq 50$ completes; include the CARA point as
+   $\gamma=\infty$ marker on the right axis.}}
    \label{fig:volume}
 \end{figure}
 
@@ -772,9 +848,12 @@ $V_{\mathrm{CRRA}}'(\tau)>0$ on a neighbourhood of the origin.
 \begin{figure}[htbp]
    \centering
    \includegraphics[width=0.62\textwidth]{figures/fig8_value_info.pdf}
-   \caption{(\emph{Forthcoming}.) Value of information $V(\tau)$ at the
-   converged REE. CARA pins the value at zero for every precision; CRRA
-   delivers strictly positive value, increasing in $\tau$.}
+   \caption{Value of information $V(\tau)$ at the converged REE. CARA pins
+   the value at zero for every precision; CRRA delivers strictly positive
+   value, increasing in $\tau$.
+   \todo{Replace placeholder once $V(\tau)$ is computed by ex-ante
+   integration of the CRRA certainty-equivalent at the converged REE for
+   $\tau\in[0.1,5]$ at $\gamma=0.5$; add CARA baseline as $V\equiv 0$.}}
    \label{fig:value-info}
 \end{figure}
 
@@ -813,62 +892,91 @@ remains within the rational class.
 \begin{figure}[htbp]
    \centering
    \includegraphics[width=0.62\textwidth]{figures/fig9_GS.pdf}
-   \caption{(\emph{Forthcoming}.) Equilibrium fraction of agents acquiring
-   a precision-$\tau$ signal as a function of the cost $c$. CARA: zero
-   acquisition for every $c>0$ (the paradox). CRRA: interior acquisition
-   on $(0,\bar c)$, no noise traders required.}
+   \caption{Equilibrium fraction of agents acquiring a precision-$\tau$
+   signal as a function of the cost $c$. CARA: zero acquisition for every
+   $c>0$ (the paradox). CRRA: interior acquisition on $(0,\bar c)$, no
+   noise traders required.
+   \todo{Replace placeholder once the acquisition fixed point
+   $\lambda^{\star}(c)\in[0,1]$ is solved at $\gamma=0.5$, $\tau=2$;
+   include comparison with the noise-trader benchmark of
+   \citet{GrossmanStiglitz1980} on the same axes.}}
    \label{fig:gs}
 \end{figure}
 
 % =====================================================================
-\section{Three Mechanisms for Partial Revelation}\label{sec:mechanisms}
+\section{Mechanisms for Partial Revelation}\label{sec:mechanisms}
 
 Partial revelation under CRRA arises from a single source --- the
 mismatch between the market-clearing aggregation space and the Bayesian
-sufficient statistic --- but the size of the deficit can be amplified by
-two further channels of heterogeneity. This section disentangles them.
+sufficient statistic --- but its size is amplified by two channels of
+heterogeneity, and a separate fourth channel arises within CARA itself in
+the no-learning equilibrium. This section disentangles the four.
 
 \paragraph{Mechanism 1: pure Jensen gap.} With identical risk aversion and
 identical signal precision across groups, partial revelation arises purely
 from the curvature of $\Lam$ in \eqref{eq:log-clearing}. The deficit is
 small but strictly positive (Proposition~\ref{prop:non-cara}).
 
-\paragraph{Mechanism 2: heterogeneous risk aversion.} If the $K$ groups
-differ in $\gamma$, the more risk-tolerant agents take larger positions and
-have disproportionate weight in clearing \eqref{eq:no-learning}. In log-odds
-terms, the implied weights $w_{k}$ depart from the equal weighting that
-matches the sufficient statistic, and the deficit expands.
+\paragraph{Mechanism 2: heterogeneous CRRA risk aversion.} If the $K$
+groups differ in $\gamma_{k}\in(0,\infty)$, the more risk-tolerant agents
+take larger positions and have disproportionate weight in clearing
+\eqref{eq:no-learning}. In log-odds terms, the implied weights $w_{k}$
+depart from the equal weighting that matches the sufficient statistic, and
+the deficit expands.
 
-\paragraph{Mechanism 3: heterogeneous signal precision.} If groups differ in
-$\tau_{k}$, then the optimal weighting that recovers $\Tstar$ exactly is
+\paragraph{Mechanism 3: heterogeneous signal precision.} If groups differ
+in $\tau_{k}$, then the optimal weighting that recovers $\Tstar$ exactly is
 $w_{k}\propto\tau_{k}$. Market clearing under CRRA does not implement this
 weighting in general; the deficit depends on the alignment between the
-$\gamma$- and $\tau$-induced weights.
+$\gamma$- and $\tau$-induced weights. When low-$\gamma$ (more
+risk-tolerant) groups also happen to be high-$\tau$ (more precise), the
+two heterogeneities partially offset and the deficit is moderate. When
+they are misaligned, they compound: an aggressive but uninformed group
+acts as an \emph{endogenous noise trader}, dragging the price away from
+$\Tstar$.
 
-When low-$\gamma$ (more risk-tolerant) groups happen also to be high-$\tau$
-(more precise), the two heterogeneities partially offset --- the weighting
-implicit in clearing comes closer to the sufficient-statistic weighting,
-and the deficit is moderate. When the two heterogeneities are misaligned,
-they compound: an aggressive but uninformed group acts as an
-\emph{endogenous noise trader}, dragging the price away from $\Tstar$.
+\paragraph{Mechanism 4: heterogeneous CARA risk aversion (no learning only).}
+A fourth route to no-learning partial revelation arises within CARA itself.
+By Proposition~\ref{prop:cara}, the no-learning CARA price is
+$\logit p=\sum_{k}w_{k}\tau_{k}u_{k}$ with $w_{k}\propto\alpha_{k}^{-1}$.
+When $\alpha_{k}$ is heterogeneous and $\tau_{k}$ is homogeneous, the
+linear combination revealed by the price is not a scalar multiple of
+$\Tstar=\tau\sum u_{k}$, and the no-learning equilibrium is partially
+revealing. The striking feature of this mechanism is that
+\emph{learning from prices restores full revelation}: the candidate
+fully-revealing price function $p=\Lam(\Tstar)$ delivers identical
+posteriors to every CARA agent and zero net trade, hence clears the market
+for arbitrary $(\alpha_{k})$. Mechanisms 1--3, by contrast, persist at the
+REE because no candidate price function with the right informational
+content also clears the market under non-CARA preferences.
+Heterogeneous risk aversion is therefore a no-learning channel under CARA
+but not a REE channel; in the strict knife-edge sense, only departures
+from the CARA preference class produce partial revelation at the REE.
+\todo{Add a numerical illustration: $1-R^{2}$ for the no-learning CARA
+equilibrium with $\alpha=(1,3,10)$ at homogeneous $\tau$ vs.\ the
+converged REE which should return to zero. Confirms Remark~\ref{rem:unique-cara}
+and the special role of CARA at the REE.}
 
 \begin{table}[htbp]
    \centering
-   \caption{Three mechanisms for partial revelation. $K=3$, no learning,
+   \caption{Mechanisms for partial revelation. $K=3$, no learning,
    $G=20$, configurations as listed. Heterogeneity in $\gamma$ and $\tau$
    compounds the pure Jensen gap, with the largest deficit when the
-   aggressive group is the least informed.}
+   aggressive group is the least informed. Heterogeneity in $\alpha$
+   under CARA also produces no-learning partial revelation but is
+   washed out at the REE.}
    \label{tab:mechanisms}
    \begin{tabular}{lcl}
       \toprule
       Configuration & $1-R^{2}$ & Channel \\
       \midrule
       Equal $\gamma$, equal $\tau$ (CRRA)        & 0.011 & pure Jensen gap \\
-      Het.\ $\gamma=(1,3,10)$, equal $\tau$      & 0.247 & + het.\ risk aversion \\
+      Het.\ $\gamma=(1,3,10)$, equal $\tau$      & 0.247 & + het.\ CRRA risk aversion \\
       Equal $\gamma$, het.\ $\tau=(1,3,10)$      & 0.082 & + het.\ precision \\
       Het.\ $\gamma$ + het.\ $\tau$ aligned      & 0.100 & low-$\gamma$ = high-$\tau$ (stabilising) \\
       Het.\ $\gamma$ + het.\ $\tau$ opposed      & 0.211 & low-$\gamma$ = low-$\tau$ (destabilising) \\
       Extreme opposed                            & 0.604 & endogenous noise trader \\
+      Het.\ $\alpha$ under CARA (no-learning)    & \todo{run} & het.\ CARA, REE-fixed \\
       \bottomrule
    \end{tabular}
 \end{table}
@@ -876,18 +984,30 @@ they compound: an aggressive but uninformed group acts as an
 \begin{figure}[htbp]
    \centering
    \includegraphics[width=0.62\textwidth]{figures/fig6_mechanisms.pdf}
-   \caption{(\emph{Forthcoming}.) Decomposition of the revelation deficit
-   across the three mechanisms tabulated in Table~\ref{tab:mechanisms}.
-   Placeholder while the heterogeneous-agent solver completes.}
+   \caption{Decomposition of the revelation deficit across the
+   mechanisms tabulated in Table~\ref{tab:mechanisms}.
+   \todo{Replace placeholder once the heterogeneous-agent solver
+   completes the configurations. Add a separate panel illustrating the
+   REE convergence from positive $1-R^{2}$ to zero for Mechanism 4 (het.\
+   CARA $\alpha$), highlighting the contrast with Mechanisms 2--3.}}
    \label{fig:mechanisms}
 \end{figure}
 
-The third mechanism is striking: at extreme misalignment the deficit
-exceeds $0.6$ without any exogenous noise. Heterogeneous risk aversion and
-information are not exotic ingredients; they are the bread and butter of
-applied finance. The implication is that ``noise trading'' as observed in
-the data may, in significant part, be a manifestation of this mechanism
-rather than a behavioural primitive.
+Two features deserve emphasis. First, Mechanism 3 at extreme misalignment
+delivers a deficit exceeding $0.6$ without any exogenous noise: an
+aggressive but uninformed CRRA group reproduces, within a fully rational
+economy, the comparative statics that the standard literature attributes
+to behavioural noise traders. Heterogeneous risk aversion and information
+are not exotic ingredients; they are the bread and butter of applied
+finance. ``Noise trading'' as observed in the data may, in significant
+part, be a manifestation of Mechanism 3 rather than a behavioural
+primitive. Second, Mechanism 4 illustrates the knife-edge in the cleanest
+possible way: heterogeneity in CARA risk aversion produces no-learning
+partial revelation but is fully neutralised by REE learning. The same
+heterogeneity introduced in $\gamma$ rather than $\alpha$ is not so
+neutralised. The contrast is not about the heterogeneity itself; it is
+about whether the underlying preference class aligns with the log-odds
+sufficient statistic.
 
 % =====================================================================
 \section{Discussion}\label{sec:discussion}
@@ -930,7 +1050,47 @@ noise; the present results show that, under CRRA, it can be a fully
 rational equilibrium phenomenon driven by misalignment between $\gamma$
 and $\tau$.
 
-\subsection{Extensions}
+\subsection{The vanishing-noise selection}\label{sec:vanishing-noise}
+
+A long-standing intuition in the noisy rational-expectations literature
+treats full revelation as a limit property: as the variance $\sigma_{z}^{2}$
+of liquidity supply shrinks to zero, the noisy CARA equilibrium converges
+to the fully revealing benchmark. This intuition is correct \emph{within
+CARA} but is not, as is sometimes claimed, a generic property of the
+rational class. The argument in this paper recasts the question. The
+no-noise CRRA equilibrium is partially revealing by
+Proposition~\ref{prop:non-cara}, so any noise-vanishing sequence in a CRRA
+economy can converge only to a partially revealing limit. The selection
+induced by $\sigma_{z}\to 0$ is therefore preference-dependent: under CARA
+it picks out the fully revealing benchmark, while under any non-CARA CRRA
+preference it picks out the strictly partially revealing no-noise
+equilibrium of Section~\ref{sec:no-learning}. The implication is that the
+``limit'' interpretation of full revelation is not an inevitable feature
+of vanishing frictions but a consequence of CARA. Conjecturing the formal
+statement, let $p_{\sigma_{z}}^{\gamma}$ denote the equilibrium price
+function in the CRRA-with-noise model with parameter $\gamma$ and supply
+noise variance $\sigma_{z}^{2}$:
+\begin{equation*}
+   \lim_{\sigma_{z}\to 0} p_{\sigma_{z}}^{\gamma}
+   \;=\;
+   \begin{cases}
+      \Lam(\Tstar/K) & \text{if } \gamma = \infty\ \text{(CARA)}, \\
+      p^{\gamma}_{\text{PR}} \neq \Lam(\Tstar/K) & \text{if } \gamma\in(0,\infty),
+   \end{cases}
+\end{equation*}
+where $p^{\gamma}_{\text{PR}}$ is the partially revealing no-noise
+equilibrium price function characterised in Section~\ref{sec:ree}.
+\todo{Make this a formal proposition with conditions on the convergence
+mode (pointwise on the signal grid, or $L^{2}$ on the joint signal
+distribution). The argument is: (i) for finite $\sigma_{z}$, the noisy
+CRRA equilibrium exists and is continuous in $\sigma_{z}$ by an
+extension of the Breon-Drish argument; (ii) at $\sigma_{z}=0$, the
+no-noise CRRA equilibrium is partially revealing; (iii) continuity in
+$\sigma_{z}$ then forces the limit to be the partially revealing no-noise
+price. The CARA case is the boundary because at $\sigma_{z}=0$ the no-noise
+CARA price is also the fully revealing price.}
+
+
 
 Several extensions are immediate. First, the binary asset can be replaced
 by a Gaussian or non-Gaussian payoff; the lognormal robustness exercise of
