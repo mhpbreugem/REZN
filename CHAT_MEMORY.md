@@ -137,3 +137,25 @@ PLACEHOLDER (yellow background):
 3. Prop 4 proof: numerical only or analytical bound?
 4. Include lognormal extension?
 5. Three mechanisms stable at G=20?
+
+## SESSION 2026-04-27 (Claude paper chat)
+- Cloned existing draft (commit 69fe4ea: "Initial paper draft")
+- Compiled cleanly: 23 pages, 0 undefined refs.
+- FOUND BUG in original Prop 1: stated "alpha_k/tau_k constant => logit(p) ∝ T*".
+  Verified numerically this is false. With alpha_k = c*tau_k, w_k*tau_k is
+  constant in k, so logit(p) ∝ sum(u_k), not T*. The correct condition is
+  alpha_k homogeneous (then w_k = 1/K, logit(p) = T*/K).
+- Pushed commit d4f2e2e fixing Prop 1, its proof, and a parallel overclaim
+  in the intro. Heterogeneous-alpha now correctly handled:
+    * No-learning: PR (a fourth mechanism, ref Section 6).
+    * REE: FR (because p = Lambda(T*) clears with zero trade for any alpha).
+- All 23 pages still compile clean after edit.
+- main.tex and main.pdf are tracked; .gitignore covers aux files.
+
+## STILL OUTSTANDING (next chat)
+- Placeholder figures fig4/6/7/8/9/10 await Claude Code's converged G>=100 runs.
+- Could add a fourth-mechanism row to Table 4 (heterogeneous alpha) for parity,
+  once numerics are in.
+- Section 6 currently lists het-gamma and het-tau as the heterogeneity
+  channels; the new Prop 1 wording forward-refs to Section 6 for het-alpha
+  too. Worth adding 1-2 sentences in Section 6 making this explicit.
