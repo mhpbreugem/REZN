@@ -14,9 +14,9 @@ from numba import njit, prange
 
 
 N_GH    = 80
-GAMMAS  = [(0.3, "0.3",      "green",  "solid",     "very thick"),
+GAMMAS  = [(0.2, "0.2",      "green",  "solid",     "very thick"),
             (1.0, "1.0",      "red",    "dashed",    "very thick"),
-            (3.0, "3.0",      "blue",   "dotted",    "very thick"),
+            (5.0, "5.0",      "blue",   "dotted",    "very thick"),
             (1e3, "\\infty", "black",  "dash dot",  "ultra thick")]
 TAUS    = np.logspace(np.log10(0.1), np.log10(20.0), 35)
 OUT     = os.path.join(os.path.dirname(os.path.dirname(__file__)),
