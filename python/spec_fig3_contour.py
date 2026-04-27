@@ -31,7 +31,7 @@ N_TRACE  = 500             # u₂ samples to trace each contour
 U1_FIXED = 1.0
 U2_REAL, U3_REAL = -1.0, 1.0
 GAMMA_CRRA = 0.5
-GAMMA_CARA = 100.0          # γ→∞ proxy
+A_CARA   = 1.0              # absolute risk aversion in CARA panel
 UMAX     = 4.0
 OUT      = os.path.join(os.path.dirname(os.path.dirname(__file__)),
                           "figures")
@@ -75,26 +75,31 @@ def _clear_price(m0, m1, m2, gamma):
     return 0.5 * (lo + hi)
 
 
-def price_at(u1, u2, u3, tau, gamma):
+def price_at_crra(u1, u2, u3, tau, gamma):
     sig = lambda u: 1.0 / (1.0 + np.exp(-tau * u))
     return _clear_price(sig(u1), sig(u2), sig(u3), gamma)
 
 
-def trace_contour(p_obs, tau, gamma, u1=U1_FIXED,
+def price_at_cara(u1, u2, u3, tau):
+    """Closed-form CARA market clearing for binary v.
+    x_k = (logit μ_k − logit p)/a, equal a → logit p = (1/K)Σ logit μ_k.
+    For binary v, logit μ_k = τ u_k, so logit p = τ(u1+u2+u3)/3.
+    """
+    return 1.0 / (1.0 + np.exp(-tau * (u1 + u2 + u3) / 3.0))
+
+
+def trace_contour(price_fn, p_obs, tau, u1=U1_FIXED,
                    n_trace=N_TRACE, umax=UMAX):
     """For each u₂ on a fine 1D grid, root-find u₃ such that
-    P(u1, u₂, u₃) = p_obs. Returns list of (u₂, u₃, T*)."""
+    price_fn(u1, u₂, u₃) = p_obs. Returns array of (u₂, u₃, T*)."""
     u2_grid = np.linspace(-umax, umax, n_trace)
     pts = []
     for u2 in u2_grid:
-        # bracket: P(u1, u2, ·) is monotone increasing in u3 (more
-        # positive signal → higher posterior → higher price).
-        f_lo = price_at(u1, u2, -umax, tau, gamma) - p_obs
-        f_hi = price_at(u1, u2,  umax, tau, gamma) - p_obs
+        f_lo = price_fn(u1, u2, -umax) - p_obs
+        f_hi = price_fn(u1, u2,  umax) - p_obs
         if f_lo * f_hi >= 0.0:
             continue
-        u3_star = brentq(lambda u3:
-                          price_at(u1, u2, u3, tau, gamma) - p_obs,
+        u3_star = brentq(lambda u3: price_fn(u1, u2, u3) - p_obs,
                           -umax, umax, xtol=1e-10)
         T_star = tau * (u1 + u2 + u3_star)
         pts.append((u2, u3_star, T_star))
@@ -123,7 +128,7 @@ _TEX = r"""\documentclass[border=2pt]{standalone}
     colormap={greys}{rgb255=(235,235,235); rgb255=(40,40,40)},
 ]
 
-\nextgroupplot[title={CARA  ($\gamma\!\to\!\infty$)}]
+\nextgroupplot[title={CARA}]
 %(cara_addplot)s
 \addplot[only marks, mark=star, mark size=4pt,
          color=black, line width=1pt]
@@ -146,18 +151,23 @@ _TEX = r"""\documentclass[border=2pt]{standalone}
 
 def main():
     os.makedirs(OUT, exist_ok=True)
-    p_obs_cara = price_at(U1_FIXED, U2_REAL, U3_REAL, TAU, GAMMA_CARA)
-    p_obs_crra = price_at(U1_FIXED, U2_REAL, U3_REAL, TAU, GAMMA_CRRA)
-    print(f"p_obs (CARA, γ={GAMMA_CARA}) = {p_obs_cara:.6f}")
-    print(f"p_obs (CRRA, γ={GAMMA_CRRA}) = {p_obs_crra:.6f}")
+
+    cara_fn = lambda u1, u2, u3: price_at_cara(u1, u2, u3, TAU)
+    crra_fn = lambda u1, u2, u3: price_at_crra(u1, u2, u3, TAU,
+                                                  GAMMA_CRRA)
+
+    p_obs_cara = cara_fn(U1_FIXED, U2_REAL, U3_REAL)
+    p_obs_crra = crra_fn(U1_FIXED, U2_REAL, U3_REAL)
+    print(f"p_obs CARA (exact)   = {p_obs_cara:.6f}")
+    print(f"p_obs CRRA γ={GAMMA_CRRA} = {p_obs_crra:.6f}")
 
     print("Tracing CARA contour …", flush=True)
-    pts_cara = trace_contour(p_obs_cara, TAU, GAMMA_CARA)
+    pts_cara = trace_contour(cara_fn, p_obs_cara, TAU)
     print(f"  {len(pts_cara)} points,  T* in "
            f"[{pts_cara[:,2].min():.3f}, {pts_cara[:,2].max():.3f}]")
 
     print("Tracing CRRA contour …", flush=True)
-    pts_crra = trace_contour(p_obs_crra, TAU, GAMMA_CRRA)
+    pts_crra = trace_contour(crra_fn, p_obs_crra, TAU)
     print(f"  {len(pts_crra)} points,  T* in "
            f"[{pts_crra[:,2].min():.3f}, {pts_crra[:,2].max():.3f}]")
 
