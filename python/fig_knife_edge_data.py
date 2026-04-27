@@ -18,7 +18,7 @@ GAMMAS  = [(0.3, "0.3",      "green",  "solid",     "very thick"),
             (1.0, "1.0",      "red",    "dashed",    "very thick"),
             (3.0, "3.0",      "blue",   "dotted",    "very thick"),
             (1e3, "\\infty", "black",  "dash dot",  "ultra thick")]
-TAUS    = np.logspace(np.log10(0.1), np.log10(25.0), 40)
+TAUS    = np.logspace(np.log10(0.1), np.log10(20.0), 35)
 OUT     = os.path.join(os.path.dirname(os.path.dirname(__file__)),
                          "figures")
 
@@ -128,7 +128,7 @@ _TEX_HEAD = r"""\documentclass[border=2pt]{standalone}
 \begin{axis}[
     width=8cm, height=8cm,
     xmode=log,
-    xmin=0.1, xmax=25,
+    xmin=0.1, xmax=20,
     ymin=-0.001, ymax=0.15,
     xtick={0.1,0.2,0.5,1,2,5,10,20},
     xticklabels={0.1,0.2,0.5,1,2,5,10,20},
