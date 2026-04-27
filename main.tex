@@ -356,6 +356,51 @@ At $\gamma=1$ this reduces to the log-utility demand
 $x_{k} = W_{k}(\mu_{k}-p)/[p(1-p)]$.
 \end{lemma}
 
+\begin{lemma}[CARA as the $\gamma\to\infty$ limit of CRRA]\label{lem:cara-limit}
+Fix $W_{k}>0$, $\mu_{k}\in(0,1)$, and $p\in(0,1)$. The CRRA demand
+\eqref{eq:crra-demand} satisfies
+\begin{equation}
+   \lim_{\gamma\to\infty}\,\gamma\cdot x_{k}^{\mathrm{CRRA}}(\mu_{k},p;\gamma)
+   \;=\; W_{k}\cdot\bigl[\logit(\mu_{k})-\logit(p)\bigr],
+\label{eq:cara-as-crra-limit}
+\end{equation}
+which is the CARA demand \eqref{eq:cara-demand} with absolute risk
+aversion $\alpha=1/W_{k}$. Equivalently, the rescaled demand
+$\hat x_{k}^{\gamma}\equiv\gamma\cdot x_{k}^{\mathrm{CRRA}}/W_{k}$ converges
+pointwise on $(0,1)\times(0,1)$ to $x_{k}^{\mathrm{CARA}}|_{\alpha=1}$ as
+$\gamma\to\infty$.
+\end{lemma}
+
+\begin{proof}
+Let $\delta\equiv [\logit(\mu_{k})-\logit(p)]/\gamma$, so $R_{k}=e^{\delta}$.
+For each fixed $(\mu_{k},p)\in(0,1)^{2}$ we have $\delta\to 0$ as
+$\gamma\to\infty$. Taylor-expanding the exponential gives
+$R_{k}-1=\delta+\delta^{2}/2+O(\delta^{3})$, hence
+\[
+   x_{k}^{\mathrm{CRRA}}
+   \;=\; \frac{W_{k}\,(R_{k}-1)}{1+p(R_{k}-1)}
+   \;=\; \frac{W_{k}\,[\delta+O(\delta^{2})]}{1+p\,\delta+O(\delta^{2})}
+   \;=\; W_{k}\,\delta\bigl[1+O(\delta)\bigr].
+\]
+Multiplying by $\gamma$ and using $\gamma\delta=\logit(\mu_{k})-\logit(p)$
+yields \eqref{eq:cara-as-crra-limit}. The convergence is uniform on
+compact subsets of $(0,1)^{2}$.
+\end{proof}
+
+The CRRA demand thus shrinks at rate $1/\gamma$ as risk aversion
+increases, and the rescaled demand reproduces CARA exactly in the limit.
+This justifies the standard parametrisation $\gamma=\infty$ as the CARA
+boundary of the CRRA family, gives content to the
+``smooth-transition-to-CARA'' phrasing of
+Proposition~\ref{prop:smooth}, and grounds the Alignment Principle of
+Section~\ref{sec:agg-space}: the no-learning aggregator $\Psi^{\gamma}$
+defined by market clearing under CRRA demand converges, in the rescaled
+sense above, to the CARA aggregator \eqref{eq:agg-cara} as
+$\gamma\to\infty$. The price-level rescaling is benign for the
+informational question because $1-R^{2}(\Tstar;p_{\gamma})$ depends only
+on the price function $p_{\gamma}$, not on the demand magnitudes that
+clear it.
+
 The decisive feature of \eqref{eq:cara-demand} is that the CARA demand is
 linear in the difference $\logit(\mu_{k})-\logit(p)$. The CRRA demand is
 \emph{nonlinear} in this difference; in the small-bet limit it is
