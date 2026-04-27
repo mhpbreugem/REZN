@@ -270,7 +270,7 @@ Linear extrapolation beyond grid edges.
 (4.8329,0.049329)(6.1585,0.048715)(7.8476,0.051070)(10.0000,0.057204)
 ```
 
-γ=5.0:
+γ=5.0 (NEEDS RECOMPUTATION AT γ=4.0):
 ```
 (0.1000,0.000001)(0.1274,0.000002)(0.1624,0.000006)(0.2069,0.000013)
 (0.2637,0.000028)(0.3360,0.000058)(0.4281,0.000117)(0.5456,0.000220)
@@ -279,7 +279,7 @@ Linear extrapolation beyond grid edges.
 (4.8329,0.006659)(6.1585,0.007431)(7.8476,0.010594)(10.0000,0.012000)
 ```
 
-NOTE: G=10 has grid artifacts at high τ (especially γ=5 at τ>7).
+NOTE: G=10 has grid artifacts at high τ (especially γ=4 at τ>7).
 NEED: Recompute at G=20 with 30 points. See TASKS below.
 
 ### 6.3 1−R² vs K (number of agents, G=5, τ=1)
@@ -294,7 +294,7 @@ NEED: Recompute at G=20 with 30 points. See TASKS below.
 (3,0.012076)(4,0.010444)(5,0.009121)(6,0.008095)(7,0.007285)(8,0.006628)(9,0.006084)(10,0.005626)
 ```
 
-γ=5.0:
+γ=5.0 (NEEDS RECOMPUTATION AT γ=4.0):
 ```
 (3,0.000714)(4,0.000624)(5,0.000546)(6,0.000484)(7,0.000433)(8,0.000392)(9,0.000357)(10,0.000329)
 ```
@@ -372,7 +372,7 @@ curve at zero. All finite γ are above zero. This is done — see Section 6.2.
 
 ### Figure 2: Knife-Edge (1−R² vs τ)
 - x: τ (log scale, 0.1 to 10), y: 1−R²
-- 4 curves: γ=0.25 green solid, γ=1 red dashed, γ=5 blue dotted, CARA black dashdotted
+- 4 curves: γ=0.25 green solid, γ=1 red dashed, γ=4 blue dotted, CARA black dashdotted
 - BC20 pgfplots style (see Section 12)
 - Status: DONE at G=10. NEED G=20 recomputation (30 log-spaced τ points).
 
