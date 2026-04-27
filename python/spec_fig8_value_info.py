@@ -43,8 +43,8 @@ GAMMAS  = [(0.2, "0.2", "green",  "solid"),
             (1.0, "1.0", "red",    "dashed"),
             (5.0, "5.0", "blue",   "dotted")]
 TAUS    = [0.1, 0.2, 0.5, 1.0, 2.0, 3.0, 5.0]
-P_LO    = 1e-4
-P_HI    = 1 - P_LO
+P_LO    = 0.01           # tight filter — drops cells where bisection
+P_HI    = 1 - P_LO       # is at the [0.002, 0.998] clip and demands blow up
 W0      = 1.0
 OUT     = os.path.join(os.path.dirname(os.path.dirname(__file__)),
                           "figures")
@@ -95,23 +95,36 @@ def _f_v(u, tau, v):
 
 @njit(cache=True, fastmath=True)
 def _U(W, gamma):
-    if W <= 1e-12:
-        return -1e9       # crude floor for log/CRRA at zero wealth
+    """CRRA utility, well-defined for W > 0 always.
+        γ < 1:  U(W) = W^{1-γ}/(1-γ),     finite at W=0 (= 0).
+        γ = 1:  U(W) = log W,              -∞ at W=0.
+        γ > 1:  U(W) = W^{1-γ}/(1-γ) < 0,  -∞ at W=0 (1/W^{γ-1} blows up).
+    Numerics: clamp W ≥ 1e-15 for stability."""
+    Wc = W if W > 1e-15 else 1e-15
     if abs(gamma - 1.0) < 1e-12:
-        return np.log(W)
-    return (W ** (1.0 - gamma)) / (1.0 - gamma)
+        return np.log(Wc)
+    return (Wc ** (1.0 - gamma)) / (1.0 - gamma)
 
 
 @njit(cache=True, parallel=True)
 def _value_info(u, tau, gamma):
-    """Compute V(τ; γ) at no-learning REE."""
+    """V(τ; γ) = E_{(u_1,u_2,u_3)}[ μ_1 U(W_v=1) + (1-μ_1) U(W_v=0) ] − U(W_0)
+
+    Outer expectation is under the marginal prior over (u_1, u_2, u_3),
+    which is the equal-weight mixture ½(f_0³ + f_1³).  Inner weighting
+    over v uses the agent-1 posterior μ_1 = Λ(τ u_1) (no-learning) —
+    that's the agent's own subjective probability of v=1 given her
+    signal alone.  Together this is the agent's ex-ante expected
+    utility from trading on her own signal, which equals
+        log W_0 + E[KL(μ_1 || p)]    (for log utility, derivable),
+    a non-negative quantity by Jensen.
+    """
     n = u.shape[0]
     f0u = np.empty(n); f1u = np.empty(n); muu = np.empty(n)
     for k in range(n):
         f0u[k] = _f_v(u[k], tau, 0)
         f1u[k] = _f_v(u[k], tau, 1)
         muu[k] = 1.0 / (1.0 + np.exp(-tau * u[k]))
-    # parallel partial sums
     SU  = np.zeros(n)
     SW  = np.zeros(n)
     for i in prange(n):
@@ -124,11 +137,17 @@ def _value_info(u, tau, gamma):
                 x1 = _crra_demand(muu[i], p, gamma)
                 W_v0 = W0 + x1 * (0.0 - p)
                 W_v1 = W0 + x1 * (1.0 - p)
-                # weight per (cell, v): 0.5·f_v(u_i)·f_v(u_j)·f_v(u_l)
-                w0 = 0.5 * f0u[i] * f0u[j] * f0u[l]
-                w1 = 0.5 * f1u[i] * f1u[j] * f1u[l]
-                sU += w0 * _U(W_v0, gamma) + w1 * _U(W_v1, gamma)
-                sW += w0 + w1
+                # Inner v-expectation uses agent-1 posterior μ_1.
+                # Outer (u) weight is the marginal prior at this cell,
+                # which is ½(f_0(u_1)f_0(u_2)f_0(u_3) + f_1...f_1...).
+                mu_1 = muu[i]
+                w_cell = 0.5 * (
+                    f0u[i] * f0u[j] * f0u[l]
+                    + f1u[i] * f1u[j] * f1u[l])
+                EU_cell = mu_1 * _U(W_v1, gamma) \
+                            + (1.0 - mu_1) * _U(W_v0, gamma)
+                sU += w_cell * EU_cell
+                sW += w_cell
         SU[i] = sU; SW[i] = sW
     if SW.sum() <= 0:
         return 0.0
