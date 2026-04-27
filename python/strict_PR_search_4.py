@@ -80,8 +80,8 @@ for gamma_v, P_seed in chain.items():
     try:
         res = pj.solve_newton(
             G, taus, gammas, umax=UMAX,
-            P_init=P_seed, maxiters=20, abstol=STRICT_TOL,
-            lgmres_tol=1e-12, lgmres_maxiter=200)
+            P_init=P_seed, maxiters=12, abstol=STRICT_TOL,
+            lgmres_tol=1e-12, lgmres_maxiter=80)
         P = res["P_star"]; Finf = res["best_Finf"]
     except Exception as ex:
         P = P_seed

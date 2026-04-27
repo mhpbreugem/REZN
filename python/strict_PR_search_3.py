@@ -62,7 +62,7 @@ for gamma_v, tau_v, G in GAMMA_TAU:
             res_n = pj.solve_newton(
                 G, taus, gammas, umax=UMAX,
                 P_init=P_init, maxiters=15, abstol=TARGET,
-                lgmres_tol=1e-12, lgmres_maxiter=200)
+                lgmres_tol=1e-12, lgmres_maxiter=80)
             P = res_n["P_star"]; Finf = res_n["best_Finf"]
         except Exception:
             continue

@@ -46,8 +46,8 @@ for G, taus_t, gammas_t, label in CONFIGS:
     try:
         res_n = pj.solve_newton(
             G, taus, gammas, umax=UMAX,
-            P_init=P_warm, maxiters=20, abstol=TARGET,
-            lgmres_tol=1e-12, lgmres_maxiter=200)
+            P_init=P_warm, maxiters=12, abstol=TARGET,
+            lgmres_tol=1e-12, lgmres_maxiter=80)
         P = res_n["P_star"]; Finf = res_n["best_Finf"]
     except Exception:
         P = P_warm; Finf = float(np.abs(res_p["residual"]).max())
