@@ -602,7 +602,7 @@ collapses smoothly to zero as $\gamma\to\infty$.
    \centering
    \includegraphics[width=0.62\textwidth]{figures/fig_knife_edge.pdf}
    \caption{Revelation deficit $1-R^{2}$ in the no-learning equilibrium as a
-   function of signal precision $\tau$, for $\gamma\in\{0.2,1,5\}$ and the
+   function of signal precision $\tau$, for $\gamma\in\{0.25,1,4\}$ and the
    CARA benchmark ($\gamma=\infty$). $K=3$, $W=1$, signals on a grid of
    $G=20$. CARA produces zero deficit for every $\tau$; every finite
    $\gamma$ produces strictly positive deficit, monotone in $\gamma$.}
@@ -689,6 +689,23 @@ itself, that is, in the full REE defined by \eqref{eq:ree-posterior}. This
 section formulates the REE as a fixed point on the price function
 $P[i,j,l]$, develops a contour-integration solution method, and reports
 converged equilibria.
+
+\todopar{The numerical implementation in the companion repository
+currently exhibits multiple fixed points of the contour map $\Phi$: a
+fully revealing branch reachable from a wide range of seeds, and a
+strictly partially revealing branch that has been observed in
+exploratory runs but is not stably reachable by Picard iteration or
+naive Newton--Krylov. The convergence diagnostics reported in
+Sections~\ref{sec:convergence}--\ref{sec:posteriors} below should be
+read with this caveat: the PR branch we report is the conjectured
+target of the contour fixed point, supported by exploratory evidence
+but not yet by a reliably converged production run. A globalised
+Newton--Krylov with perturbation-based homotopy (or a careful
+characterisation of the basin boundary) is required before
+Proposition~\ref{prop:ree} can be claimed as a numerical theorem
+rather than a conjecture. Section~\ref{sec:posteriors} reports the
+exploratory PR values; Section~\ref{sec:convergence} reports the
+solver behaviour.}
 
 \subsection{The price-function fixed point}
 
@@ -796,7 +813,7 @@ expected straight contours; the CRRA ($\gamma=0.5$) slice is visibly curved.
    \label{fig:contours}
 \end{figure}
 
-\subsection{Existence and convergence}
+\subsection{Existence and convergence}\label{sec:convergence}
 
 The contour fixed point \eqref{eq:fixed-point} is solved by Picard iteration
 with damping or by Anderson acceleration. Both schemes converge across the
@@ -816,23 +833,41 @@ $(K,\tau,\gamma,W)=(3,2,0.5,1)$ at $G=5$.
    \label{fig:convergence}
 \end{figure}
 
-\begin{proposition}[REE partial revelation]\label{prop:ree}
-Fix $K=3$, $\tau=2$, $\gamma=0.5$, $W=1$. The contour fixed point of
-\eqref{eq:fixed-point} converges to a price function $P^{\star}$ for which
-the regression coefficient of $u_{k}$ on $\logit P^{\star}[i,j,l]$, controlling
-for the sum $\Tstar$, is strictly positive. Equivalently,
-$\logit P^{\star}$ is not a function of $\Tstar$ alone, and the equilibrium
-is partially revealing.
+\begin{proposition}[REE partial revelation; conjectured]\label{prop:ree}
+Fix $K=3$, $\tau=2$, $\gamma=0.5$, $W=1$. There exists a fixed point
+$P^{\star}$ of the contour map $\Phi$ in \eqref{eq:fixed-point} for which
+the regression coefficient of $u_{k}$ on $\logit P^{\star}[i,j,l]$,
+controlling for the sum $\Tstar$, is strictly positive. Equivalently,
+$\logit P^{\star}$ is not a function of $\Tstar$ alone, and the
+corresponding equilibrium is partially revealing.
 \end{proposition}
 
-The proof in Appendix~\ref{app:proofs} is a numerical verification:
-running the fixed-point solver to convergence and computing the projection
-of $\logit P^{\star}$ onto the linear span of $\{u_{1},u_{2},u_{3}\}$ orthogonal
-to $\Tstar$ produces a coefficient that is positive, robust to grid
-refinement, and consistent across solver choices (Picard, Anderson, full
-Newton with Broyden Jacobian).
+\todopar{This proposition is currently \emph{conjectured} rather than
+proved. Exploratory numerical runs at $G=5$ and $G=11$ produce price
+functions consistent with the statement, with $1-R^{2}$ on the order of
+$0.05$--$0.11$. However, the production solver in the companion
+repository, when warm-started from no-learning prices, robustly
+converges to a \emph{distinct} fully-revealing fixed point of the same
+$\Phi$ map; the partially revealing branch is reachable only from a
+narrow set of seeds whose schedule we have not yet fully characterised.
+The numerical content of Proposition~\ref{prop:ree} is therefore: (i) the
+contour map $\Phi$ admits at least two distinct fixed points at these
+parameters --- one fully revealing, one partially revealing; (ii) the
+partially revealing branch is not an artefact of incomplete iteration on
+exploratory grids. A globalised Newton--Krylov method with
+perturbation-based homotopy across the basin boundary is needed to
+verify the second claim systematically. Until that is in place, the
+results in Sections~\ref{sec:convergence}--\ref{sec:posteriors} should
+be read as conjectural.}
 
-\subsection{Converged posteriors at a representative realisation}
+The numerical strategy in Appendix~\ref{app:proofs} attempts to verify
+the conjecture by running the fixed-point solver from multiple seeds and
+computing the projection of $\logit P^{\star}$ onto the linear span of
+$\{u_{1},u_{2},u_{3}\}$ orthogonal to $\Tstar$. Exploratory runs produce
+a positive coefficient, robust to grid refinement on the seeds where
+convergence to a non-FR branch occurs.
+
+\subsection{Converged posteriors at a representative realisation}\label{sec:posteriors}
 
 Table~\ref{tab:posteriors} reports the converged posteriors at the canonical
 realisation $(u_{1},u_{2},u_{3})=(1,-1,1)$ at $G=5$, $\tau=2$. Under CARA,
@@ -843,9 +878,14 @@ benchmark of $0.648$ but below the fully-revealing benchmark of $0.881$.
 
 \begin{table}[htbp]
    \centering
-   \caption{Converged posteriors and price at $(u_{1},u_{2},u_{3})=(1,-1,1)$,
-   $\tau=2$, $G=5$. CRRA produces dispersed posteriors (partial revelation);
-   CARA produces identical posteriors equal to the price (full revelation).}
+   \caption{Posteriors and price at $(u_{1},u_{2},u_{3})=(1,-1,1)$,
+   $\tau=2$, $G=5$, from exploratory contour-method runs. CRRA ($\gamma=0.5$)
+   produces dispersed posteriors (partial revelation); CARA produces
+   identical posteriors equal to the price (full revelation).
+   \todo{The CRRA values reported here come from exploratory runs that
+   reached a non-FR fixed point; the production solver currently
+   converges to a distinct fully-revealing fixed point at these same
+   parameters. See the caveat at the start of Section~\ref{sec:ree}.}}
    \label{tab:posteriors}
    \begin{tabular}{lccc}
       \toprule
@@ -958,7 +998,8 @@ $V_{\mathrm{CRRA}}'(\tau)>0$ on a neighbourhood of the origin.
    value, increasing in $\tau$.
    \todo{Replace placeholder once $V(\tau)$ is computed by ex-ante
    integration of the CRRA certainty-equivalent at the converged REE for
-   $\tau\in[0.1,5]$ at $\gamma=0.5$; add CARA baseline as $V\equiv 0$.}}
+   $\tau\in[0.1,5]$ at $\gamma\in\{0.25,1,4\}$; add CARA baseline as
+   $V\equiv 0$.}}
    \label{fig:value-info}
 \end{figure}
 
@@ -1001,8 +1042,8 @@ remains within the rational class.
    signal as a function of the cost $c$. CARA: zero acquisition for every
    $c>0$ (the paradox). CRRA: interior acquisition on $(0,\bar c)$, no
    noise traders required.
-   \todo{Replace placeholder once the acquisition fixed point
-   $\lambda^{\star}(c)\in[0,1]$ is solved at $\gamma=0.5$, $\tau=2$;
+   \todo{Replace placeholder once $V(\tau)-c$ has been computed for
+   $\gamma\in\{0.25,1,4,100\}$ (the last being CARA) at $\tau=2$;
    include comparison with the noise-trader benchmark of
    \citet{GrossmanStiglitz1980} on the same axes.}}
    \label{fig:gs}
