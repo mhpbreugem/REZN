@@ -138,24 +138,69 @@ PLACEHOLDER (yellow background):
 4. Include lognormal extension?
 5. Three mechanisms stable at G=20?
 
-## SESSION 2026-04-27 (Claude paper chat)
-- Cloned existing draft (commit 69fe4ea: "Initial paper draft")
-- Compiled cleanly: 23 pages, 0 undefined refs.
-- FOUND BUG in original Prop 1: stated "alpha_k/tau_k constant => logit(p) ∝ T*".
-  Verified numerically this is false. With alpha_k = c*tau_k, w_k*tau_k is
-  constant in k, so logit(p) ∝ sum(u_k), not T*. The correct condition is
-  alpha_k homogeneous (then w_k = 1/K, logit(p) = T*/K).
-- Pushed commit d4f2e2e fixing Prop 1, its proof, and a parallel overclaim
-  in the intro. Heterogeneous-alpha now correctly handled:
-    * No-learning: PR (a fourth mechanism, ref Section 6).
-    * REE: FR (because p = Lambda(T*) clears with zero trade for any alpha).
-- All 23 pages still compile clean after edit.
-- main.tex and main.pdf are tracked; .gitignore covers aux files.
+## SESSION 2026-04-27 (Claude paper chat) — POLISH PASS COMPLETED
+Two rounds of polish on top of the initial draft:
 
-## STILL OUTSTANDING (next chat)
-- Placeholder figures fig4/6/7/8/9/10 await Claude Code's converged G>=100 runs.
-- Could add a fourth-mechanism row to Table 4 (heterogeneous alpha) for parity,
-  once numerics are in.
-- Section 6 currently lists het-gamma and het-tau as the heterogeneity
-  channels; the new Prop 1 wording forward-refs to Section 6 for het-alpha
-  too. Worth adding 1-2 sentences in Section 6 making this explicit.
+ROUND 1 (commit d4f2e2e + 4220cb1): Fixed Prop 1 condition bug.
+- Original said "alpha_k/tau_k constant => FR". This is false; the
+  correct condition is alpha_k constant.
+- Updated Prop 1 statement, proof, and intro overclaim.
+
+ROUND 2 (commit 99c8f6b): Sharpened contribution.
+- Abstract rewritten to lead with alignment idea.
+- Intro contributions: one conceptual + four formal, italicised.
+- Section 2.4 promoted to conceptual climax with explicit
+  'Alignment principle' italicised statement.
+- Remark 1 after Prop 1: CARA is the unique CRRA preference whose
+  demand is linear in logit mu - logit p.
+- Section 6: added Mechanism 4 (heterogeneous CARA alpha). Cleanest
+  illustration of knife-edge: het-alpha gives no-learning PR but
+  REE FR (because p = Lambda(T*) clears with zero trade for any alpha).
+  Mechanisms 1-3 (CRRA channels) survive REE; Mechanism 4 doesn't.
+- Section 7.3: added 'The vanishing-noise selection' subsection.
+  sigma_z -> 0 selects FR under CARA but PR under any non-CARA. With
+  conjectured formal statement and proof sketch.
+- xcolor + \todo{} macro added; all open items marked in red.
+
+ROUND 3 (commit 747f2bd): Tightened proofs and cleanup.
+- Prop 4 (smooth) proof: proper continuity via IFT + dominated
+  convergence; monotonicity proved analytically in small-tau, with
+  red TODO for the missing arbitrary-tau analytical argument.
+- Prop 5 (REE PR) proof: retitled 'numerical verification', expanded
+  with regression spec and grid-refinement check. Red TODO outlining
+  perturbation route to an analytical proof.
+- Prop 6 (positive trade) statement and proof: previous version
+  conflated no-learning and REE for CARA. Fixed: CARA REE has zero
+  volume; CARA no-learning has POSITIVE volume (demands tau(u_k-u_bar)/alpha).
+  CRRA positive at both. Highlights how REE learning collapses CARA
+  posteriors but not CRRA.
+- Prop 7 (V) proof: certainty-equivalent decomposition; Taylor for V'(0+).
+  Red TODO for arbitrary-tau monotonicity.
+- Prop 8 (GS) proof: split into non-existence under CARA (contradiction)
+  and existence under CRRA (intermediate value theorem). Red TODO for
+  strict monotonicity in lambda.
+- Discussion: restored Extensions header (lost in vanishing-noise insert).
+  'What CARA does and does not do' rewritten with engine framing.
+- Conclusion: mirrors new contribution paragraph; closes with forward
+  line on dynamic and intermediated extensions.
+
+FINAL STATE: 28 pages, 0 warnings, 0 undefined references. Compiles clean.
+Latest commit: 747f2bd. PDF and TEX both pushed to origin/main.
+
+OPEN TODOs (visible in PDF as red sansserif boxes):
+1. fig4_posteriors: G>=100 contour run, multi-realization sweep
+2. fig6_mechanisms: heterogeneous-agent solver, including new 4th channel
+3. fig7_volume: REE volume sweep over gamma in [0.1, 30] at G>=50
+4. fig8_value_info: V(tau) computation by ex-ante CE integration
+5. fig9_GS: lambda* (c) acquisition fixed point
+6. Het-alpha numerical illustration for Mechanism 4 (Section 6)
+7. Het-alpha row of Table 3 (currently labelled '\todo{run}')
+8. Formal uniqueness theorem extending Remark 1 to HARA (proof outline)
+9. Formal vanishing-noise selection proposition (proof sketch)
+10. Analytical monotonicity for Prop 4 at arbitrary tau
+11. Analytical proof of Prop 5 via perturbation around no-learning seed
+12. Arbitrary-tau monotonicity of V_CRRA(tau) for Prop 7
+13. Strict monotonicity of V_CRRA(tau, lambda) in lambda for Prop 8
+
+Items 1-7 are numerical (Claude Code).
+Items 8-13 are analytical (could be paper revisions).
