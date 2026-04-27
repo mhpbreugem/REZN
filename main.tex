@@ -153,12 +153,15 @@ Building on this principle, the paper makes four formal contributions.
 show that the CARA market-clearing condition aggregates private posteriors
 in log-odds for arbitrary heterogeneity in $(\alpha_{k},\tau_{k},W_{k})$
 and is fully revealing of the Bayesian sufficient statistic when risk
-aversion is homogeneous (Proposition~\ref{prop:cara}). The result extends,
-with weighted log-odds aggregation, to any signal distribution in the
-exponential family. \emph{Second}, I show that under any CRRA preference
-with $\gamma\in(0,\infty)$ the no-learning equilibrium is partially
-revealing, derive the third-order asymptotic expansion of the Jensen gap
-between the actual price and the fully-revealing benchmark
+aversion is homogeneous (Proposition~\ref{prop:cara}). I prove a
+companion uniqueness result: among all smooth concave utilities, CARA
+is the only class whose binary-asset demand is linear in $\logit\mu-\logit p$
+(Theorem~\ref{thm:cara-unique}); this delineates the knife-edge across
+preferences, not only across the CRRA parametrisation. \emph{Second}, I
+show that under any CRRA preference with $\gamma\in(0,\infty)$ the
+no-learning equilibrium is partially revealing, derive the third-order
+asymptotic expansion of the Jensen gap between the actual price and the
+fully-revealing benchmark
 (Propositions~\ref{prop:non-cara}--\ref{prop:jensen}), and prove that the
 revelation deficit is a continuous, strictly monotone function of $\gamma$
 that vanishes only at $\gamma=\infty$ (Proposition~\ref{prop:smooth}).
@@ -170,27 +173,73 @@ numerically that partial revelation survives rational learning from prices
 consequences and the resolution of the Grossman--Stiglitz paradox: trade
 volume is strictly positive under any CRRA preference, the value of
 private information $V(\tau)$ is strictly positive for every $\tau>0$ and
-increasing in precision, and the paradox dissolves within the rational
-class without recourse to noise
-(Propositions~\ref{prop:welfare}--\ref{prop:gs}).
+increasing in precision, the paradox dissolves within the rational class
+without recourse to noise, and the vanishing-noise limit selects partial
+revelation at every finite $\gamma$
+(Propositions~\ref{prop:welfare}--\ref{prop:vanishing}).
 
 \paragraph{Relation to the literature.}
-The closest precursor is \citet{DeMarzoSkiadas1998}, who establish that in the
-Gaussian-CARA model the rational-expectations equilibrium is unique and fully
-revealing, and \citet{BreonDrish2015}, who extend full revelation to the
-exponential family of signal distributions with CARA demands. Their results
-are usually read as evidence that revelation is generic and that the role of
-noise traders is to introduce frictions strong enough to sustain non-trivial
-informational rents. The present paper takes the opposite view: full
-revelation is a knife-edge property of CARA combined with appropriate signal
-distributions, and the broader rational class delivers partial revelation
-without any frictions. \citet{Vives2011} and the strategic-information
-literature offer one route around CARA via private values. Recent work by
-\citet{AlbagliHellwigTsyvinski2024} characterises non-Gaussian equilibria
-with CARA-like demands; the mechanism here is complementary, operating on
-the preference rather than the distributional dimension. Numerically, the
-contour-integration fixed point I introduce builds on the projection method
-of \citet{BreugemBuss2019} for non-standard rational-expectations problems.
+The paper sits at the intersection of three strands.
+
+The \emph{informational-revelation} literature begins with
+\citet{GrossmanStiglitz1980}, \citet{Hellwig1980}, and
+\citet{DiamondVerrecchia1981}, which together formalise the
+noisy-rational-expectations paradigm and identify Gaussian-CARA-with-noise
+as the canonical solvable case. \citet{DeMarzoSkiadas1998} prove that the
+zero-noise limit of this model is the unique fully revealing equilibrium,
+and \citet{BreonDrish2015} extend full revelation to the entire
+exponential family of signal distributions paired with CARA demands. These
+results are typically read as evidence that revelation is generic and
+that exogenous noise is required to generate non-trivial informational
+rents. The present paper takes the opposite view: full revelation is a
+knife-edge property of CARA, not a property of the rational class as a
+whole, and the alignment between log-odds aggregation and the Bayesian
+sufficient statistic is a feature of CARA in particular rather than of
+rational expectations in general.
+
+The \emph{noise-trader} literature has long debated whether the
+liquidity-trader assumption is innocuous. \citet{Black1986} introduced
+the term informally, and \citet{DSSW1990} showed that noise traders can
+survive in equilibrium and earn premia of their own. The microstructure
+strand following \citet{Kyle1985} and \citet{GlostenMilgrom1985} treats
+liquidity demand as a primitive of trading, while
+\citet{Kyle1989} and \citet{SpiegelSubrahmanyam1992} address strategic
+information transmission with noise. \citet{BhattacharyaSpiegel1991}
+study no-noise breakdowns under CARA. The present paper offers a
+disjoint resolution: rather than asking whether noise traders are
+behaviourally plausible or strategically necessary, it shows that the
+informational role of noise is preference-specific. Within CRRA, partial
+revelation arises endogenously and noise traders are not required to
+sustain it.
+
+The \emph{higher-moment and non-CARA} literature is the closest
+neighbourhood. \citet{Wang1993,Wang1994} solve dynamic
+asymmetric-information models with CARA and study volume; the present
+results suggest that the volume implications are CARA-specific.
+\citet{BarlevyVeronesi2003} and \citet{Mele2007} obtain non-Gaussian
+prices via state-dependent preferences, and \citet{AllenMorrisShin2006}
+and \citet{KasaWalkerWhiteman2014} analyse higher-order beliefs in
+information-aggregation environments. \citet{Peress2004} studies
+information acquisition under CRRA with noise and obtains
+wealth-dependent acquisition; the present paper isolates the pure
+preference channel by setting noise to zero. \citet{Vives2011} obtains
+partial revelation in a private-values strategic setting without noise;
+the present mechanism is complementary, operating in a common-values
+competitive environment via preferences.
+\citet{AlbagliHellwigTsyvinski2024} characterise non-Gaussian REE with
+CARA-like demands and show that the alignment between aggregation and
+the sufficient statistic is fragile on the distributional dimension; the
+present paper makes the parallel point on the preference dimension. On
+information acquisition more broadly, \citet{VeldkampBook} provides a
+comprehensive treatment of which the GS resolution here can be read as a
+preference-driven complement.
+
+Numerically, the contour-integration fixed point introduced in
+Section~\ref{sec:ree} builds on the projection method of
+\citet{BreugemBuss2019} for non-standard rational-expectations problems.
+The role of \citet{Milgrom1982} appears in Section~\ref{sec:welfare}: the
+classical no-trade theorem describes precisely the CARA-REE outcome,
+which the CRRA-REE escapes.
 
 \paragraph{Organisation.}
 Section~\ref{sec:model} sets out the model and the demand
@@ -430,7 +479,7 @@ asset, and a parallel extension obtains for any signal distribution in the
 exponential family with CARA preferences (\citealp{BreonDrish2015}); the
 proof in Appendix~\ref{app:proofs} sketches this extension.
 
-\begin{remark}[CARA as the unique log-odds aggregator]\label{rem:unique-cara}
+\begin{remark}[CARA as the unique log-odds aggregator within CRRA]\label{rem:unique-cara}
 Within the CRRA preference class indexed by $\gamma\in(0,\infty]$, the
 demand function is $x_{k}=W_{k}(R_{k}-1)/[(1-p)+R_{k}p]$ with
 $R_{k}=\exp([\logit\mu_{k}-\logit p]/\gamma)$, which is linear in
@@ -439,12 +488,49 @@ CARA limit. Consequently, CARA is the unique CRRA preference whose
 no-learning aggregator $\Psi$ takes the form \eqref{eq:agg-cara} of a
 linear functional of log-odds, and so the unique CRRA preference for which
 \(\PP(v=1\mid p)=\PP(v=1\mid u_{1},\ldots,u_{K})\) for every realisation
-under homogeneous parameters. Every other $\gamma$ produces an aggregator
-that is non-affine in log-odds, and the consequences of that non-affineness
-are the subject of the next two subsections.
+under homogeneous parameters. The next theorem strengthens this
+observation by removing the CRRA restriction: among all smooth utilities,
+CARA is the unique class that produces log-odds-linear demand on a
+binary asset.
 \end{remark}
 
-\todopar{A formal uniqueness theorem extending the remark to a wider preference class --- e.g.\ HARA, or a general smooth concave $U$ with $U'''(W)/U''(W)\neq U''(W)/U'(W)\cdot\mathrm{const.}$ --- would strengthen the claim to ``CARA is the unique full-revelation preference'' across HARA, not only across CRRA. Outline of argument: CARA $\Leftrightarrow$ demand linear in $\logit\mu-\logit p$ on a binary asset $\Leftrightarrow$ FOC reduces to $\logit\mu-\logit p=\alpha x$. Any preference outside CARA fails the linearity step.}
+\begin{theorem}[CARA uniqueness for log-odds-linear demand]\label{thm:cara-unique}
+Let $U:\mathcal{D}\to\R$ be three times continuously differentiable on an
+open interval $\mathcal{D}\subset\R$ with $U'>0$ and $U''<0$, and consider
+the binary-asset trade $\max_{x}\E[U(W+(v-p)x)]$ for $v\in\{0,1\}$ with
+$\PP(v=1)=\mu\in(0,1)$, price $p\in(0,1)$, and wealth $W\in\mathcal{D}$
+such that the optimal $x^{\star}(\mu,p,W)$ leaves both $W+(1-p)x^{\star}$
+and $W-px^{\star}$ in $\mathcal{D}$. Suppose the optimal demand admits the
+representation
+\begin{equation}
+   x^{\star}(\mu,p,W) \;=\; \frac{\logit\mu-\logit p}{\alpha(p,W)}
+\label{eq:linear-demand-rep}
+\end{equation}
+for some positive function $\alpha:(0,1)\times\mathcal{D}\to(0,\infty)$,
+holding for every $(\mu,p,W)$ in the admissible domain. Then $U$ is CARA:
+there exist constants $\alpha_{0}>0$ and $a,b\in\R$ with $b>0$ such that
+\begin{equation}
+   U(W) \;=\; a - b\exp(-\alpha_{0}W),
+\label{eq:CARA-form}
+\end{equation}
+and $\alpha(p,W)\equiv\alpha_{0}$ is constant. Conversely, if $U$ takes
+the form \eqref{eq:CARA-form}, the optimal demand on the binary asset
+satisfies \eqref{eq:linear-demand-rep} with $\alpha(p,W)=\alpha_{0}$.
+\end{theorem}
+
+The theorem closes the uniqueness question: the CARA full-revelation
+result of Proposition~\ref{prop:cara} is not a property of CRRA but of
+\emph{linearity in log-odds}, which singles out CARA across the entire
+class of smooth concave utilities. The proof, in
+Appendix~\ref{app:proofs}, differentiates the first-order condition of
+the binary-asset problem twice in the log-odds gap and shows that the
+function $h\equiv\ln U'$ must be affine, which forces $U$ to be CARA.
+The converse is the standard derivation of CARA demand on a binary asset
+already recorded as Lemma~\ref{lem:cara-demand}. The contour-integration
+extension of Section~\ref{sec:ree} inherits the same uniqueness, since
+the agent's posterior under any non-CARA preference enters the demand
+nonlinearly in log-odds and the contour-converged aggregator inherits
+the same nonlinearity.
 
 \subsection{Non-CARA implies partial revelation}
 
@@ -584,6 +670,15 @@ this.
    parametrisation.}
    \label{fig:robust}
 \end{figure}
+
+\paragraph{Heterogeneity.} The size of the no-learning revelation deficit
+is amplified by heterogeneity in risk aversion and in signal precision,
+and a separate channel arises within CARA itself when risk aversion
+varies across groups. We defer the systematic decomposition to
+Section~\ref{sec:mechanisms} so as not to interrupt the homogeneous-CRRA
+core that the next two sections build on; the punch line is that the
+homogeneous deficits reported in Table~\ref{tab:smooth} are a lower
+envelope.
 
 % =====================================================================
 \section{Full Rational-Expectations Equilibrium}\label{sec:ree}
@@ -1074,38 +1169,49 @@ treats full revelation as a limit property: as the variance $\sigma_{z}^{2}$
 of liquidity supply shrinks to zero, the noisy CARA equilibrium converges
 to the fully revealing benchmark. This intuition is correct \emph{within
 CARA} but is not, as is sometimes claimed, a generic property of the
-rational class. The argument in this paper recasts the question. The
-no-noise CRRA equilibrium is partially revealing by
-Proposition~\ref{prop:non-cara}, so any noise-vanishing sequence in a CRRA
-economy can converge only to a partially revealing limit. The selection
-induced by $\sigma_{z}\to 0$ is therefore preference-dependent: under CARA
-it picks out the fully revealing benchmark, while under any non-CARA CRRA
-preference it picks out the strictly partially revealing no-noise
-equilibrium of Section~\ref{sec:no-learning}. The implication is that the
-``limit'' interpretation of full revelation is not an inevitable feature
-of vanishing frictions but a consequence of CARA. Conjecturing the formal
-statement, let $p_{\sigma_{z}}^{\gamma}$ denote the equilibrium price
-function in the CRRA-with-noise model with parameter $\gamma$ and supply
-noise variance $\sigma_{z}^{2}$:
-\begin{equation*}
-   \lim_{\sigma_{z}\to 0} p_{\sigma_{z}}^{\gamma}
-   \;=\;
-   \begin{cases}
-      \Lam(\Tstar/K) & \text{if } \gamma = \infty\ \text{(CARA)}, \\
-      p^{\gamma}_{\text{PR}} \neq \Lam(\Tstar/K) & \text{if } \gamma\in(0,\infty),
-   \end{cases}
-\end{equation*}
-where $p^{\gamma}_{\text{PR}}$ is the partially revealing no-noise
-equilibrium price function characterised in Section~\ref{sec:ree}.
-\todo{Make this a formal proposition with conditions on the convergence
-mode (pointwise on the signal grid, or $L^{2}$ on the joint signal
-distribution). The argument is: (i) for finite $\sigma_{z}$, the noisy
-CRRA equilibrium exists and is continuous in $\sigma_{z}$ by an
-extension of the Breon-Drish argument; (ii) at $\sigma_{z}=0$, the
-no-noise CRRA equilibrium is partially revealing; (iii) continuity in
-$\sigma_{z}$ then forces the limit to be the partially revealing no-noise
-price. The CARA case is the boundary because at $\sigma_{z}=0$ the no-noise
-CARA price is also the fully revealing price.}
+rational class. The vanishing-noise limit selects full revelation at
+$\gamma=\infty$ and partial revelation at every finite $\gamma$: the
+``limit'' that the literature has reported as fully revealing is in fact
+preference-dependent, and only the CARA fibre of it is fully revealing.
+
+To make this precise, embed the model of Section~\ref{sec:model} in the
+standard CARA-with-noise framework: residual aggregate supply is
+$\bar z + \sigma_{z}\zeta$ with $\zeta\sim\mathcal{N}(0,1)$ independent
+of $v$ and of all signals, agents have CRRA preferences indexed by
+$\gamma\in(0,\infty]$, and $p^{\gamma,\sigma_{z}}$ denotes the equilibrium
+price function.
+
+\begin{proposition}[Vanishing-noise selection is preference-dependent]\label{prop:vanishing}
+Assume that for each $\gamma\in(0,\infty]$, the equilibrium price function
+$p^{\gamma,\sigma_{z}}$ exists, is unique, and is continuous in
+$\sigma_{z}\geq 0$ in the topology of pointwise convergence on the signal
+grid. Then:
+\begin{enumerate}[label=\textnormal{(\roman*)},topsep=2pt,itemsep=2pt]
+\item At $\gamma=\infty$ (CARA),
+$\lim_{\sigma_{z}\to 0}p^{\infty,\sigma_{z}}=\Lam(\Tstar/K)$, the fully
+revealing benchmark.
+\item At every $\gamma\in(0,\infty)$,
+$\lim_{\sigma_{z}\to 0}p^{\gamma,\sigma_{z}}=p^{\gamma,0}$, the no-noise
+CRRA price function characterised by Proposition~\ref{prop:non-cara},
+which satisfies $p^{\gamma,0}\neq\Lam(\Tstar/K)$ on a set of full
+Lebesgue measure.
+\end{enumerate}
+The standard claim that vanishing noise gives full revelation is therefore
+a CARA-specific statement. If the noise is removed at any finite
+$\gamma$, the resulting equilibrium is strictly partially revealing.
+\end{proposition}
+
+\todo{The continuity hypothesis is the formal sticking point. Existence
+and uniqueness of the noisy CRRA equilibrium for $\sigma_{z}>0$ has been
+established for wide classes of preferences and signal distributions by
+\citet{BreonDrish2015} but not specifically for the binary-state CRRA
+case at hand. A complete proof requires verifying their conditions in
+this setting; we leave the verification to a companion note. Numerically,
+the $\sigma_{z}\to 0$ limit at finite $\gamma$ is unambiguously the
+no-noise CRRA equilibrium of Section~\ref{sec:no-learning}, which is
+partially revealing.}
+
+
 
 
 
@@ -1168,6 +1274,71 @@ $\alpha x=\logit\mu-\logit p$.
 The first-order condition for CRRA on a binary outcome is
 $\mu/(1-\mu)\cdot[(W+(1-p)x)/(W-px)]^{-\gamma}=p/(1-p)$, which with
 $R=\exp([\logit\mu-\logit p]/\gamma)$ rearranges to \eqref{eq:crra-demand}.
+\end{proof}
+
+\begin{proof}[Proof of Theorem~\ref{thm:cara-unique}]
+The first-order condition for the binary-asset problem is
+\[
+   \mu(1-p)\,U'\!\bigl(W+(1-p)x\bigr) \;=\; (1-\mu)\,p\,U'\!\bigl(W-px\bigr),
+\]
+which, after dividing through and exponentiating the log-odds identities,
+rearranges to
+\begin{equation}
+   \frac{U'\!\bigl(W+(1-p)x\bigr)}{U'\!\bigl(W-px\bigr)}
+   \;=\; \frac{(1-\mu)\,p}{\mu\,(1-p)}
+   \;=\; \exp\!\bigl(\logit p - \logit\mu\bigr).
+\label{eq:thm-foc}
+\end{equation}
+Suppose the optimal demand admits the representation
+\eqref{eq:linear-demand-rep}, $x^{\star}=z/\alpha(p,W)$ with
+$z=\logit\mu-\logit p$. Substituting into \eqref{eq:thm-foc} and writing
+$h(W)\equiv\ln U'(W)$, which is well defined and three times continuously
+differentiable on $\mathcal{D}$ since $U'>0$, we obtain
+\begin{equation}
+   h\!\bigl(W+(1-p)z/\alpha(p,W)\bigr) - h\!\bigl(W-pz/\alpha(p,W)\bigr) \;=\; -z,
+\label{eq:thm-h}
+\end{equation}
+which must hold for all admissible $(W,p,z)$ with $z\in\R$ ranging freely
+as $\mu$ varies in $(0,1)$ at fixed $p$.
+
+Differentiate \eqref{eq:thm-h} once in $z$ at $z=0$. Treating
+$\alpha(p,W)$ as a constant in $z$, the chain rule gives
+\[
+   h'(W)\cdot\frac{1-p}{\alpha(p,W)}
+   \;+\; h'(W)\cdot\frac{p}{\alpha(p,W)}
+   \;=\; \frac{h'(W)}{\alpha(p,W)} \;=\; -1,
+\]
+so $\alpha(p,W)=-h'(W)$ for all $(p,W)$. Since $\alpha>0$ by assumption,
+$h'(W)<0$ for all $W\in\mathcal{D}$, and $\alpha$ depends only on $W$,
+not on $p$.
+
+Differentiate \eqref{eq:thm-h} a second time in $z$ at $z=0$:
+\[
+   h''(W)\cdot\!\left[\!\left(\frac{1-p}{\alpha(W)}\right)^{\!2}
+   - \left(\frac{p}{\alpha(W)}\right)^{\!2}\right]
+   \;=\; h''(W)\cdot\frac{1-2p}{\alpha(W)^{2}} \;=\; 0,
+\]
+where the right-hand side is zero because the right-hand side of
+\eqref{eq:thm-h} is linear in $z$. The identity must hold for every
+$p\in(0,1)$, hence in particular for some $p\neq\tfrac12$, which forces
+$h''(W)=0$ for every $W\in\mathcal{D}$.
+
+Therefore $h$ is affine on $\mathcal{D}$: there exist constants
+$\alpha_{0}>0$ and $C\in\R$ with $h(W)=-\alpha_{0}W+C$. (Positivity of
+$\alpha_{0}$ follows from $\alpha=-h'>0$.) Consequently
+$U'(W)=e^{C}\exp(-\alpha_{0}W)$, and integrating yields
+\[
+   U(W) \;=\; -\frac{e^{C}}{\alpha_{0}}\,\exp(-\alpha_{0}W) + D
+   \;=\; a - b\exp(-\alpha_{0}W),
+\]
+with $a\equiv D\in\R$ and $b\equiv e^{C}/\alpha_{0}>0$. This is CARA, and
+$\alpha(p,W)\equiv\alpha_{0}$ is constant.
+
+For the converse, set $U(W)=a-b\exp(-\alpha_{0}W)$ in \eqref{eq:thm-foc}.
+Then $U'(W)=b\alpha_{0}\exp(-\alpha_{0}W)$, and the FOC ratio reduces to
+$\exp(-\alpha_{0}x)=\exp(\logit p - \logit\mu)$, equivalently
+$\alpha_{0}x=\logit\mu-\logit p$, recovering
+\eqref{eq:linear-demand-rep}.
 \end{proof}
 
 \begin{proof}[Proof of Proposition~\ref{prop:cara}]
