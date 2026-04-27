@@ -638,27 +638,31 @@ strictly decreasing on $(0,\infty)$, and equal to zero at $\gamma=\infty$.
 CARA is therefore a knife-edge case within the rational class.
 \end{proposition}
 
-Figure~\ref{fig:knife-edge} reports the deficit as a function of the signal
-precision $\tau$ for three levels of $\gamma$ together with the CARA
-benchmark. The deficit is strictly positive for every finite $\gamma$ and
-collapses smoothly to zero as $\gamma\to\infty$.
+Figure~\ref{fig:smooth-heatmap} reports the deficit as a heatmap over the
+$(\gamma,\tau)$ plane: the locus $1-R^{2}=0$ is exactly the right edge
+$\gamma=\infty$, and the deficit grows continuously as one moves into the
+interior. Table~\ref{tab:smooth} reports a transposed cross-section of
+the same surface for direct numerical comparison.
 
 \begin{figure}[htbp]
    \centering
-   \includegraphics[width=0.62\textwidth]{figures/fig_knife_edge.pdf}
-   \caption{Revelation deficit $1-R^{2}$ in the no-learning equilibrium as a
-   function of signal precision $\tau$, for $\gamma\in\{0.25,1,4\}$ and the
-   CARA benchmark ($\gamma=\infty$). $K=3$, $W=1$, signals on a grid of
-   $G=20$. CARA produces zero deficit for every $\tau$; every finite
-   $\gamma$ produces strictly positive deficit, monotone in $\gamma$.}
-   \label{fig:knife-edge}
+   \includegraphics[width=0.62\textwidth]{figures/fig1_smooth_transition.pdf}
+   \caption{Revelation deficit on the $(\gamma,\tau)$ plane in the
+   no-learning equilibrium. $K=3$, $W=1$, signals on a grid of $G=20$.
+   The CARA line sits at the right edge ($\gamma=\infty$, $1-R^{2}=0$);
+   the deficit grows continuously as $\gamma$ falls and is strictly
+   positive for every finite $\gamma$.}
+   \label{fig:smooth-heatmap}
 \end{figure}
 
 \begin{table}[htbp]
    \centering
    \caption{No-learning revelation deficit $1-R^{2}$ across $\gamma$ and
    $\tau$. Computed exactly on a $G=20$ grid. CARA ($\gamma=\infty$) is the
-   knife-edge.}
+   knife-edge. Entries reported to three decimal places; values shown as
+   $0.000$ are strictly positive but below display precision (cf.\
+   Proposition~\ref{prop:jensen} for the $\tau^{3}/\gamma^{2}$ asymptotic
+   order).}
    \label{tab:smooth}
    \begin{tabular}{lccc}
       \toprule
@@ -674,19 +678,6 @@ collapses smoothly to zero as $\gamma\to\infty$.
       \bottomrule
    \end{tabular}
 \end{table}
-
-Figure~\ref{fig:smooth-heatmap} provides a complementary view as a heatmap
-over the $(\gamma,\tau)$ plane: the locus $1-R^{2}=0$ is exactly the right
-edge $\gamma=\infty$, and the deficit grows continuously as one moves into
-the interior.
-
-\begin{figure}[htbp]
-   \centering
-   \includegraphics[width=0.62\textwidth]{figures/fig1_smooth_transition.pdf}
-   \caption{Revelation deficit on the $(\gamma,\tau)$ plane. The CARA line
-   sits at the right edge; the deficit grows monotonically as $\gamma$ falls.}
-   \label{fig:smooth-heatmap}
-\end{figure}
 
 \subsection{Robustness}
 
