@@ -252,7 +252,7 @@ Linear extrapolation beyond grid edges.
 
 ### 6.2 1−R² vs τ (knife-edge figure data, G=10)
 
-γ=0.2, 20 log-spaced τ from 0.1 to 10:
+γ=0.25, 20 log-spaced τ from 0.1 to 10:
 ```
 (0.1000,0.005112)(0.1274,0.010448)(0.1624,0.019278)(0.2069,0.031679)
 (0.2637,0.046413)(0.3360,0.061466)(0.4281,0.075049)(0.5456,0.085972)
@@ -284,7 +284,7 @@ NEED: Recompute at G=20 with 30 points. See TASKS below.
 
 ### 6.3 1−R² vs K (number of agents, G=5, τ=1)
 
-γ=0.2:
+γ=0.25:
 ```
 (3,0.113220)(4,0.130804)(5,0.129275)(6,0.123143)(7,0.118312)(8,0.112108)(9,0.105452)(10,0.098957)
 ```
@@ -372,7 +372,7 @@ curve at zero. All finite γ are above zero. This is done — see Section 6.2.
 
 ### Figure 2: Knife-Edge (1−R² vs τ)
 - x: τ (log scale, 0.1 to 10), y: 1−R²
-- 4 curves: γ=0.2 green solid, γ=1 red dashed, γ=5 blue dotted, CARA black dashdotted
+- 4 curves: γ=0.25 green solid, γ=1 red dashed, γ=5 blue dotted, CARA black dashdotted
 - BC20 pgfplots style (see Section 12)
 - Status: DONE at G=10. NEED G=20 recomputation (30 log-spaced τ points).
 
@@ -421,11 +421,11 @@ curve at zero. All finite γ are above zero. This is done — see Section 6.2.
 ## 11. TASKS FOR CLAUDE CODE
 
 ### HIGH PRIORITY
-1. **Recompute knife-edge data at G=20**: 30 log-spaced τ from 0.1 to 10, γ=0.2, 1.0, 5.0.
+1. **Recompute knife-edge data at G=20**: 30 log-spaced τ from 0.1 to 10, γ=0.25, 1.0, 4.0.
    Output as pgfplots coordinates. Save to Google Drive folder CLAUDE (ID: 19XlmnFAON2qufCeYUsRT6UBTjFUZqjo3).
    Algorithm: Section 5 steps, no-learning only (no iteration). See Section 6.2 for the code pattern.
 
-2. **Converged REE at multiple (γ,τ)**: Run Anderson at G=20 for (γ,τ) ∈ {0.2,1.0,5.0} × {0.5,1.0,2.0}.
+2. **Converged REE at multiple (γ,τ)**: Run Anderson at G=20 for (γ,τ) ∈ {0.25,1.0,4.0} × {0.5,1.0,2.0}.
    Report: converged 1−R², ||F||∞, number of iterations.
 
 3. **CARA vs CRRA contour figure**: G=100 or more. Extract level set at (1,−1,1).
@@ -433,7 +433,7 @@ curve at zero. All finite γ are above zero. This is done — see Section 6.2.
 
 ### MEDIUM PRIORITY
 4. Trade volume E[|x_k|] at converged REE for γ = 0.1 to 100.
-5. Value of information V(τ) for τ = 0 to 5, γ = 0.2, 1, 5.
+5. Value of information V(τ) for τ = 0 to 5, γ = 0.25, 1, 4.
 6. K-agent sweep at G=10 (more precise than G=5).
 
 ### LOW PRIORITY

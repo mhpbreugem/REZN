@@ -77,12 +77,12 @@ Section §3. The main visual result.
 
 Parameters:
 - G = 20
-- γ = 0.2, 1.0, 5.0
+- γ = 0.25, 1.0, 4.0
 - τ = 30 log-spaced points from 0.1 to 10: `np.logspace(log10(0.1), log10(10), 30)`
 
 Output: pgfplots coordinates for each γ:
 ```
-% gamma = 0.2
+% gamma = 0.25
     (0.1000,0.005112)(0.1274,0.010448)...
 ```
 
@@ -108,17 +108,17 @@ Full .tex file:
   width=8cm, height=8cm,
   title={Signal precision ($\tau$)}]
 
-\addplot[very thick,color=green,smooth] coordinates {REPLACE_GAMMA_0.2};
+\addplot[very thick,color=green,smooth] coordinates {REPLACE_GAMMA_0.25};
 \addplot[very thick,color=red,dashed,smooth] coordinates {REPLACE_GAMMA_1.0};
-\addplot[very thick,color=blue,dotted,smooth] coordinates {REPLACE_GAMMA_5.0};
+\addplot[very thick,color=blue,dotted,smooth] coordinates {REPLACE_GAMMA_4.0};
 \addplot[ultra thick,color=black,dashdotted] coordinates {(0.08,0)(10,0)};
-\legend{$\gamma = 0.2$, $\gamma = 1$, $\gamma = 5$, CARA}
+\legend{$\gamma = 0.25$, $\gamma = 1$, $\gamma = 4$, CARA}
 \end{axis}
 \end{tikzpicture}
 \end{document}
 ```
 
-Existing G=10 data has grid artifacts at high τ for γ=5. G=20 should fix this.
+Existing G=10 data has grid artifacts at high τ for γ=4. G=20 should fix this.
 
 ---
 
@@ -270,7 +270,7 @@ E[U] = Σ_{i,j,l} Σ_{v=0,1} 0.5 · f_v(u_i)·f_v(u_j)·f_v(u_l) · U(W + x_k·(
 Uninformed: x=0, so E[U_uninformed] = U(W) = U(1). For log: U(1) = 0.
 
 Parameters:
-- γ = 0.2, 1.0, 5.0
+- γ = 0.25, 1.0, 4.0
 - τ = 0.1, 0.2, 0.5, 1.0, 2.0, 3.0, 5.0
 - G = 15
 
@@ -285,7 +285,7 @@ Section §5. Derived from Figure 8.
 For fixed τ = 2:
 - x-axis: c (cost of signal), 0 to max(V(τ))
 - y-axis: V(τ) - c
-- Curves for γ = 0.2, 1.0, 5.0, 100.0 (CARA)
+- Curves for γ = 0.25, 1.0, 4.0, 100.0 (CARA)
 
 CARA: V=0, so line = -c (always negative).
 CRRA: V>0, crosses zero at c* = V(τ).
@@ -317,7 +317,7 @@ For γ=1 (log): closed form p = mean(μ_k), no brentq.
 Parameters:
 - G = 5
 - τ = 1.0
-- γ = 0.2, 1.0, 5.0
+- γ = 0.25, 1.0, 4.0
 - K = 3, 4, 5, 6, 7, 8, 9, 10
 
 Output: pgfplots coordinates.
@@ -326,18 +326,18 @@ Output: pgfplots coordinates.
   xmin=2.5, xmax=10.5, xtick={3,...,10},
   ymin=-0.001, ymax=0.15,
   xlabel={Number of agents ($K$)}, ylabel={$1-R^2$}, ...]
-\addplot[very thick,color=green,smooth] coordinates {...};  % γ=0.2
+\addplot[very thick,color=green,smooth] coordinates {...};  % γ=0.25
 \addplot[very thick,color=red,dashed,smooth] coordinates {...};  % γ=1
-\addplot[very thick,color=blue,dotted,smooth] coordinates {...};  % γ=5
+\addplot[very thick,color=blue,dotted,smooth] coordinates {...};  % γ=4
 \addplot[ultra thick,color=black,dashdotted] coordinates {(2.5,0)(10.5,0)};
-\legend{$\gamma = 0.2$, $\gamma = 1$, $\gamma = 5$, CARA}
+\legend{$\gamma = 0.25$, $\gamma = 1$, $\gamma = 4$, CARA}
 \end{axis}
 ```
 
 Reference (G=5):
-- γ=0.2: (3,0.113)(4,0.131)(5,0.129)(6,0.123)(7,0.118)(8,0.112)(9,0.105)(10,0.099)
+- γ=0.25: (3,0.113)(4,0.131)(5,0.129)(6,0.123)(7,0.118)(8,0.112)(9,0.105)(10,0.099)
 - γ=1.0: (3,0.012)(4,0.010)(5,0.009)(6,0.008)(7,0.007)(8,0.007)(9,0.006)(10,0.006)
-- γ=5.0: (3,0.001)(4,0.001)(5,0.001)(6,0.000)(7,0.000)(8,0.000)(9,0.000)(10,0.000)
+- γ=4.0: (3,0.001)(4,0.001)(5,0.001)(6,0.000)(7,0.000)(8,0.000)(9,0.000)(10,0.000)
 
 ---
 
