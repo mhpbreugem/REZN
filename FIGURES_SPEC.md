@@ -82,7 +82,7 @@ Parameters:
 
 Output: pgfplots coordinates for each γ:
 ```
-% gamma = 0.25
+% gamma = 0.255
     (0.1000,0.005112)(0.1274,0.010448)...
 ```
 
@@ -108,7 +108,7 @@ Full .tex file:
   width=8cm, height=8cm,
   title={Signal precision ($\tau$)}]
 
-\addplot[very thick,color=green,smooth] coordinates {REPLACE_GAMMA_0.25};
+\addplot[very thick,color=green,smooth] coordinates {REPLACE_GAMMA_0.255};
 \addplot[very thick,color=red,dashed,smooth] coordinates {REPLACE_GAMMA_1.0};
 \addplot[very thick,color=blue,dotted,smooth] coordinates {REPLACE_GAMMA_4.0};
 \addplot[ultra thick,color=black,dashdotted] coordinates {(0.08,0)(10,0)};
