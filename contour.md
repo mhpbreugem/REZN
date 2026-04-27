@@ -111,3 +111,46 @@ for the new price. Under CARA, all three posteriors are equal (full revelation) 
 ## The Fixed Point
 
 The new prices P_new feed back into the contour computation. Iterate until P = Φ(P). Picard does this with damping. Anderson/Newton does it in one shot.
+
+## Why the System Decouples
+
+There is only ONE unknown object: the price array P[i,j,l]. Everything else — the root-found signals, the contour integrals, the posteriors — is a FUNCTION of P. They are not independent unknowns. They are intermediate computations.
+
+Think of it as a single function Φ that maps a price array to a new price array:
+
+    P_new = Φ(P)
+
+Here is exactly what Φ does, step by step, given P as input:
+
+    Step 1: For each grid point (i,j,l), read off the price p = P[i,j,l].
+
+    Step 2: For agent 1 at signal u_i, extract her slice P[i,:,:].
+            Sweep u₂ on grid, for each one solve P[i, u₂, u₃*] = p for u₃*.
+            This is a 1D root-find. The root u₃* is determined by P — it is not free.
+            
+    Step 3: At each crossing, evaluate f_v(u₂) · f_v(u₃*) and sum.
+            This gives A_v. Again, determined by P.
+
+    Step 4: Compute μ₁ = f₁(u₁)·A₁ / (f₀(u₁)·A₀ + f₁(u₁)·A₁).
+            Determined by P.
+
+    Step 5: Repeat steps 2-4 for agents 2 and 3 on their own slices.
+
+    Step 6: Solve market clearing Σ x_k(μ_k, p_new) = 0 for p_new.
+            This is the output: P_new[i,j,l] = p_new.
+
+Every step takes P as input and produces a deterministic output. There are no choices, no degrees of freedom, no additional unknowns. The root-found u₃* is not an unknown — it is the unique solution of P[i, u₂, u₃*] = p, which is fully determined once you know P.
+
+The equilibrium condition is:
+
+    P = Φ(P)
+
+This is G³ scalar equations in G³ scalar unknowns. Solve it with:
+
+- **Picard:** P^(n+1) = α·Φ(P^(n)) + (1−α)·P^(n), iterate.
+- **Anderson:** Same Φ evaluations, but use past residuals to build a quasi-Newton step.
+- **Newton:** Solve F(P) = P − Φ(P) = 0 directly. The Jacobian ∂F/∂P is G³ × G³.
+
+In all three cases, ONE call to Φ means: loop over all G³ grid points, for each do the 2-pass contour (6G root-finds), compute 3 posteriors, solve 1 market clearing. Then you have the new P. That is one "iteration" or one "function evaluation."
+
+The table of equations D1-D6, E1 in the session summary lists the intermediate steps INSIDE Φ. They are not separate equations to be solved simultaneously with P. They are the recipe for computing Φ(P) given P.
