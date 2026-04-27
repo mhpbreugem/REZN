@@ -28,3 +28,11 @@ python/pchip_asymmetric_results.csv
 python/pchip_backward_results.csv
 __pycache__/
 *.pyc
+
+# Probe / experiment logs
+python/nk_pr.log
+python/compress.log
+python/fwd_homotopy.log
+python/picard11.log
+python/picard_g3.log
+python/probe_PR.log
