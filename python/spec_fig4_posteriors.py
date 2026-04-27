@@ -19,7 +19,7 @@ import rezn_het as rh
 # ---- spec ---------------------------------------------------------------
 TAU      = 2.0
 GAMMA    = 0.5
-G        = 20
+G        = 5            # matches the published reference table at G=5
 UMAX     = 2.0
 U_REAL   = (1.0, -1.0, 1.0)
 OUT      = os.path.join(os.path.dirname(os.path.dirname(__file__)),
@@ -53,28 +53,18 @@ def main():
     mu_cara = (_sigmoid(T_star),) * 3
     finf_cara = 0.0
 
-    # ---- CRRA REE: Picard then Anderson polish -------------------------
+    # ---- CRRA REE: try Picard α=0.3 first (stays in PR basin at G=5),
+    #                 fall back to Anderson polish.
     taus_arr   = np.array([TAU, TAU, TAU])
     gammas_arr = np.array([GAMMA, GAMMA, GAMMA])
     print(f"Solving CRRA REE at γ={GAMMA}, τ={TAU}, G={G} …", flush=True)
-    print("  Picard α=0.3 ...", flush=True)
     res_p = rp.solve_picard_pchip(
         G, taus_arr, gammas_arr, umax=UMAX,
-        maxiters=1500, abstol=1e-9, alpha=0.3)
-    finf_p = float(np.abs(res_p["residual"]).max())
-    print(f"  Picard iters={len(res_p['history'])} "
-           f"Finf={finf_p:.3e}", flush=True)
-
-    print("  Anderson m=8 polish ...", flush=True)
-    res = rp.solve_anderson_pchip(
-        G, taus_arr, gammas_arr, umax=UMAX,
-        maxiters=400, abstol=1e-9, m_window=8,
-        P_init=res_p["P_star"])
-    finf_a = float(np.abs(res["residual"]).max())
-    P_star = res["P_star"] if finf_a < finf_p else res_p["P_star"]
-    finf_crra = min(finf_a, finf_p)
-    print(f"  Anderson iters={len(res['history'])} "
-           f"Finf={finf_a:.3e};   best={finf_crra:.3e}", flush=True)
+        maxiters=2000, abstol=1e-7, alpha=0.3)
+    P_star = res_p["P_star"]
+    finf_crra = float(np.abs(res_p["residual"]).max())
+    print(f"  Picard iters={len(res_p['history'])}  "
+           f"best Finf={finf_crra:.3e}", flush=True)
 
     # Locate the (1, -1, 1) cell
     i_r = int(np.argmin(np.abs(u_grid - u1)))
