@@ -209,3 +209,89 @@ Items 8-13 are analytical (could be paper revisions).
 
 ### Zero Supply Footnote (Section 2)
 Zero supply is fine. CRRA demand self-bounds (no negative wealth). Market clearing always has solution by IVT. Positive supply shifts price level but not information content. z-bar=0 is the strongest version — PR without any exogenous friction. Add footnote where z-bar=0 is introduced.
+
+---
+
+## OVERNIGHT ANALYSIS (2026-04-27) — FULL PAPER REVIEW
+
+Read entire main.tex (1685 lines, 28 pages). Overall quality is high — Econometrica-worthy writing, clear narrative, strong results. Below are gaps and recommendations.
+
+### CRITICAL ISSUES
+
+**1. Prop 4 (REE PR) is labeled "conjectured"** (line 872)
+The paper's strongest claim is that PR survives rational learning. But Prop 4 is hedged as conjectured, and the TODO paragraph (lines 729-744) admits the solver hasn't reliably converged to the PR branch. For Econometrica this must be resolved. Options:
+  a) Get clean convergence at G≥50 (Claude Code's job)
+  b) Add analytical perturbation argument
+  c) Reframe: no-learning PR is the main result (fully analytical), REE survival is supplementary numerical evidence
+Recommendation: (c) for now, upgrade to (a) or (b) when computation completes.
+
+**2. Six placeholder figures** (yellow background)
+Figs 4, 6, 7, 8, 9, 10 are all placeholders. For submission, at minimum need:
+  - Fig 4 (converged posteriors) — confirms Prop 4
+  - Fig 7 (trade volume) — confirms Prop 5
+  - Fig 9 (GS resolution) — confirms Prop 8
+
+**3. Multiple fixed points mentioned but not addressed**
+The TODO paragraph (729) mentions both FR and PR branches. This needs explicit discussion:
+  - Are there multiple equilibria?
+  - Which one is selected by the vanishing-noise limit?
+  - Does Picard converge to FR or PR depending on initialization?
+
+### MISSING CONTENT
+
+**4. No formal definition of 1−R²**
+The paper uses 1−R² throughout but never defines the regression. Add a definition:
+"The revelation deficit 1−R² is the fraction of weighted variance in logit(p) not explained by T*:
+  1−R² = 1 − [Cov_w(logit p, T*)]² / [Var_w(logit p) · Var_w(T*)]
+where the weighted expectation uses w(u₁,...,u_K) = ½(Π f₁(u_k) + Π f₀(u_k))."
+Place this as a Definition in Section 3 before Prop 1.
+
+**5. No existence theorem for no-learning equilibrium**
+Add a simple lemma: "For any (gamma, tau, W, K), the no-learning market-clearing equation has a unique solution p ∈ (0,1)." Proof: total CRRA demand is continuous, strictly decreasing in p, positive as p→0, negative as p→1. By IVT + monotonicity, unique root.
+
+**6. No HARA discussion in the paper**
+The theory.md analysis shows that within HARA, (a,b) cancel with homogeneous agents — only gamma matters. This strengthens the knife-edge claim and should be a Remark in the Discussion: "The knife-edge is robust to the HARA generalisation: within T(W) = aW/(1−γ) + b, the equilibrium price depends only on γ, and the alignment principle singles out CARA (a=0 or equivalently γ→∞) regardless of (a,b)."
+
+**7. Vanishing-noise proposition (Prop 9) depends on unverified continuity**
+Acknowledged in TODO (line 1281). Either verify the continuity condition or demote to a conjecture with numerical support.
+
+### STRUCTURAL IMPROVEMENTS
+
+**8. Reorder: put knife-edge figure FIRST**
+Currently Fig 1 is the heatmap and the knife-edge (1−R² vs τ) is introduced later. The knife-edge figure is more visually striking and immediate. Consider making it Fig 1 and the table/heatmap Fig 2.
+
+**9. Section 4 (REE) should separate method from results more cleanly**
+Currently: fixed point → contour integration → why straight/curved → convergence → posteriors. The "why straight/curved" subsection (4.3) is the key insight and could come earlier — right after stating the fixed point, before the numerical details.
+
+**10. Section 5 (Welfare/GS) structure is good but needs the zero-supply footnote**
+Already planned (theory.md §16). The footnote should go at line 266 where z̄=0 is stated.
+
+**11. Section 6 (Mechanisms) Mechanism 4 needs numerical confirmation**
+The het-α CARA result is elegant (no-learning PR → REE FR) but the TODO at line 1137 asks for numerical verification. This is a simple computation — just run het-α CARA at no-learning vs REE.
+
+**12. Conclusion could be stronger**
+The conclusion (lines 1310-1331) is solid but could end with a more provocative statement: "The noise-trader assumption is not a feature of rational markets; it is a feature of CARA preferences."
+
+### MINOR ISSUES
+
+**13. Lemma 3 (CARA as limit)** proof is in the main text (lines 374-388). For Econometrica, all proofs go to the appendix. Move it.
+
+**14. The CARA demand lemma proof** (line 1341) uses a certainty-equivalent manipulation that's not quite right for binary outcomes. The standard proof goes through the FOC directly: μ(1-p)U'(W+x(1-p)) = (1-μ)pU'(W-xp), then with U'=αe^{-αW}: αe^{-α(W+x(1-p))} / αe^{-α(W-xp)} = (1-μ)p / (μ(1-p)), giving e^{-αx} = e^{logit(p)-logit(μ)}.
+
+**15. References incomplete** — the \bibliography{references} at line 1334 points to references.bib which should be in the repo. Check it exists and has all cited entries.
+
+### ACTION ITEMS (ordered by priority)
+
+1. [ANALYTICAL] Add Definition of 1−R² in Section 3
+2. [ANALYTICAL] Add existence/uniqueness lemma for no-learning equilibrium
+3. [ANALYTICAL] Add HARA remark to Discussion
+4. [NUMERICAL - Claude Code] Get Prop 4 to converge at G≥50
+5. [NUMERICAL - Claude Code] Fill placeholder figures (4, 7, 9 minimum)
+6. [ANALYTICAL] Address multiple equilibria / selection
+7. [EDITORIAL] Move Lemma 3 proof to appendix
+8. [EDITORIAL] Add zero-supply footnote
+9. [EDITORIAL] Consider reordering figures (knife-edge first)
+10. [ANALYTICAL] Verify or demote vanishing-noise continuity hypothesis
+11. [NUMERICAL - Claude Code] Mechanism 4 het-α numerical confirmation
+12. [EDITORIAL] Check references.bib completeness
+13. [EDITORIAL] Strengthen conclusion
