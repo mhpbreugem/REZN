@@ -506,3 +506,12 @@ Protocol:
 - This chat reads `numerics.md` and updates figures/paper
 - This chat writes `theory.md` here with model updates
 - Claude Code reads `theory.md` before computing
+
+---
+
+## 16. FOOTNOTES AND REMARKS FOR THE PAPER
+
+### Footnote: Zero Net Supply
+Add a footnote in Section 2 (Model) where zero supply is introduced. Text:
+
+"Zero net supply is the strongest version of our result: partial revelation arises without any exogenous friction — no supply noise, no noise traders, no demand shocks. CRRA demand is self-bounding: as wealth approaches zero in either state, marginal utility diverges, preventing agents from taking unbounded positions. Market clearing at z-bar = 0 always admits a solution by the intermediate value theorem, with some agents long and others short. Introducing positive deterministic supply z-bar > 0 shifts the price level but does not affect the information content: under CARA, agents still extract T* perfectly from p (since z-bar is known); under CRRA, partial revelation persists. Our choice of z-bar = 0 thus isolates the pure preference channel."

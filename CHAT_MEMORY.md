@@ -204,3 +204,8 @@ OPEN TODOs (visible in PDF as red sansserif boxes):
 
 Items 1-7 are numerical (Claude Code).
 Items 8-13 are analytical (could be paper revisions).
+
+## FOOTNOTES FOR THE PAPER
+
+### Zero Supply Footnote (Section 2)
+Zero supply is fine. CRRA demand self-bounds (no negative wealth). Market clearing always has solution by IVT. Positive supply shifts price level but not information content. z-bar=0 is the strongest version — PR without any exogenous friction. Add footnote where z-bar=0 is introduced.

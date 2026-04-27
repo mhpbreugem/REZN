@@ -204,3 +204,10 @@ Figures: use \includegraphics{figures/fig_name.pdf} pointing to the repo's figur
 
 ## SUMMARY
 Read CHAT_MEMORY.md from the repo first — it has everything. Write the paper. Push to the repo. Use the done figures directly. Mark placeholder figures as forthcoming. Ask the author if anything is unclear about the economics or the narrative.
+
+---
+
+## FOOTNOTES TO INCLUDE
+
+### Zero Net Supply (Section 2, where z-bar=0 is stated)
+Add a footnote explaining: "Zero net supply is the strongest version of our result: partial revelation arises without any exogenous friction. CRRA demand is self-bounding (U' -> inf as W -> 0 prevents unbounded positions). Market clearing at z-bar = 0 always admits a solution by IVT. Positive deterministic supply z-bar > 0 shifts the price level but not information content: under CARA, agents still extract T* (z-bar is known); under CRRA, PR persists. Our choice isolates the pure preference channel."
