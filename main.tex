@@ -127,12 +127,14 @@ posteriors to demand is itself the inverse logistic --- a coincidence of
 functional form, not an economic primitive.
 
 The contributions of the paper are four. First, I show analytically that in
-a binary-state model with $K\geq 3$ groups and arbitrary heterogeneity in
-risk aversion, signal precision, and wealth, the CARA equilibrium is fully
-revealing for every parameter configuration (Proposition~\ref{prop:cara}).
-This generalises the uniqueness result of \citet{DeMarzoSkiadas1998} to
-heterogeneous parameters and provides a constructive characterisation in
-terms of weighted log-odds aggregation. Second, I show that under any CRRA
+a binary-state model with $K\geq 3$ groups, the CARA market-clearing
+condition aggregates private posteriors in log-odds for arbitrary
+heterogeneity in risk aversion, signal precision, and wealth, and is fully
+revealing of the Bayesian sufficient statistic when risk aversion is
+homogeneous (Proposition~\ref{prop:cara}). Heterogeneous risk aversion
+introduces a separate route to partial revelation, but the underlying
+log-odds aggregation is robust and continues to identify CARA as the
+boundary case. Second, I show that under any CRRA
 preference with $\gamma\neq\infty$ the no-learning equilibrium is partially
 revealing, and I derive the third-order asymptotic expansion of the Jensen
 gap (Propositions~\ref{prop:non-cara},~\ref{prop:jensen}). Third, I solve the
@@ -339,34 +341,41 @@ The conclusions extend to the full REE in Section~\ref{sec:ree}.
 
 \subsection{CARA implies full revelation}
 
-\begin{proposition}[CARA full revelation]\label{prop:cara}
-Fix any $K\geq 1$ and any heterogeneous parameter vector
+\begin{proposition}[CARA log-odds aggregation and full revelation]\label{prop:cara}
+Fix any $K\geq 1$ and any parameter vector
 $(\alpha_{k},\tau_{k},W_{k})_{k=1}^{K}$. The unique no-learning equilibrium
-under CARA preferences satisfies
+under CARA preferences aggregates private posteriors in log-odds:
 \begin{equation}
-   \logit p \;=\; \sum_{k=1}^{K} w_{k}\,\tau_{k}\,u_{k},
-   \qquad w_{k} \;=\; \frac{\alpha^{-1}_{k}}{\sum_{j}\alpha^{-1}_{j}},
+   \logit p \;=\; \sum_{k=1}^{K} w_{k}\,\logit\mu_{k}
+              \;=\; \sum_{k=1}^{K} w_{k}\,\tau_{k}\,u_{k},
+   \qquad w_{k} \;=\; \frac{\alpha^{-1}_{k}}{\sum_{j}\alpha^{-1}_{j}}.
 \label{eq:cara-clearing}
 \end{equation}
-and, when $\alpha_{k}/\tau_{k}$ is constant across $k$, $\logit p$ is an
-affine function of the Bayesian sufficient statistic $\Tstar$ of
-\eqref{eq:Tstar}. In particular, with homogeneous $(\alpha,\tau)$ across
-groups, $\logit p = (\sum\tau_{k}u_{k})/K$, and the price reveals $\Tstar$
-exactly. The equilibrium is fully revealing in the sense that
+When risk aversion is homogeneous across groups, $w_{k}=1/K$ and
+$\logit p=\Tstar/K$ is a known scalar multiple of the Bayesian sufficient
+statistic $\Tstar$ of \eqref{eq:Tstar}. The equilibrium is then fully
+revealing in the sense that
 $\PP(v=1\mid p)=\PP(v=1\mid u_{1},\ldots,u_{K})$ for almost every realisation.
+With heterogeneous $\alpha_{k}$ the no-learning price reveals a different
+linear combination of the signals --- a fourth route to partial revelation,
+discussed in Section~\ref{sec:mechanisms} --- but, because the candidate
+fully-revealing price function $p=\Lam(\Tstar)$ satisfies market clearing
+identically (zero trade) regardless of $(\alpha_{k})$, the
+\emph{rational-expectations} equilibrium remains fully revealing for
+arbitrary heterogeneous CARA parameters.
 \end{proposition}
 
 The proof, in Appendix~\ref{app:proofs}, exploits the linearity of
 \eqref{eq:cara-demand} to reduce \eqref{eq:no-learning} to a linear equation
 in $\logit p$, then composes with \eqref{eq:posterior} to obtain the
-weighted log-odds form. Full revelation follows because $\Tstar$ is a
-sufficient statistic for the joint posterior $\PP(v=1\mid u_{1},\ldots,u_{K})$
-and any affine function of $\Tstar$ is informationally equivalent.
-The result generalises \citet{DeMarzoSkiadas1998} from the Gaussian-asset
-CARA model to a binary asset with arbitrary heterogeneity, and a parallel
-extension obtains for any signal distribution in the exponential family with
-CARA preferences (\citealp{BreonDrish2015}); the proof in
-Appendix~\ref{app:proofs} sketches this extension.
+weighted log-odds form. Under homogeneous risk aversion, full revelation
+follows because $\Tstar$ is a sufficient statistic for the joint posterior
+$\PP(v=1\mid u_{1},\ldots,u_{K})$ and any affine function of $\Tstar$ is
+informationally equivalent. The log-odds aggregation form generalises
+\citet{DeMarzoSkiadas1998} from the Gaussian-asset CARA model to a binary
+asset, and a parallel extension obtains for any signal distribution in the
+exponential family with CARA preferences (\citealp{BreonDrish2015}); the
+proof in Appendix~\ref{app:proofs} sketches this extension.
 
 \subsection{Non-CARA implies partial revelation}
 
@@ -978,11 +987,17 @@ $\sum_{k}\alpha_{k}^{-1}[\logit\mu_{k}-\logit p]=0$, which solves to
 $\logit p=\sum_{k}w_{k}\logit\mu_{k}$ with
 $w_{k}=\alpha_{k}^{-1}/\sum_{j}\alpha_{j}^{-1}$. By
 \eqref{eq:posterior}, $\logit\mu_{k}=\tau_{k}u_{k}$, so
-$\logit p=\sum_{k}w_{k}\tau_{k}u_{k}$. When $\alpha_{k}/\tau_{k}$ is
-constant across $k$, this reduces to a scalar multiple of
-$\Tstar=\sum\tau_{k}u_{k}$. Full revelation follows because $\Tstar$ is a
-sufficient statistic for the joint posterior. The exponential-family
-extension is identical with $\tau_{k}u_{k}$ replaced by the natural-parameter
+$\logit p=\sum_{k}w_{k}\tau_{k}u_{k}$. When $\alpha_{k}$ is constant across
+$k$, $w_{k}=1/K$, and this reduces to the scalar multiple $\Tstar/K$ of the
+sufficient statistic; the price is then informationally equivalent to
+$\Tstar$ and full revelation follows. With heterogeneous $\alpha_{k}$,
+the no-learning price reveals one linear combination of the $u_{k}$, which
+for $K\geq 3$ is generically not informationally equivalent to $\Tstar$;
+revelation is then partial in the no-learning equilibrium but full in the
+REE because the price function $p=\Lam(\Tstar)$ delivers identical
+posteriors to every agent and demands of zero, so it is a market-clearing
+equilibrium for any $(\alpha_{k})$. The exponential-family extension is
+identical with $\tau_{k}u_{k}$ replaced by the natural-parameter
 log-likelihood ratio of the chosen family.
 \end{proof}
 
