@@ -23,8 +23,10 @@ import pchip_jacobian as pj
 
 G = 11
 UMAX = 2.0
-TAUS = np.array([4.0, 4.0, 4.0])
-GAMMAS = np.array([3.0, 3.0, 3.0])
+# Heterogeneous τ at γ=2 — matches the historical 9e-10 PR config (γ=2)
+# with broken τ-symmetry to escape the symmetric FR basin.
+TAUS = np.array([1.0, 3.0, 5.0])
+GAMMAS = np.array([2.0, 2.0, 2.0])
 WS = np.array([1.0, 1.0, 1.0])
 EPS_OUTER = 1e-9
 LGMRES_TOL = 1e-13
@@ -44,11 +46,23 @@ _v = pj.J_dot_v(P0, _p)
 print(f"  JIT warm: {time.time()-t0:.1f}s", flush=True)
 
 
-def picard_adaptive(P_init, alpha0=0.20, alpha_min=0.02, alpha_max=0.20,
+def picard_adaptive(P_init, alpha0=0.20, alpha_min=0.02, alpha_max=0.30,
                      maxiter=20000, abstol=1e-13,
-                     window=60, mono_relax=200,
-                     stall_window=800, stall_ratio=0.97,
+                     slope_window=100,
+                     mono_relax=400,
+                     stall_window=500, stall_ratio=0.95,
                      perturb_sigma=1e-6, perturb_seed=42):
+    """Adaptive Picard.
+
+      α-shrink (×0.7) when log-residual slope over last `slope_window`
+        iters is ≥0 (residual not decreasing on average).
+      α-relax (×1.05) when residual decreased monotonically for
+        `mono_relax` iters in a row.
+      Perturb (σ × scale) when best-in-last-N ≥ stall_ratio × best-in-prior-N.
+
+    Cooldown: any α change → no further α change for 50 iters; any
+    perturb → no further perturb for `stall_window` iters.
+    """
     print(f"=== Adaptive Picard: α₀={alpha0}, max {maxiter} iters ===",
           flush=True)
     rng = np.random.default_rng(perturb_seed)
@@ -57,8 +71,9 @@ def picard_adaptive(P_init, alpha0=0.20, alpha_min=0.02, alpha_max=0.20,
     resid_hist = []
     decr_streak = 0
     last_perturb = -10**6
+    last_alpha_chg = -10**6
     n_perturb = 0
-    n_alpha_changes = 0
+    n_alpha_chg = 0
     t_start = time.time()
     t_last_print = -1.0
 
@@ -75,63 +90,69 @@ def picard_adaptive(P_init, alpha0=0.20, alpha_min=0.02, alpha_max=0.20,
                   flush=True)
             break
 
-        # Adaptive α
+        # ---- α adapt
         alpha_changed = False
-        if it >= window:
-            recent = resid_hist[-window:]
-            r_min = min(recent)
-            r_max = max(recent[-window // 2:])
-            if r_min > 0 and r_max / r_min > 1.05:
-                # oscillation → shrink α
+        if (it >= slope_window
+                and (it - last_alpha_chg) >= 50):
+            window = np.asarray(resid_hist[-slope_window:])
+            log_w = np.log(np.maximum(window, 1e-300))
+            xs = np.arange(slope_window, dtype=float)
+            slope = float(np.polyfit(xs, log_w, 1)[0])
+            if slope >= 0.0 and alpha > alpha_min:
                 new_a = max(alpha_min, alpha * 0.7)
                 if new_a < alpha:
                     alpha = new_a
-                    decr_streak = 0
+                    last_alpha_chg = it
                     alpha_changed = True
-                    n_alpha_changes += 1
+                    n_alpha_chg += 1
+                    decr_streak = 0
         if it > 0 and Finf < resid_hist[-2]:
             decr_streak += 1
-            if decr_streak >= mono_relax and alpha < alpha_max:
+            if (decr_streak >= mono_relax
+                    and alpha < alpha_max
+                    and (it - last_alpha_chg) >= 50):
                 new_a = min(alpha_max, alpha * 1.05)
                 if new_a > alpha:
                     alpha = new_a
-                    decr_streak = 0
+                    last_alpha_chg = it
                     alpha_changed = True
-                    n_alpha_changes += 1
+                    n_alpha_chg += 1
+                    decr_streak = 0
         else:
             decr_streak = 0
 
-        # Stall detect → perturb
+        # ---- stall → perturb
         perturbed = False
-        if (it >= 2 * stall_window and
-                (it - last_perturb) >= stall_window):
+        if (it >= 2 * stall_window
+                and (it - last_perturb) >= stall_window):
             recent_min = min(resid_hist[-stall_window:])
             prior_min = min(resid_hist[-2 * stall_window:-stall_window])
-            if (prior_min > 0 and
-                    recent_min >= stall_ratio * prior_min):
-                scale = float(np.mean(P[(P > EPS_OUTER * 10) &
-                                          (P < 1 - EPS_OUTER * 10)]))
+            if (prior_min > 0
+                    and recent_min >= stall_ratio * prior_min):
+                support = (P > EPS_OUTER * 10) & (P < 1 - EPS_OUTER * 10)
+                scale = float(np.mean(P[support])) if support.any() else 0.5
                 noise = perturb_sigma * scale * rng.standard_normal(P.shape)
                 P = np.clip(P + noise, EPS_OUTER, 1 - EPS_OUTER)
                 last_perturb = it
                 n_perturb += 1
                 perturbed = True
 
-        # Damped Picard step (after possible perturb)
+        # ---- step (skip damped step if we already perturbed in place)
         if not perturbed:
             P = np.clip(alpha * Phi + (1 - alpha) * P,
                           EPS_OUTER, 1 - EPS_OUTER)
 
-        # Heartbeat / event print
+        # ---- print
         elapsed = time.time() - t_start
-        if (elapsed - t_last_print) >= HEARTBEAT or alpha_changed or perturbed \
-                or it == maxiter - 1:
+        if ((elapsed - t_last_print) >= HEARTBEAT
+                or alpha_changed or perturbed
+                or it == maxiter - 1):
             tag = ""
             if alpha_changed: tag += f" α→{alpha:.4f}"
             if perturbed:     tag += f" PERTURB σ={perturb_sigma:.0e}"
             print(f"  Picard iter {it+1}/{maxiter}: resid={Finf:.3e}  "
                   f"α={alpha:.4f}  decr={decr_streak}  "
-                  f"perturbs={n_perturb}  α-chg={n_alpha_changes}  "
+                  f"perturbs={n_perturb}  α-chg={n_alpha_chg}  "
                   f"elapsed={elapsed:.1f}s{tag}",
                   flush=True)
             t_last_print = elapsed
