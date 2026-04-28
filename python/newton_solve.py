@@ -39,14 +39,29 @@ u_full = np.concatenate([pad_left, u_inner, pad_right])
 PAD = N_pad
 
 
-def make_residual(gamma, tau, kind):
-    """F(x_flat) = x - Sym(Phi(extrapolate(x))).  x is the inner G_in^3 array, flat."""
+def make_residual(gamma, tau, kind, state):
+    """
+    F(x_flat) = x - Sym(Phi(extrapolate(x))).  x is the inner G_in^3 array, flat.
+    Emits a HEARTBEAT line every state['heartbeat_every'] F-evals so the monitor
+    can show progress during inner-Newton (LGMRES) Jacobian-column construction.
+    """
     def F(x_flat):
         P_inner = x_flat.reshape((G_in, G_in, G_in))
         P_full = extrapolate_padded(P_inner, G_in, N_pad)
         P_new = Phi_inner(P_full, u_full, G_in, N_pad, gamma, tau, kind)
         P_new = symmetrize(P_new)
-        return (P_inner - P_new).flatten()
+        residual = (P_inner - P_new).flatten()
+
+        state['F_total'] += 1
+        state['F_since_iter'] += 1
+        if state['F_since_iter'] % state['heartbeat_every'] == 0:
+            Finf = float(np.max(np.abs(residual)))
+            R2 = compute_R2(P_inner, u_inner, state['tau'])
+            elapsed = time.time() - state['t0']
+            print(f"HEARTBEAT  outer={state['outer_iter']:3d}  Jcol={state['F_since_iter']:3d}  "
+                  f"Ftotal={state['F_total']:4d}  ||F||inf={Finf:.4e}  1-R^2={R2:.8f}  "
+                  f"t={elapsed:.1f}s  ({state['label']})", flush=True)
+        return residual
     return F
 
 
@@ -61,20 +76,28 @@ def initial_inner(gamma, tau, kind):
 
 def newton_run(gamma, tau, kind, label, f_tol=1e-12, maxiter=200,
                inner_maxiter=12, perturb_scale=0.05, stall_atol=1e-5,
-               max_perturbs=8, seed=0):
+               max_perturbs=8, seed=0, heartbeat_every=5):
     """
     Outer loop: calls newton_krylov in chunks of inner_maxiter iterations.
     Detects stall (residual barely moves between chunks) and perturbs iterate
     with symmetrized Gaussian noise scaled to the current residual, then restarts.
+    Emits a HEARTBEAT line every `heartbeat_every` F-evals so the monitor sees
+    progress during inner-Newton (LGMRES Jacobian-column construction).
     """
     print(f"\n{'=' * 64}", flush=True)
     print(f"  NEWTON-KRYLOV + PERTURB-ON-STALL  {label}  gamma={gamma}  tau={tau}", flush=True)
     print(f"  G_in={G_in}, N_pad={N_pad}, UMAX={UMAX}, UMAX_PAD={UMAX_PAD}", flush=True)
     print(f"  f_tol={f_tol:.1e}, max_total_iter={maxiter}, inner_maxiter={inner_maxiter}", flush=True)
     print(f"  perturb_scale={perturb_scale}, stall_atol={stall_atol}, max_perturbs={max_perturbs}", flush=True)
+    print(f"  heartbeat_every={heartbeat_every} F-evals", flush=True)
     print(f"{'=' * 64}", flush=True)
 
-    F = make_residual(gamma, tau, kind)
+    state = {
+        'F_total': 0, 'F_since_iter': 0, 'outer_iter': 0,
+        't0': time.time(), 'label': label, 'tau': tau,
+        'heartbeat_every': heartbeat_every,
+    }
+    F = make_residual(gamma, tau, kind, state)
     x = initial_inner(gamma, tau, kind)
     rng = np.random.default_rng(seed)
 
@@ -83,26 +106,25 @@ def newton_run(gamma, tau, kind, label, f_tol=1e-12, maxiter=200,
     print(f"ITER   0  1-R^2={R2_NL:.8f}  ||F||={np.max(np.abs(F0)):.4e}  t=0.0s  (no-learning seed)",
           flush=True)
 
-    counter = {"n": 0, "t0": time.time()}
-
     def cb(x_cur, f_cur):
-        counter["n"] += 1
+        state['outer_iter'] += 1
+        state['F_since_iter'] = 0
         P_inner = x_cur.reshape((G_in, G_in, G_in))
         R2 = compute_R2(P_inner, u_inner, tau)
         Finf = float(np.max(np.abs(f_cur)))
         F2 = float(np.linalg.norm(f_cur))
-        elapsed = time.time() - counter["t0"]
-        print(f"ITER {counter['n']:3d}  1-R^2={R2:.8f}  ||F||inf={Finf:.4e}  ||F||2={F2:.4e}  t={elapsed:.1f}s",
-              flush=True)
+        elapsed = time.time() - state['t0']
+        print(f"ITER {state['outer_iter']:3d}  1-R^2={R2:.8f}  ||F||inf={Finf:.4e}  ||F||2={F2:.4e}  "
+              f"Ftotal={state['F_total']:4d}  t={elapsed:.1f}s", flush=True)
 
     last_resid = float(np.max(np.abs(F0)))
     n_perturbs = 0
     status = "running"
 
-    while counter["n"] < maxiter and n_perturbs <= max_perturbs:
+    while state['outer_iter'] < maxiter and n_perturbs <= max_perturbs:
         try:
             x = newton_krylov(F, x, f_tol=f_tol,
-                              maxiter=min(inner_maxiter, maxiter - counter["n"]),
+                              maxiter=min(inner_maxiter, maxiter - state['outer_iter']),
                               method="lgmres", verbose=False, callback=cb,
                               line_search="armijo")
             status = "converged"
@@ -112,8 +134,8 @@ def newton_run(gamma, tau, kind, label, f_tol=1e-12, maxiter=200,
             cur_resid = float(np.max(np.abs(F(x))))
             rel_change = abs(cur_resid - last_resid) / max(cur_resid, 1e-30)
             stalled = rel_change < stall_atol
-            elapsed = time.time() - counter["t0"]
-            if stalled and counter["n"] < maxiter:
+            elapsed = time.time() - state['t0']
+            if stalled and state['outer_iter'] < maxiter:
                 # Symmetric Gaussian perturbation, scaled to current residual
                 noise = rng.standard_normal((G_in, G_in, G_in)) * perturb_scale * cur_resid
                 P_inner = x.reshape((G_in, G_in, G_in))
@@ -155,7 +177,7 @@ def newton_run(gamma, tau, kind, label, f_tol=1e-12, maxiter=200,
         "label": label, "gamma": gamma, "tau": tau, "kind": kind,
         "status": status, "P_inner": P_inner, "R2": R2_final,
         "F_inf": float(np.max(np.abs(F_final))), "F_2": float(np.linalg.norm(F_final)),
-        "iter": counter["n"],
+        "iter": state['outer_iter'],
     }
 
 
