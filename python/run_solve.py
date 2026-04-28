@@ -42,6 +42,10 @@ def main(argv=None):
     p.add_argument("--save-to", default=None,
                    help="pickle path for the final P_f128 + metadata")
     p.add_argument("--label", default="")
+    p.add_argument("--checkpoint", default=None,
+                   help="periodic Picard checkpoint pickle (atomic write)")
+    p.add_argument("--checkpoint-every", type=int, default=50,
+                   help="iters between checkpoint writes (default 50)")
     args = p.parse_args(argv)
 
     gammas = np.asarray(args.gammas, dtype=np.float64)
@@ -70,6 +74,8 @@ def main(argv=None):
         log_interval_s=args.log_interval_s,
         save_to=args.save_to,
         label=args.label,
+        checkpoint_path=args.checkpoint,
+        checkpoint_every=args.checkpoint_every,
     )
     print(f"DONE  Finf={res['Finf']:.3e}  1-R²={res['one_minus_R2']:.3e}")
     return 0

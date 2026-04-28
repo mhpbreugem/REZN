@@ -82,6 +82,7 @@ def solve(
     log_path=None,
     log_interval_s=120.0,
     save_to=None, label="",
+    checkpoint_path=None, checkpoint_every=50,
 ):
     """Run the full pipeline. Returns a result dict.
 
@@ -149,6 +150,8 @@ def solve(
             log=log,
             log_interval_s=log_interval_s,
             extra_fn=extra_metrics,
+            checkpoint_path=checkpoint_path,
+            checkpoint_every=checkpoint_every,
         )
         timings["picard_s"] = time.time() - t0
         history.extend(("picard", h) for h in pic["history"])

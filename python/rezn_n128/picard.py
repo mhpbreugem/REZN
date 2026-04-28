@@ -4,12 +4,25 @@
 σ-perturbation when best-in-window stalls; tracks the best non-saturated
 iterate across the whole run and returns it (the last iterate may be a
 spurious saturated one).
+
+If `checkpoint_path` is given, atomically writes the best iterate every
+`checkpoint_every` iters as a minimal pickle ({'P_f128', 'iter', 'Finf',
+'alpha'}). Loadable by `solver._resolve_seed` (just keys 'P_f128'/'P').
 """
 from __future__ import annotations
+import os
+import pickle
 import time
 import numpy as np
 
 from .primitives import DTYPE, EPS_OUTER
+
+
+def _atomic_pickle(path, obj):
+    tmp = path + ".tmp"
+    with open(tmp, "wb") as f:
+        pickle.dump(obj, f)
+    os.replace(tmp, path)
 
 
 def picard_adaptive(
@@ -24,6 +37,7 @@ def picard_adaptive(
     perturb_sigma=DTYPE("1e-6"), perturb_seed=42,
     log=print, log_interval_s=10.0,
     extra_fn=None,
+    checkpoint_path=None, checkpoint_every=50,
 ):
     """Run adaptive Picard until residual < abstol or maxiter exhausted.
 
@@ -64,6 +78,15 @@ def picard_adaptive(
         if Finf < 0.5 and Finf < Finf_best:
             Finf_best = Finf
             P_best = P.copy()
+
+        if (checkpoint_path is not None
+                and (it + 1) % checkpoint_every == 0
+                and Finf_best < float("inf")):
+            _atomic_pickle(checkpoint_path, dict(
+                P_f128=P_best, P=P_best.astype(np.float64),
+                iter=it + 1, Finf=Finf_best, alpha=float(alpha),
+                schema="picard_checkpoint/1",
+            ))
 
         if Finf < abstol_f:
             elapsed = time.time() - t_start
