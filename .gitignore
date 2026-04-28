@@ -1,5 +1,7 @@
 python/sweep_restart.log
 python/*.log
+python/*.stdout
+python/*.out
 python/sweep_status.txt
 python/polish_status.txt
 python/pchip_cache.pkl
