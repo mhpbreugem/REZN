@@ -8,3 +8,10 @@
 *.synctex.gz
 *.fls
 *.fdb_latexmk
+
+# Python / numerics
+__pycache__/
+*.pyc
+.numba_cache/
+output/
+*.npz
