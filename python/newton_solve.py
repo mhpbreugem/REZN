@@ -26,7 +26,7 @@ from level_k_extrap import (
 # Configure problem
 # --------------------------------------------------------------------------
 
-G_in = 5
+G_in = 9
 N_pad = 2
 UMAX = 2.0
 UMAX_PAD = 3.0
@@ -161,11 +161,11 @@ def newton_run(gamma, tau, kind, label, f_tol=1e-12, maxiter=200,
 
 if __name__ == "__main__":
     res_cara = newton_run(gamma=1.0, tau=TAU, kind="cara", label="CARA",
-                          f_tol=1e-12, maxiter=200, inner_maxiter=12,
-                          perturb_scale=0.05, stall_atol=1e-5, max_perturbs=8)
+                          f_tol=1e-12, maxiter=250, inner_maxiter=10,
+                          perturb_scale=0.05, stall_atol=1e-5, max_perturbs=20)
     res_crra = newton_run(gamma=0.5, tau=TAU, kind="crra", label="CRRA(0.5)",
-                          f_tol=1e-12, maxiter=200, inner_maxiter=12,
-                          perturb_scale=0.05, stall_atol=1e-5, max_perturbs=8)
+                          f_tol=1e-12, maxiter=250, inner_maxiter=10,
+                          perturb_scale=0.05, stall_atol=1e-5, max_perturbs=20)
 
     print("\n" + "=" * 64, flush=True)
     print("SUMMARY", flush=True)
