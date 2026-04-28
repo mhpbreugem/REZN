@@ -205,6 +205,90 @@ OPEN TODOs (visible in PDF as red sansserif boxes):
 Items 1-7 are numerical (Claude Code).
 Items 8-13 are analytical (could be paper revisions).
 
+---
+
+## SIDE-PROJECT FINDING (2026-04-28) — K=4 PR-BRANCH IS UNSTABLE UNDER PICARD
+
+Side-projects chat built a clean K=4 contour-method solver in `code/`
+(single-thread, float64 hot kernel + float128 metrics & symmetrise via
+`code/f128.py`). All seven smoke tests pass; CARA reaches 1-R^2 ~ 1e-16
+in two Anderson iterations. Code is on branch
+`claude/side-projects-exploration-cfAbX`.
+
+Then ran a gamma-ladder experiment to test Prop 8 (smooth transition)
+at K=4. Two ladder configurations:
+
+(a) Continuation seed (gamma=100 -> 0.25, G=10, Anderson m=8, 40 iters):
+    1-R^2 stays ~1e-8 across the whole ladder. Continuation traps the
+    iterate on the FR branch — Lambda(T*) is a fixed point of Phi at
+    every gamma. f64 == f128 to all 6 reported digits.
+
+(b) No-learning seed at each gamma (G=8, Picard alpha=0.05, 300 iters):
+    SEED          FINAL         RATIO    GRID-FLOOR RESIDUAL
+    gamma=100  6.7e-6     3.3e-7   0.049    3.9e-3
+    gamma= 5   2.3e-3     1.4e-5   0.006    1.6e-2
+    gamma= 1   2.8e-2     2.0e-4   0.007    1.5e-2
+    gamma=0.5  5.4e-2     1.3e-4   0.002    3.2e-2
+    gamma=0.25 8.7e-2     9.7e-5   0.001    4.5e-2
+
+Picard reduces 1-R^2 by 2-3 orders of magnitude from any no-learning
+seed. The fixed point Phi appears to attract is FR (Lambda(T*)), not PR.
+Residuals stall at the K=4/G=8 interpolation floor (~1-5e-2), so the
+"finals" above are not exact equilibria — only as close as G=8 admits.
+
+INTERPRETATION
+--------------
+This replicates exactly the open issue in main.tex line 729:
+"the solver hasn't reliably converged to the PR branch."
+At K=4 the no-learning equilibrium is partially revealing
+(Table 6.1-style values match the paper's K=3 numbers up to a 1/K
+correction), but it is NOT a fixed point of Phi. Iteration drifts
+toward the FR no-trade equilibrium.
+
+Three caveats:
+- G=8 is coarse for K=4. G=20+ may change the picture; the relative
+  cost is G^6 (one Phi at G=20 ~ 0.5 min on one core, 300 Picard iters
+  ~ 2.5 hrs/gamma).
+- Picard finds locally-stable fixed points only. If PR is a
+  saddle/repelling fixed point, Picard cannot find it; Anderson with
+  good seeding might.
+- f128 changes nothing in either ladder. The floor is geometric
+  (basin-of-attraction), not arithmetic precision.
+
+DIAGNOSIS FOR THE PAPER
+-----------------------
+This is consistent with the K=3 Section 7.1 reported "PR" possibly
+being a coarse-grid metastable transient at G=5. Two productive
+directions for the paper chat to consider:
+
+1. Re-frame Prop 4 ("PR survives at REE") as a NUMERICAL CONJECTURE
+   rather than a theorem until G is large enough to distinguish PR
+   from grid noise. This is option (c) in the OVERNIGHT ANALYSIS
+   list above (CRITICAL ISSUES item 1).
+
+2. Lead with the ANALYTICAL no-learning result (Props 1-3 + Table 6.1,
+   all closed-form) as the paper's main contribution; treat the REE
+   survival of PR as an open numerical question. The alignment principle
+   does not require Prop 4 to land — it only requires that the
+   alignment-versus-no-alignment distinction matters, which is fully
+   established at no-learning.
+
+ARTIFACTS PUSHED TO BRANCH
+--------------------------
+- code/                 (10 modules + README, ~1100 lines, float64 hot
+                        kernel + float128 metrics/symmetrise)
+- code/ladder.py        (--seed continuation|no-learning, --f128-symmetrize)
+- code/trajectory.py    (records 1-R^2 every N iters for the whole
+                        ladder; this is what the table above came from)
+- output/ladder_G10/    (continuation ladder, FR branch trapped)
+- output/traj_G8/       (300-iter Picard trajectory, no-learning seeds)
+
+To reproduce:
+    taskset -c 0 env OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 \
+        OPENBLAS_NUM_THREADS=1 NUMBA_NUM_THREADS=1 \
+        python -m code.trajectory --G 8 --tau 2.0 \
+            --max-iters 300 --damping 0.05 --record-every 25
+
 ## FOOTNOTES FOR THE PAPER
 
 ### Zero Supply Footnote (Section 2)
