@@ -71,6 +71,8 @@ def picard_adaptive(P_init, alpha0=0.20, alpha_min=0.02, alpha_max=0.30,
           flush=True)
     rng = np.random.default_rng(perturb_seed)
     P = P_init.copy()
+    P_best = P.copy()
+    Finf_best = float("inf")
     alpha = alpha0
     resid_hist = []
     decr_streak = 0
@@ -86,6 +88,11 @@ def picard_adaptive(P_init, alpha0=0.20, alpha_min=0.02, alpha_max=0.30,
         F = P - Phi
         Finf = float(np.abs(F).max())
         resid_hist.append(Finf)
+
+        # Track best non-saturated iterate (Finf < 0.5 → not saturated)
+        if Finf < 0.5 and Finf < Finf_best:
+            Finf_best = Finf
+            P_best = P.copy()
 
         if Finf < abstol:
             elapsed = time.time() - t_start
@@ -168,9 +175,18 @@ def picard_adaptive(P_init, alpha0=0.20, alpha_min=0.02, alpha_max=0.30,
     Phi_final = rp._phi_map_pchip(P, u, TAUS, GAMMAS, WS)
     Finf_final = float(np.abs(P - Phi_final).max())
     print(f"  Picard done: final resid={Finf_final:.3e}  "
+          f"best non-sat resid={Finf_best:.3e}  "
           f"total={time.time()-t_start:.1f}s  "
-          f"perturbs={n_perturb}  α-chg={n_alpha_changes}",
+          f"perturbs={n_perturb}  α-chg={n_alpha_chg}",
           flush=True)
+    if Finf_best < Finf_final:
+        try:
+            one_r2_best = rh.one_minus_R2(P_best, u, TAUS)
+            print(f"  Using BEST iterate: resid={Finf_best:.3e}  "
+                  f"1-R²={one_r2_best:.3e}", flush=True)
+        except Exception:
+            pass
+        return P_best, Finf_best
     return P, Finf_final
 
 
