@@ -59,44 +59,84 @@ def initial_inner(gamma, tau, kind):
 # Driver: Newton-Krylov with per-iteration callback
 # --------------------------------------------------------------------------
 
-def newton_run(gamma, tau, kind, label, f_tol=1e-12, maxiter=60):
+def newton_run(gamma, tau, kind, label, f_tol=1e-12, maxiter=200,
+               inner_maxiter=12, perturb_scale=0.05, stall_atol=1e-5,
+               max_perturbs=8, seed=0):
+    """
+    Outer loop: calls newton_krylov in chunks of inner_maxiter iterations.
+    Detects stall (residual barely moves between chunks) and perturbs iterate
+    with symmetrized Gaussian noise scaled to the current residual, then restarts.
+    """
     print(f"\n{'=' * 64}", flush=True)
-    print(f"  NEWTON-KRYLOV  {label}  gamma={gamma}  tau={tau}", flush=True)
+    print(f"  NEWTON-KRYLOV + PERTURB-ON-STALL  {label}  gamma={gamma}  tau={tau}", flush=True)
     print(f"  G_in={G_in}, N_pad={N_pad}, UMAX={UMAX}, UMAX_PAD={UMAX_PAD}", flush=True)
-    print(f"  f_tol={f_tol:.1e}, maxiter={maxiter}", flush=True)
+    print(f"  f_tol={f_tol:.1e}, max_total_iter={maxiter}, inner_maxiter={inner_maxiter}", flush=True)
+    print(f"  perturb_scale={perturb_scale}, stall_atol={stall_atol}, max_perturbs={max_perturbs}", flush=True)
     print(f"{'=' * 64}", flush=True)
 
     F = make_residual(gamma, tau, kind)
-    x0 = initial_inner(gamma, tau, kind)
+    x = initial_inner(gamma, tau, kind)
+    rng = np.random.default_rng(seed)
 
-    R2_NL = compute_R2(x0.reshape((G_in, G_in, G_in)), u_inner, tau)
-    F0 = F(x0)
+    R2_NL = compute_R2(x.reshape((G_in, G_in, G_in)), u_inner, tau)
+    F0 = F(x)
     print(f"ITER   0  1-R^2={R2_NL:.8f}  ||F||={np.max(np.abs(F0)):.4e}  t=0.0s  (no-learning seed)",
           flush=True)
 
     counter = {"n": 0, "t0": time.time()}
 
-    def cb(x, f):
+    def cb(x_cur, f_cur):
         counter["n"] += 1
-        P_inner = x.reshape((G_in, G_in, G_in))
+        P_inner = x_cur.reshape((G_in, G_in, G_in))
         R2 = compute_R2(P_inner, u_inner, tau)
-        Finf = float(np.max(np.abs(f)))
-        F2 = float(np.linalg.norm(f))
+        Finf = float(np.max(np.abs(f_cur)))
+        F2 = float(np.linalg.norm(f_cur))
         elapsed = time.time() - counter["t0"]
         print(f"ITER {counter['n']:3d}  1-R^2={R2:.8f}  ||F||inf={Finf:.4e}  ||F||2={F2:.4e}  t={elapsed:.1f}s",
               flush=True)
 
-    try:
-        sol = newton_krylov(F, x0, f_tol=f_tol, maxiter=maxiter,
-                             method="lgmres", verbose=False, callback=cb,
-                             line_search="armijo")
-        status = "converged"
-    except NoConvergence as e:
-        sol = np.asarray(e.args[0])
-        status = f"no convergence (maxiter={maxiter})"
-    except Exception as e:
-        print(f"ITER FAIL: {type(e).__name__}: {e}", flush=True)
-        return None
+    last_resid = float(np.max(np.abs(F0)))
+    n_perturbs = 0
+    status = "running"
+
+    while counter["n"] < maxiter and n_perturbs <= max_perturbs:
+        try:
+            x = newton_krylov(F, x, f_tol=f_tol,
+                              maxiter=min(inner_maxiter, maxiter - counter["n"]),
+                              method="lgmres", verbose=False, callback=cb,
+                              line_search="armijo")
+            status = "converged"
+            break
+        except NoConvergence as e:
+            x = np.asarray(e.args[0])
+            cur_resid = float(np.max(np.abs(F(x))))
+            rel_change = abs(cur_resid - last_resid) / max(cur_resid, 1e-30)
+            stalled = rel_change < stall_atol
+            elapsed = time.time() - counter["t0"]
+            if stalled and counter["n"] < maxiter:
+                # Symmetric Gaussian perturbation, scaled to current residual
+                noise = rng.standard_normal((G_in, G_in, G_in)) * perturb_scale * cur_resid
+                P_inner = x.reshape((G_in, G_in, G_in))
+                P_perturbed = symmetrize(P_inner + noise)
+                P_perturbed = np.clip(P_perturbed, 1e-4, 1 - 1e-4)
+                x = P_perturbed.flatten()
+                n_perturbs += 1
+                new_resid = float(np.max(np.abs(F(x))))
+                print(f"  >>> STALL at ||F||={cur_resid:.4e} (rel change {rel_change:.2e}); "
+                      f"perturb #{n_perturbs} scale={perturb_scale*cur_resid:.4e} "
+                      f"-> ||F||={new_resid:.4e}  t={elapsed:.1f}s", flush=True)
+                last_resid = new_resid
+            else:
+                last_resid = cur_resid
+        except Exception as e:
+            print(f"ITER FAIL: {type(e).__name__}: {e}", flush=True)
+            status = f"error: {e}"
+            break
+
+    if status == "running":
+        status = f"no convergence (max_total_iter={maxiter}, perturbs={n_perturbs})"
+
+    sol = x
 
     P_inner = sol.reshape((G_in, G_in, G_in))
     R2_final = compute_R2(P_inner, u_inner, tau)
@@ -121,9 +161,11 @@ def newton_run(gamma, tau, kind, label, f_tol=1e-12, maxiter=60):
 
 if __name__ == "__main__":
     res_cara = newton_run(gamma=1.0, tau=TAU, kind="cara", label="CARA",
-                          f_tol=1e-12, maxiter=60)
+                          f_tol=1e-12, maxiter=200, inner_maxiter=12,
+                          perturb_scale=0.05, stall_atol=1e-5, max_perturbs=8)
     res_crra = newton_run(gamma=0.5, tau=TAU, kind="crra", label="CRRA(0.5)",
-                          f_tol=1e-12, maxiter=60)
+                          f_tol=1e-12, maxiter=200, inner_maxiter=12,
+                          perturb_scale=0.05, stall_atol=1e-5, max_perturbs=8)
 
     print("\n" + "=" * 64, flush=True)
     print("SUMMARY", flush=True)
