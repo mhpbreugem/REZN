@@ -161,8 +161,9 @@ def newton_step_hybrid(P128, label):
     return P128, Finf, Finf_try, float(alpha)
 
 
-# Picard burn-in: damping 0.5, 2000 iters
-P_warm, Finf_picard = picard(P0, alpha=0.5, maxiter=2000, abstol=1e-13)
+# Picard burn-in: damping 0.15 (below the α=0.5 oscillation seen in v2),
+# 20000 iters
+P_warm, Finf_picard = picard(P0, alpha=0.15, maxiter=20000, abstol=1e-13)
 
 
 # Float64 Newton (8 iters), per-iter print
