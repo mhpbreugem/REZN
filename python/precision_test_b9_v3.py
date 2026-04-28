@@ -257,7 +257,8 @@ def newton_step_hybrid(P128, label):
     return P128, Finf, Finf_try, float(alpha)
 
 
-P_warm, Finf_picard = picard_adaptive(P0)
+P_warm, Finf_picard = picard_adaptive(
+    P0, alpha0=0.05, alpha_min=0.01, alpha_max=0.15)
 
 
 print(f"=== Newton-f64 (8 iters) ===", flush=True)
