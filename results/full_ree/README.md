@@ -10,7 +10,7 @@ Command:
 ```bash
 python3 python/full_ree_solver.py \
   --G 5 --umax 2 --tau 2 --gamma 0.5 \
-  --seed no-learning --max-iter 900 --damping 0.3 --tol 1e-8
+  --seed no-learning --max-iter 1300 --damping 0.3 --tol 1e-12
 ```
 
 Result:
@@ -21,9 +21,9 @@ Result:
 | parameters | `tau=2`, `gamma=0.5` |
 | seed | no-learning price function |
 | Picard damping | `0.3` |
-| iterations | `849` |
+| iterations | `1029` |
 | converged | `true` |
-| residual `||Phi(P)-P||_inf` | `9.4443e-09` |
+| residual `||Phi(P)-P||_inf` | `9.2604e-13` |
 | revelation deficit `1-R^2` | `3.0073e-04` |
 | max absolute distance from FR price array | `0.2705` |
 

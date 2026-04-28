@@ -300,7 +300,11 @@ def main() -> None:
     stem = f"G{args.G}_tau{args.tau:g}_gamma{args.gamma:g}_{args.seed}"
     (args.outdir / f"{stem}_summary.json").write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
     with (args.outdir / f"{stem}_history.csv").open("w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=["iteration", "residual_inf", "revelation_deficit", "max_fr_error"])
+        writer = csv.DictWriter(
+            f,
+            fieldnames=["iteration", "residual_inf", "revelation_deficit", "max_fr_error"],
+            lineterminator="\n",
+        )
         writer.writeheader()
         writer.writerows(result.history)
 
