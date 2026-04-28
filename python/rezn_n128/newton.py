@@ -18,12 +18,18 @@ from .primitives import DTYPE, EPS_OUTER
 
 
 # ---------------------------------------------------------------- Jacobian
-def build_fd_jacobian(P, F_eval, *, h=DTYPE("1e-12"), log=print, log_interval_s=10.0):
+def build_fd_jacobian(P, F_eval, *, h=DTYPE("1e-7"), log=print, log_interval_s=10.0):
     """Central-difference Jacobian J[:, k] = (F(P + h·e_k) − F(P − h·e_k)) / (2h).
 
     F_eval(P_array) returns the residual array (same shape as P).
     All arithmetic in float128. Per-perturbation P is reclipped so the FD
     stays inside (EPS_OUTER, 1−EPS_OUTER).
+
+    Default h = 1e-7 is near the f128 sweet spot: ε^(1/3) ≈ (1e-19)^(1/3)
+    ≈ 5e-7. Smaller h (e.g., 1e-12 used previously for f64-derived code)
+    causes catastrophic cancellation: the numerator F(P+h)-F(P-h) ≈ 2Jh
+    has only eps/h ≈ 1e-7 relative precision. With h=1e-7 the column has
+    ~1e-13 precision, ~6 digits better.
     """
     eps = DTYPE(EPS_OUTER)
     one_m_eps = DTYPE(1.0) - eps

@@ -78,7 +78,7 @@ def solve(
     lm_iters=15, lm_lambda0=DTYPE("1e-3"),
     tsvd_iters=8, tsvd_rcond_init=1e-6,
     target_finf=1e-12,
-    fd_h=DTYPE("1e-12"),
+    fd_h=DTYPE("1e-7"),
     log_path=None,
     log_interval_s=120.0,
     save_to=None, label="",
