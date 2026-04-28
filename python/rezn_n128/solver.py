@@ -216,8 +216,11 @@ def solve(
             log(f"  LM iter {it}: Finf {Finf:.3e} → {Finf_try:.3e}  "
                 f"ratio={ratio:.4f}  1-R²={r2:.3e}  α={float(alpha):.6f}  "
                 f"accepted={accepted}  t={time.time()-t_iter:.1f}s")
-            history.append(("lm", Finf_try))
-            Finf = Finf_try
+            if accepted:
+                history.append(("lm", Finf_try))
+                Finf = Finf_try
+            else:
+                history.append(("lm-rejected", Finf_try))
             if Finf <= target_f:
                 log(f"  LM CONVERGED at iter {it}")
                 break
@@ -270,8 +273,11 @@ def solve(
             log(f"  TSVD iter {it}: Finf {Finf:.3e} → {Finf_try:.3e}  "
                 f"ratio={ratio:.4f}  1-R²={r2:.3e}  α={float(alpha):.6f}  "
                 f"rank={last_rank}  accepted={accepted}  t={time.time()-t_iter:.1f}s")
-            history.append(("tsvd", Finf_try))
-            Finf = Finf_try
+            if accepted:
+                history.append(("tsvd", Finf_try))
+                Finf = Finf_try
+            else:
+                history.append(("tsvd-rejected", Finf_try))
             if Finf <= target_f:
                 log(f"  TSVD CONVERGED at iter {it}")
                 break
