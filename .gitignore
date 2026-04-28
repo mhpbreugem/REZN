@@ -8,3 +8,4 @@
 *.synctex.gz
 *.fls
 *.fdb_latexmk
+python/__pycache__/
