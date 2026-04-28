@@ -44,3 +44,6 @@ nk_pr.log
 *.bak.tonight
 python/pchip_G11u20_forward.csv
 python/*.status
+
+# Picard runtime checkpoints (atomically rewritten mid-run)
+python/checkpoint_*.pkl
