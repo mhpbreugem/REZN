@@ -25,7 +25,8 @@ from pathlib import Path
 import numpy as np
 
 from .config import DTYPE
-from .contour_K3_halo import init_no_learning_K3, phi_K3_halo
+from .contour_K3_halo import (init_no_learning_K3, phi_K3_halo,
+                              phi_K3_halo_cubic, phi_K3_halo_smooth)
 from .f128 import revelation_deficit_f128
 from .halo import extract_inner, replace_inner
 from .staggered import staggered_solve
@@ -53,6 +54,14 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--presmooth-alpha", type=float, default=0.05)
     p.add_argument("--halo-update", choices=("no_learning", "extrapolate"),
                    default="no_learning")
+    p.add_argument("--kernel", choices=("scan", "cubic", "smooth"),
+                   default="smooth",
+                   help="contour-evidence kernel: scan (linear interp), "
+                        "cubic (Hermite interp), smooth (Gaussian K_h)")
+    p.add_argument("--kernel-h", type=float, default=0.0,
+                   help="Gaussian bandwidth for --kernel=smooth; "
+                        "0 means auto = du / (2*sqrt(2)) where du is "
+                        "the inner-grid spacing")
     p.add_argument("--heartbeat-s", type=float, default=60.0)
     p.add_argument("--output-dir", type=Path,
                    default=Path("output/staggered_K3"))
@@ -89,7 +98,8 @@ def main() -> None:
 
     config_str = (f"Gi{G_inner}_pad{pad}"
                   f"_g{'-'.join(f'{g:g}' for g in gamma_vec)}"
-                  f"_t{'-'.join(f'{t:g}' for t in tau_vec)}")
+                  f"_t{'-'.join(f'{t:g}' for t in tau_vec)}"
+                  f"_{args.kernel}")
     tag = f"_{args.tag}" if args.tag else ""
     base = f"K3_staggered_{config_str}{tag}"
 
@@ -112,6 +122,10 @@ def main() -> None:
           f"  rdiff={args.rdiff}")
     print(f"  Presmooth: {args.presmooth_steps} steps alpha={args.presmooth_alpha}")
     print(f"  Halo update: {args.halo_update}")
+    print(f"  Kernel: {args.kernel}", end="")
+    if args.kernel == "smooth":
+        print(f"  (kernel_h = {args.kernel_h or 'auto'})", end="")
+    print()
     print(f"  Heartbeat every {args.heartbeat_s}s")
     print("=" * 78)
 
@@ -122,17 +136,43 @@ def main() -> None:
 
     P_inner_seed = extract_inner(halo, inner_lo, inner_hi)
 
+    # Bandwidth for smooth kernel.
+    # Heuristic: the kernel should localise on a width comparable to one
+    # grid cell along the steepest price gradient. Typical price slope on
+    # a binary asset with K agents is |dP/du| ~ 0.1 per u-unit, so the
+    # price difference between adjacent cells is roughly 0.1 * du. We use
+    # h ~ a fraction of that so that 2-3 cells contribute on each side
+    # of the level set, giving a smooth but localised kernel.
+    kernel_h = args.kernel_h
+    if args.kernel == "smooth" and kernel_h <= 0.0:
+        kernel_h = 0.05 * du
+        if kernel_h < 0.005:
+            kernel_h = 0.005
+    print(f"[seed] kernel={args.kernel}"
+          + (f" kernel_h={kernel_h:.4f}" if args.kernel == "smooth" else ""),
+          flush=True)
+
+    if args.kernel == "scan":
+        def phi_full_fn(P_full: np.ndarray) -> np.ndarray:
+            return phi_K3_halo(P_full, u_full, inner_lo, inner_hi,
+                               tau_vec, gamma_vec, W_vec)
+    elif args.kernel == "cubic":
+        def phi_full_fn(P_full: np.ndarray) -> np.ndarray:
+            return phi_K3_halo_cubic(P_full, u_full, inner_lo, inner_hi,
+                                     tau_vec, gamma_vec, W_vec)
+    elif args.kernel == "smooth":
+        def phi_full_fn(P_full: np.ndarray) -> np.ndarray:
+            return phi_K3_halo_smooth(P_full, u_full, inner_lo, inner_hi,
+                                      tau_vec, gamma_vec, W_vec, kernel_h)
+    else:
+        raise SystemExit(f"unknown kernel {args.kernel}")
+
     print("[seed] timing one Phi evaluation on padded grid ...", flush=True)
     P_full = replace_inner(halo, P_inner_seed, inner_lo, inner_hi)
     t0 = time.perf_counter()
-    _ = phi_K3_halo(P_full, u_full, inner_lo, inner_hi,
-                    tau_vec, gamma_vec, W_vec)
+    _ = phi_full_fn(P_full)
     print(f"[seed] one Phi on padded grid: "
           f"{time.perf_counter() - t0:.2f}s", flush=True)
-
-    def phi_full_fn(P_full: np.ndarray) -> np.ndarray:
-        return phi_K3_halo(P_full, u_full, inner_lo, inner_hi,
-                           tau_vec, gamma_vec, W_vec)
 
     print("[run] starting staggered solve ...", flush=True)
     t0 = time.perf_counter()
