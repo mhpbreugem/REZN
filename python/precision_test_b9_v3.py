@@ -23,10 +23,10 @@ import pchip_jacobian as pj
 
 G = 11
 UMAX = 2.0
-# Heterogeneous τ at γ=2 — matches the historical 9e-10 PR config (γ=2)
-# with broken τ-symmetry to escape the symmetric FR basin.
-TAUS = np.array([1.0, 3.0, 5.0])
-GAMMAS = np.array([2.0, 2.0, 2.0])
+# Very heterogeneous γ (3 orders of magnitude spread), homogeneous τ.
+# Tests whether γ-asymmetry alone breaks the symmetric FR basin.
+TAUS = np.array([3.0, 3.0, 3.0])
+GAMMAS = np.array([0.3, 3.0, 30.0])
 WS = np.array([1.0, 1.0, 1.0])
 EPS_OUTER = 1e-9
 LGMRES_TOL = 1e-13
