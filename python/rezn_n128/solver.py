@@ -136,6 +136,7 @@ def solve(
 
     F = F_eval(P)
     Finf0 = float(np.abs(F).max())
+    Finf = Finf0
     log(f"  initial Finf = {Finf0:.3e}")
 
     history = []
