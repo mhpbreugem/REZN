@@ -23,10 +23,14 @@ import pchip_jacobian as pj
 
 G = 11
 UMAX = 2.0
-# Very heterogeneous γ (3 orders of magnitude spread), homogeneous τ.
-# Tests whether γ-asymmetry alone breaks the symmetric FR basin.
-TAUS = np.array([3.0, 3.0, 3.0])
+# OPPOSED heterogeneity: γ and τ anti-correlated.
+# Agent with smallest γ (low risk aversion → big trade) has the highest
+# τ (sharpest signal); agent with biggest γ (timid trader) has the
+# noisiest signal. This breaks symmetry along TWO axes simultaneously
+# in opposite directions — a strong test for whether the FR basin
+# loses its global pull.
 GAMMAS = np.array([0.3, 3.0, 30.0])
+TAUS   = np.array([30.0, 3.0,  0.3])
 WS = np.array([1.0, 1.0, 1.0])
 EPS_OUTER = 1e-9
 LGMRES_TOL = 1e-13
