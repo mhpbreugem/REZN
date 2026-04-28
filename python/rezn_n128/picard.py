@@ -23,6 +23,7 @@ def picard_adaptive(
     stall_window=500, stall_ratio=0.95,
     perturb_sigma=DTYPE("1e-6"), perturb_seed=42,
     log=print, log_interval_s=10.0,
+    extra_fn=None,
 ):
     """Run adaptive Picard until residual < abstol or maxiter exhausted.
 
@@ -130,8 +131,15 @@ def picard_adaptive(
                 tag += f" α→{float(alpha):.4f}"
             if perturbed:
                 tag += f" PERTURB σ={float(sigma):.0e}"
+            extra_str = ""
+            if extra_fn is not None:
+                try:
+                    for k, v in extra_fn(P).items():
+                        extra_str += f"  {k}={float(v):.3e}"
+                except Exception as ex:
+                    extra_str = f"  [extra_fn err: {ex}]"
             log(f"  [picard] iter {it+1}/{maxiter}  Finf={Finf:.3e}  "
-                f"best={Finf_best:.3e}  α={float(alpha):.4f}  "
+                f"best={Finf_best:.3e}{extra_str}  α={float(alpha):.4f}  "
                 f"decr={decr_streak}  perturbs={n_perturb}  "
                 f"α-chg={n_alpha_chg}  elapsed={elapsed:.1f}s{tag}")
             t_last_print = elapsed

@@ -135,6 +135,10 @@ def solve(
     if picard_iters > 0:
         log("\n=== Phase 1: adaptive Picard ===")
         t0 = time.time()
+
+        def extra_metrics(Pcur):
+            return {"1-R²": one_minus_R2(Pcur, u, taus_f)}
+
         pic = picard_adaptive(
             P, Phi,
             alpha0=picard_alpha0,
@@ -144,6 +148,7 @@ def solve(
             abstol=DTYPE(target_f),
             log=log,
             log_interval_s=log_interval_s,
+            extra_fn=extra_metrics,
         )
         timings["picard_s"] = time.time() - t0
         history.extend(("picard", h) for h in pic["history"])
@@ -195,8 +200,9 @@ def solve(
                     log(f"  [LM] rejected; λ → {float(lam):.3e}")
 
             ratio = Finf_try / Finf if Finf > 0 else float("nan")
+            r2 = one_minus_R2(P, u, taus_f)
             log(f"  LM iter {it}: Finf {Finf:.3e} → {Finf_try:.3e}  "
-                f"ratio={ratio:.4f}  α={float(alpha):.6f}  "
+                f"ratio={ratio:.4f}  1-R²={r2:.3e}  α={float(alpha):.6f}  "
                 f"accepted={accepted}  t={time.time()-t_iter:.1f}s")
             history.append(("lm", Finf_try))
             Finf = Finf_try
@@ -248,9 +254,10 @@ def solve(
                     log(f"  [TSVD] rejected; rcond → {rcond:.0e}")
 
             ratio = Finf_try / Finf if Finf > 0 else float("nan")
+            r2 = one_minus_R2(P, u, taus_f)
             log(f"  TSVD iter {it}: Finf {Finf:.3e} → {Finf_try:.3e}  "
-                f"ratio={ratio:.4f}  α={float(alpha):.6f}  rank={last_rank}  "
-                f"accepted={accepted}  t={time.time()-t_iter:.1f}s")
+                f"ratio={ratio:.4f}  1-R²={r2:.3e}  α={float(alpha):.6f}  "
+                f"rank={last_rank}  accepted={accepted}  t={time.time()-t_iter:.1f}s")
             history.append(("tsvd", Finf_try))
             Finf = Finf_try
             if Finf <= target_f:
