@@ -263,9 +263,22 @@ implementation of the contour fixed point is in Appendix~\ref{app:contour}.
 A binary state of the world $v\in\{0,1\}$ is realised at $t=1$. At $t=0$ a
 single risky asset trades against a riskless numeraire; the asset pays $v$
 units of the numeraire at $t=1$ and is in zero net supply,
-$\bar{z}=0$. There are no noise traders, no liquidity shocks, and no
-exogenous supply variation: the entire equilibrium is determined by the
-preferences and signals of the rational agents.
+$\bar{z}=0$.\footnote{Zero net supply is the strongest version of our
+result: partial revelation arises without any exogenous friction. CRRA
+demand is self-bounding ---  marginal utility diverges as wealth
+approaches zero in either state --- so no agent takes an unbounded
+position or crosses into negative wealth. Market clearing at
+$\bar{z}=0$ always admits a unique solution
+(Lemma~\ref{lem:existence}). Introducing a positive deterministic
+supply $\bar{z}>0$ shifts the price level (and under CARA shifts the
+sufficient statistic by a known constant $\alpha\bar{z}$) but does not
+affect the informational content of the aggregation: the alignment
+between demand linearity and the Bayesian sufficient statistic is a
+preference property, not a supply property. Our choice $\bar{z}=0$
+isolates the pure preference channel.} There are no noise traders, no
+liquidity shocks, and no exogenous supply variation: the entire
+equilibrium is determined by the preferences and signals of the
+rational agents.
 
 \subsection{Information structure}
 
@@ -416,6 +429,31 @@ when each group $k$ uses only its own private posterior $\mu_{k}$:
    \sum_{k=1}^{K} x_{k}\!\left(\mu_{k},p\right) \;=\; 0.
 \label{eq:no-learning}
 \end{equation}
+
+\begin{lemma}[Existence and uniqueness of the no-learning
+equilibrium]\label{lem:existence}
+For any $\gamma\in(0,\infty]$, $K\geq 1$, $\tau_{k}>0$, $W_{k}>0$, and any
+posterior vector $(\mu_{1},\ldots,\mu_{K})\in(0,1)^{K}$, the
+market-clearing equation \eqref{eq:no-learning} has a unique solution
+$p^{\star}\in(0,1)$.
+\end{lemma}
+
+\begin{proof}
+Let $Z(p)\equiv\sum_{k=1}^{K}x_{k}(\mu_{k},p)$. Both \eqref{eq:cara-demand}
+and \eqref{eq:crra-demand} are continuous on $(0,1)$ in $p$ at fixed
+$\mu_{k}$ and strictly decreasing in $p$ (raising $p$ raises $\logit p$,
+which lowers $R_{k}=\exp([\logit\mu_{k}-\logit p]/\gamma)$ in the CRRA
+case and lowers $\logit\mu_{k}-\logit p$ directly in the CARA case);
+hence $Z$ is continuous and strictly decreasing on $(0,1)$. As
+$p\to 0^{+}$, $\logit p\to-\infty$, $R_{k}\to+\infty$, and each
+$x_{k}\to+W_{k}$ in the CRRA case (or $x_{k}\to+\infty$ in the CARA case),
+so $Z(p)\to$ a strictly positive value. As $p\to 1^{-}$, $\logit p\to+\infty$,
+$R_{k}\to 0$, each $x_{k}\to-W_{k}$ in the CRRA case (or
+$x_{k}\to-\infty$ in the CARA case), so $Z(p)\to$ a strictly negative
+value. By the intermediate value theorem $Z$ has at least one root on
+$(0,1)$; strict monotonicity delivers uniqueness.
+\end{proof}
+
 A rational-expectations equilibrium (REE) is a price function $p(u_{1},
 \ldots,u_{K})$ such that each group $k$ uses the conditional posterior
 \begin{equation}
@@ -485,6 +523,25 @@ survives the introduction of price-based learning.
 This section establishes the analytical core of the paper in the simpler
 no-learning environment, where each agent uses only her own private signal.
 The conclusions extend to the full REE in Section~\ref{sec:ree}.
+
+\begin{definition}[Revelation deficit]\label{def:deficit}
+The \emph{revelation deficit} of a price function
+$p:(u_{1},\ldots,u_{K})\mapsto p\in(0,1)$ relative to the Bayesian
+sufficient statistic $\Tstar=\sum_{k=1}^{K}\tau_{k}u_{k}$ is
+\begin{equation}
+   1 - R^{2}\bigl(\Tstar\,;\,p\bigr) \;\equiv\;
+   1 - \frac{\bigl[\Cov_{w}(\logit p,\,\Tstar)\bigr]^{2}}
+            {\Var_{w}(\logit p)\,\cdot\,\Var_{w}(\Tstar)},
+\label{eq:deficit}
+\end{equation}
+where the weighted moments use the ex ante signal density averaged over
+the two states,
+$w(u_{1},\ldots,u_{K})=\tfrac12\bigl[\prod_{k}f_{1}(u_{k})
++\prod_{k}f_{0}(u_{k})\bigr]$. The deficit equals zero if and only if
+$\logit p$ is an affine function of $\Tstar$ over the support of $w$
+(full revelation), takes values in $[0,1]$, and equals one when $\logit p$
+is independent of $\Tstar$ (no revelation at all).
+\end{definition}
 
 \subsection{CARA implies full revelation}
 
@@ -869,6 +926,24 @@ $(K,\tau,\gamma,W)=(3,2,0.5,1)$ at $G=5$.
    \label{fig:convergence}
 \end{figure}
 
+\paragraph{Equilibrium selection.}
+The contour map $\Phi$ admits the fully-revealing price function
+$p=\Lam(\Tstar)$ as one fixed point unconditionally: identical posteriors
+clear the market at zero trade for any preferences. Whether $\Phi$ admits
+\emph{additional} partially-revealing fixed points at the same parameters
+is the central numerical question. If a partially-revealing fixed point
+exists, the vanishing-noise selection of
+Section~\ref{sec:vanishing-noise} would pick it out: at every finite
+$\gamma$, the limit of vanishing supply noise is conjectured to converge
+to the partially-revealing branch rather than the fully-revealing one,
+because the partially-revealing branch is the unique no-noise limit of
+the standard Hellwig--Diamond--Verrecchia equilibrium under non-CARA
+preferences. The numerical question remains open at the time of writing
+(see the caveat at the start of this section); but the analytical
+argument shows that, conditional on existence, the partially-revealing
+branch is the equilibrium relevant to the vanishing-noise interpretation
+of Grossman--Stiglitz.
+
 \begin{proposition}[REE partial revelation; conjectured]\label{prop:ree}
 Fix $K=3$, $\tau=2$, $\gamma=0.5$, $W=1$. There exists a fixed point
 $P^{\star}$ of the contour map $\Phi$ in \eqref{eq:fixed-point} for which
@@ -1216,6 +1291,22 @@ to CARA, and in particular the conclusion that partial revelation
 requires noise, should not be transported to the rational class as a
 whole.
 
+\begin{remark}[HARA and the knife-edge]\label{rem:hara}
+The CRRA family is the $b=0$ subfamily of the HARA class with risk
+tolerance $T(W)=aW/(1-\gamma)+b$. With homogeneous agents and equal
+wealth, the parameters $(a,b)$ enter the optimal demand only through the
+overall scale of the position: each HARA demand is an
+$(a,b)$-dependent scalar multiple of the CRRA demand at the same
+$\gamma$. Market clearing annihilates the scalar, so the equilibrium
+price depends solely on $\gamma$, not on $(a,b)$. The knife-edge is
+therefore robust to the full HARA generalisation: moving within HARA at
+fixed $\gamma$ does not change the revelation deficit, and only moving
+to $\gamma=\infty$ (CARA, equivalently $a=0$ in the HARA parametrisation)
+recovers full revelation. The alignment principle of
+Section~\ref{sec:agg-space} singles out CARA across HARA, not only
+across CRRA.
+\end{remark}
+
 \subsection{Connection to the existing literature}
 
 Several strands of the literature have anticipated parts of the story.
@@ -1323,11 +1414,16 @@ is positive, the Grossman--Stiglitz paradox dissolves within the rational
 class, and the limit of vanishing liquidity noise selects partial
 revelation rather than full revelation. CARA full revelation is the
 exception in the rational class; partial revelation is the rule. The
-remaining open question is whether the same alignment principle survives
-in dynamic and intermediated extensions, where preferences and learning
-interact in ways that the static binary model abstracts from. The
-contour-integration fixed point developed here is in principle extendable
-to those settings, and we leave that extension to future work.
+remaining open question is whether the alignment principle carries
+through to dynamic and intermediated environments, where the interaction
+between preferences and learning unfolds over multiple rounds. The
+contour-integration fixed point developed here extends in principle to
+those settings, and we leave the dynamic analysis to future work. The
+broader message is simple: what the literature has modelled as exogenous
+noise in the price is, in significant part, the endogenous consequence
+of preferences that do not align with the Bayesian sufficient statistic.
+Noise traders are not a primitive of rational markets; they are an
+artefact of CARA.
 
 % =====================================================================
 \bibliographystyle{plainnat}
