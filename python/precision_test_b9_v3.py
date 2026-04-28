@@ -150,10 +150,14 @@ def picard_adaptive(P_init, alpha0=0.20, alpha_min=0.02, alpha_max=0.30,
             tag = ""
             if alpha_changed: tag += f" α→{alpha:.4f}"
             if perturbed:     tag += f" PERTURB σ={perturb_sigma:.0e}"
+            try:
+                one_r2 = rh.one_minus_R2(P, u, TAUS)
+            except Exception:
+                one_r2 = float("nan")
             print(f"  Picard iter {it+1}/{maxiter}: resid={Finf:.3e}  "
-                  f"α={alpha:.4f}  decr={decr_streak}  "
-                  f"perturbs={n_perturb}  α-chg={n_alpha_chg}  "
-                  f"elapsed={elapsed:.1f}s{tag}",
+                  f"1-R²={one_r2:.3e}  α={alpha:.4f}  "
+                  f"decr={decr_streak}  perturbs={n_perturb}  "
+                  f"α-chg={n_alpha_chg}  elapsed={elapsed:.1f}s{tag}",
                   flush=True)
             t_last_print = elapsed
 
