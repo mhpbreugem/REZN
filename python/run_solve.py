@@ -29,11 +29,17 @@ def main(argv=None):
     p.add_argument("--umax",  type=float, required=True)
     p.add_argument("--P-init", default=None,
                    help="path to pickle with prior P (optional warm-start)")
+    p.add_argument("--seed-perturb-sigma", type=float, default=0.0,
+                   help="if > 0, multiply seed P by (1 + σ·N(0,1)) before solving")
+    p.add_argument("--seed-perturb-seed", type=int, default=42,
+                   help="RNG seed for --seed-perturb-sigma (default 42)")
     p.add_argument("--picard-iters", type=int, default=20000)
     p.add_argument("--picard-alpha0", type=float, default=0.20)
     p.add_argument("--picard-alpha-min", type=float, default=0.02)
     p.add_argument("--picard-alpha-max", type=float, default=0.30)
     p.add_argument("--lm-iters",   type=int, default=15)
+    p.add_argument("--lm-lambda0", type=float, default=1e-3,
+                   help="initial Levenberg-Marquardt damping (default 1e-3)")
     p.add_argument("--tsvd-iters", type=int, default=8)
     p.add_argument("--target-finf", type=float, default=1e-12)
     p.add_argument("--log", default=None,
@@ -68,6 +74,7 @@ def main(argv=None):
         picard_alpha_min=args.picard_alpha_min,
         picard_alpha_max=args.picard_alpha_max,
         lm_iters=args.lm_iters,
+        lm_lambda0=args.lm_lambda0,
         tsvd_iters=args.tsvd_iters,
         target_finf=args.target_finf,
         log_path=args.log,
@@ -76,6 +83,8 @@ def main(argv=None):
         label=args.label,
         checkpoint_path=args.checkpoint,
         checkpoint_every=args.checkpoint_every,
+        seed_perturb_sigma=args.seed_perturb_sigma,
+        seed_perturb_seed=args.seed_perturb_seed,
     )
     print(f"DONE  Finf={res['Finf']:.3e}  1-R²={res['one_minus_R2']:.3e}")
     return 0

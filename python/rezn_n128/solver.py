@@ -83,6 +83,7 @@ def solve(
     log_interval_s=120.0,
     save_to=None, label="",
     checkpoint_path=None, checkpoint_every=50,
+    seed_perturb_sigma=0.0, seed_perturb_seed=42,
 ):
     """Run the full pipeline. Returns a result dict.
 
@@ -118,6 +119,13 @@ def solve(
 
     P = _resolve_seed(P_init, u, taus_f, gammas_f, Ws_f, log)
     P = np.clip(P, eps128, one_m_eps)
+    if seed_perturb_sigma > 0:
+        rng = np.random.default_rng(seed_perturb_seed)
+        sigma = DTYPE(float(seed_perturb_sigma))
+        noise = sigma * np.abs(P) * np.asarray(
+            rng.standard_normal(P.shape), dtype=DTYPE)
+        P = np.clip(P + noise, eps128, one_m_eps)
+        log(f"  [seed] perturbed σ={float(sigma):.3e} (rng seed={seed_perturb_seed})")
     timings = {}
 
     def Phi(Pin):
