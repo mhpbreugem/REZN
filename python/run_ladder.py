@@ -31,7 +31,13 @@ def main(argv=None):
     p.add_argument("--picard-alpha0", type=float, default=1.0)
     p.add_argument("--picard-alpha-min", type=float, default=0.05)
     p.add_argument("--picard-alpha-max", type=float, default=1.0)
+    p.add_argument("--lm-iters", type=int, default=0,
+                   help="LM polish iters per step (0 = picard only)")
+    p.add_argument("--lm-lambda0", type=float, default=1e-3)
+    p.add_argument("--tsvd-iters", type=int, default=0)
     p.add_argument("--target-finf", type=float, default=1e-10)
+    p.add_argument("--P-init", default=None,
+                   help="initial warm-start pickle (skips no-learning seed)")
     p.add_argument("--out-prefix", required=True,
                    help="basename for saved tensors and log (no extension)")
     p.add_argument("--log-interval-s", type=float, default=15.0)
@@ -55,7 +61,14 @@ def main(argv=None):
     log(f"  ladder: {args.gammas}")
     log(f"  out_prefix={args.out_prefix}")
 
-    P_warm = None
+    if args.P_init is not None:
+        log(f"  initial warm-start: {args.P_init}")
+        rec = rezn_n128.load(args.P_init)
+        P_warm = (rec["P_f128"] if "P_f128" in rec and rec["P_f128"] is not None
+                  else rec["P"])
+        P_warm = np.asarray(P_warm, dtype=np.float128)
+    else:
+        P_warm = None
     summary = []
     t_total = time.time()
     for step_i, gamma_val in enumerate(args.gammas):
@@ -73,7 +86,9 @@ def main(argv=None):
             picard_alpha0=args.picard_alpha0,
             picard_alpha_min=args.picard_alpha_min,
             picard_alpha_max=args.picard_alpha_max,
-            lm_iters=0, tsvd_iters=0,
+            lm_iters=args.lm_iters,
+            lm_lambda0=args.lm_lambda0,
+            tsvd_iters=args.tsvd_iters,
             target_finf=args.target_finf,
             log_path=sub_log,
             log_interval_s=args.log_interval_s,
