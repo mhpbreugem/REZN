@@ -41,3 +41,4 @@ nk_pr.log
 # Runtime backup snapshots
 *.bak.tonight
 python/pchip_G11u20_forward.csv
+python/*.status
