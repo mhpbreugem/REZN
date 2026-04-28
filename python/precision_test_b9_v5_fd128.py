@@ -110,17 +110,33 @@ for it in range(NEWTON_ITERS):
     except Exception:
         pass
 
-    print(f"  solving J·dP = −F (float128)...", flush=True)
+    print(f"  solving J·dP = −F (iterative refinement: f64 LU + f128 residual)...",
+          flush=True)
     t0 = time.time()
     try:
-        dP_flat = np.linalg.solve(J, (-F).reshape(-1))
-        dP_dtype = dP_flat.dtype
+        J64 = J.astype(np.float64)
+        # Initial f64 solve
+        dP_flat = np.linalg.solve(J64, (-F).reshape(-1).astype(np.float64))
+        dP_flat128 = dP_flat.astype(np.float128)
+        # Iterative refinement in float128 residual
+        REFINE_MAX = 8
+        for r_it in range(REFINE_MAX):
+            # r = -F - J · dP   in float128
+            r128 = ((-F).reshape(-1)
+                     - (J @ dP_flat128.reshape(-1, 1)).reshape(-1))
+            r_norm = float(np.abs(r128).max())
+            if r_norm < 1e-25:
+                break
+            delta = np.linalg.solve(J64, r128.astype(np.float64))
+            dP_flat128 = dP_flat128 + delta.astype(np.float128)
+            print(f"    [refine {r_it}] ‖r‖∞={r_norm:.3e}", flush=True)
+        dP_dtype = dP_flat128.dtype
         print(f"    solve done in {time.time()-t0:.1f}s, "
-              f"dP dtype={dP_dtype}", flush=True)
+              f"dP dtype={dP_dtype}, refine iters={r_it+1}", flush=True)
     except Exception as ex:
         print(f"    solve FAILED: {ex}", flush=True)
         break
-    dP = dP_flat.reshape(P.shape).astype(np.float128)
+    dP = dP_flat128.reshape(P.shape).astype(np.float128)
 
     # Armijo backtrack
     alpha = np.float128(1.0)
