@@ -14,6 +14,7 @@ contour assumption raise NotImplementedError.
 from .primitives import DTYPE, EPS_OUTER, build_grid, cast_problem, to_f128
 from .phi import phi_map, residual_array, fixed_point_residual, nolearning_seed
 from .picard import picard_adaptive
+from .anderson import anderson_solve
 from .newton import build_fd_jacobian, lm_solve, tsvd_solve
 from .diagnostics import analyse, pretty
 from .io import load, save
@@ -22,7 +23,7 @@ from .solver import solve, one_minus_R2
 __all__ = [
     "DTYPE", "EPS_OUTER", "build_grid", "cast_problem", "to_f128",
     "phi_map", "residual_array", "fixed_point_residual", "nolearning_seed",
-    "picard_adaptive",
+    "picard_adaptive", "anderson_solve",
     "build_fd_jacobian", "lm_solve", "tsvd_solve",
     "analyse", "pretty",
     "load", "save",
