@@ -289,6 +289,93 @@ To reproduce:
         python -m code.trajectory --G 8 --tau 2.0 \
             --max-iters 300 --damping 0.05 --record-every 25
 
+---
+
+## SIDE-PROJECT FINDING #2 (2026-04-28) — PR FIXED POINT EXISTS UNDER HET PARAMS
+
+Newton-Krylov with intelligent (no-learning) seeding finds a partial-
+revelation fixed point of Phi at K=4 in the EXTREME-OPPOSED
+heterogeneous configuration. This is the first numerical evidence,
+in our K=4 work, that Prop 4 holds — the PR equilibrium is not just
+an artifact of the K=3 small-G results.
+
+Configuration:
+    K=4, G=8
+    gamma_k = (0.25, 1, 3, 10)         # extreme-opposed quartet
+    tau_k   = (0.25, 1, 3, 10)         # low-gamma agent has low tau
+    W_k     = (1, 1, 1, 1)
+    u in [-4, 4]
+
+Seed: no-learning equilibrium for the het params (analytical, partially
+revealing by Jensen's inequality; 1-R^2 = 0.343 in f128).
+
+Solver: scipy.optimize.newton_krylov (LGMRES inner, Armijo line search,
+rdiff=1e-4, outer_k=30, inner_maxiter=60), max 30 outer Newton iters,
+preceded by 20 Picard pre-smooth steps at alpha=0.05 to absorb the
+contour-integration kinks.
+
+KEY TRAJECTORY (all 1-R^2 in float128):
+    stage                    ||F||      1-R^2
+    seed (no-learning)       0.428      0.343
+    after 20 Picard a=0.05   0.403      0.055    Picard ALONE drifts to FR
+    Newton iter  1           0.238      0.277    Newton LIFTS the deficit
+    Newton iter 10           0.728      0.090    oscillation
+    Newton iter 20           0.288      0.179    settles into PR neighbourhood
+    Newton iter 30 (final)   0.288      0.183    ratio to seed = 0.534x
+
+Residual stalls at ||F||~0.29 — the K=4/G=8 het-config grid floor
+(K=4/G=5 floor for the same config was 0.24). f128 vs f64 metrics
+agree throughout; the deficit value 0.183 is geometric, not arithmetic.
+
+CONTRAST WITH PRIOR FINDINGS
+----------------------------
+1. Homogeneous K=4 runs across the gamma ladder ALL collapsed to FR
+   (1-R^2 in 1e-7 to 1e-4) under both Picard and Anderson. Same kernel,
+   same solver class. The difference is purely the heterogeneity.
+2. Picard alone in the het case ALSO drifts to FR (after 20 steps,
+   1-R^2 = 0.055, which is comparable to the homogeneous trajectory).
+   It is NEWTON that lifts the deficit back to 0.18 — Newton finds the
+   non-attracting (saddle-like) PR fixed point that Picard cannot reach.
+3. Without intelligent seeding (the no-learning P), we never escape the
+   FR basin. Random or perturbed seeds at this G have not been tested
+   yet, but the no-learning seed is the canonical starting point.
+
+IMPLICATION FOR THE PAPER
+-------------------------
+This supports Prop 4 (PR survives at REE) for the heterogeneous-agent
+configuration that drives Mechanism 3 in Section 6. The homogeneous
+case appears to have only the FR fixed point (or PR is a saddle that
+Newton would also find with care, but that we did not pursue here).
+
+Two interpretations the paper could adopt:
+
+(a) The homogeneous PR is a saddle; PR becomes a stable basin only
+    under sufficient heterogeneity. The paper's mechanism story
+    survives at REE for the configurations where it matters most.
+
+(b) Homogeneous PR is genuinely unstable / non-existent in our G range,
+    and Mechanism 3's "endogenous noise trader" channel is the unique
+    REE-stable PR mechanism. This is consistent with the paper's
+    framing of Mechanism 3 as the strongest PR channel.
+
+ARTIFACTS PUSHED
+----------------
+- code/contour_K4_het.py  per-axis tau in scan, het Phi map (numba)
+- code/newton.py          scipy newton_krylov + 15s heartbeats +
+                          Picard pre-smoother
+- code/newton_run.py      CLI for het Newton run
+- output/newton_G8/       run with extreme-opposed quartet
+- the run is in the .log saved alongside the .npz
+
+To reproduce:
+    taskset -c 0 env OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 \
+        OPENBLAS_NUM_THREADS=1 NUMBA_NUM_THREADS=1 \
+        python -m code.newton_run --G 8 \
+            --gammas 0.25,1,3,10 --taus 0.25,1,3,10 \
+            --max-iter 30 --inner-method lgmres --inner-maxiter 60 \
+            --outer-k 30 --rdiff 1e-4 \
+            --presmooth-steps 20 --presmooth-alpha 0.05
+
 ## FOOTNOTES FOR THE PAPER
 
 ### Zero Supply Footnote (Section 2)

@@ -15,3 +15,8 @@ __pycache__/
 .numba_cache/
 output/
 *.npz
+
+# results/ holds text-only mirrors for chat handoff; keep them tracked
+!results/
+!results/*.log
+!results/*.txt
