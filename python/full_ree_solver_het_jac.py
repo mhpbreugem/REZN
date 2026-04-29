@@ -1,20 +1,24 @@
 #!/usr/bin/env python3
-"""Heterogeneous-gamma solver with KERNEL-SMOOTHED contour evidence.
+"""Heterogeneous-gamma solver with JACOBIAN-CORRECTED linear-interp contour
+and proper quadrature normalization.
 
-Replaces the linear-interp sign-change tracer in
-full_ree_solver_het.py with a Gaussian-kernel-weighted sum:
+Implements:
+    A_v = ½ (Pass_A + Pass_B)
+where each pass is a Riemann sum approximation of
+    ∫∫ δ(P(a,b) - p_obs) f_v(a) f_v(b) da db
+using the co-area formula:
+    Pass_A:  Σ_a Δu  Σ_{b*: row_a(b*)=p_obs} f_v(u_a) f_v(b*) / |∂P/∂b|_cell
+    Pass_B:  Σ_b Δu  Σ_{a*: col_b(a*)=p_obs} f_v(a*) f_v(u_b) / |∂P/∂a|_cell
+The local Jacobian |∂P/∂axis|_cell uses the linear-interp slope in the cell
+that contains the sign-change crossing.
 
-  A_v = sum_{i,j} K((P[i,j] - p_target)/h) * f_v(u_i) * f_v(u_j)
+Difference from the original tracer in python/full_ree_solver.py:
+    OLD:   A_v = (Σ contributions) / hits  -- no Jacobian, no Δu, normalized
+                                              by hits (dimensionless ratio).
+    NEW:   A_v = (Σ contributions / |∇P|_cell) * Δu  -- proper density factor,
+                                              proper grid spacing.
 
-  K(x) = exp(-x^2/2)
-
-This is smooth in P (and in p_target), so the residual surface has no
-sign-change kinks.  Fixed points can therefore be reached at machine
-precision via Picard+Anderson or Newton-Krylov, even without
-permutation symmetrization in the heterogeneous-gamma case.
-
-The bandwidth h biases the result by O(h^2) (since the Gaussian
-approximates a delta).  Recommend h ~ 0.005-0.02 for G=6.
+Same bisection market clearing, same Phi structure as full_ree_solver_het.
 """
 
 from __future__ import annotations
@@ -41,9 +45,14 @@ def logit(p):
     return float(out) if out.shape == () else out
 
 
-def _f_density(u, v, tau):
+def _f_scalar(u, v, tau):
     mean = v - 0.5
-    return math.sqrt(tau / (2.0 * math.pi)) * np.exp(-0.5 * tau * (np.asarray(u) - mean) ** 2)
+    return math.sqrt(tau / (2.0 * math.pi)) * math.exp(-0.5 * tau * (u - mean) ** 2)
+
+
+def _f_grid(u, v, tau):
+    mean = v - 0.5
+    return math.sqrt(tau / (2.0 * math.pi)) * np.exp(-0.5 * tau * (u - mean) ** 2)
 
 
 def crra_demand(mu, p, gamma, wealth=1.0):
@@ -66,29 +75,81 @@ def clear_market_het(mus, gammas):
     return 0.5 * (lo + hi)
 
 
-# ---------- KERNEL-SMOOTHED contour evidence ----------
+# ---------- Jacobian-corrected linear-interp 2-pass tracer ----------
 
-def contour_evidence_smooth(slice_2d, grid, target_p, tau, h):
-    """A_v ≈ ∫∫ δ(P - target_p) f_v(a) f_v(b) da db
-    via Gaussian-kernel-smoothed Dirac in price-space + grid-spacing weight:
+JAC_FLOOR = 1.0e-12   # don't divide by tiny gradients; treat as no-crossing
 
-      A_v = (Δu)^2 / (h √(2π)) · Σ_{i,j} exp(-((P[i,j]-target_p)/h)^2/2) f_v(u_i) f_v(u_j)
 
-    The Δu^2 / (h √(2π)) prefactor is the proper integration measure;
-    it cancels in the posterior ratio but makes A_v dimensionful.
-    """
+def contour_evidence_jac(slice_2d, grid, target_p, tau):
+    """Returns A_0, A_1 with co-area formula and grid-spacing weight."""
     n = len(grid)
-    du = float(grid[1] - grid[0])
-    f0_grid = _f_density(grid, 0, tau)
-    f1_grid = _f_density(grid, 1, tau)
-    F0 = np.outer(f0_grid, f0_grid)
-    F1 = np.outer(f1_grid, f1_grid)
-    z = (slice_2d - target_p) / h
-    K = np.exp(-0.5 * z * z)
-    pref = (du * du) / (h * math.sqrt(2 * math.pi))
-    A0 = pref * float(np.sum(K * F0))
-    A1 = pref * float(np.sum(K * F1))
-    return A0, A1
+    du = float(grid[1] - grid[0])     # uniform grid assumed
+    A0_a, A1_a = 0.0, 0.0   # Pass A accumulators
+    A0_b, A1_b = 0.0, 0.0   # Pass B accumulators
+
+    # Pass A: rows on grid, root-find b* in cell (j, j+1) of axis 1
+    for a in range(n):
+        f0a = _f_scalar(float(grid[a]), 0, tau)
+        f1a = _f_scalar(float(grid[a]), 1, tau)
+        row = slice_2d[a, :]
+        diff = row - target_p
+        for j in range(n - 1):
+            d0, d1 = diff[j], diff[j + 1]
+            cell_diff = float(row[j + 1] - row[j])
+            if d0 * d1 < 0:
+                # linear interp in cell j
+                slope = cell_diff / du   # ∂P/∂b at any point in this cell (linear interp)
+                jac = abs(slope)
+                if jac < JAC_FLOOR:
+                    continue
+                t = float(-d0 / (d1 - d0))
+                b_star = float(grid[j]) + t * du
+                fb0 = _f_scalar(b_star, 0, tau)
+                fb1 = _f_scalar(b_star, 1, tau)
+                A0_a += f0a * fb0 / jac
+                A1_a += f1a * fb1 / jac
+            elif abs(d0) < 1e-14:
+                # exact hit at u_grid[j]; use right-cell slope
+                slope = cell_diff / du
+                jac = abs(slope)
+                if jac >= JAC_FLOOR:
+                    fb0 = _f_scalar(float(grid[j]), 0, tau)
+                    fb1 = _f_scalar(float(grid[j]), 1, tau)
+                    A0_a += 0.5 * f0a * fb0 / jac   # boundary halving
+                    A1_a += 0.5 * f1a * fb1 / jac
+    A0_a *= du; A1_a *= du
+
+    # Pass B: cols on grid, root-find a* in cell (i, i+1) of axis 0
+    for b in range(n):
+        f0b = _f_scalar(float(grid[b]), 0, tau)
+        f1b = _f_scalar(float(grid[b]), 1, tau)
+        col = slice_2d[:, b]
+        diff = col - target_p
+        for i in range(n - 1):
+            d0, d1 = diff[i], diff[i + 1]
+            cell_diff = float(col[i + 1] - col[i])
+            if d0 * d1 < 0:
+                slope = cell_diff / du
+                jac = abs(slope)
+                if jac < JAC_FLOOR:
+                    continue
+                t = float(-d0 / (d1 - d0))
+                a_star = float(grid[i]) + t * du
+                fa0 = _f_scalar(a_star, 0, tau)
+                fa1 = _f_scalar(a_star, 1, tau)
+                A0_b += fa0 * f0b / jac
+                A1_b += fa1 * f1b / jac
+            elif abs(d0) < 1e-14:
+                slope = cell_diff / du
+                jac = abs(slope)
+                if jac >= JAC_FLOOR:
+                    fa0 = _f_scalar(float(grid[i]), 0, tau)
+                    fa1 = _f_scalar(float(grid[i]), 1, tau)
+                    A0_b += 0.5 * fa0 * f0b / jac
+                    A1_b += 0.5 * fa1 * f1b / jac
+    A0_b *= du; A1_b *= du
+
+    return 0.5 * (A0_a + A0_b), 0.5 * (A1_a + A1_b)
 
 
 def _symmetrize(P):
@@ -96,8 +157,7 @@ def _symmetrize(P):
     return sum(np.transpose(P, axes=pp) for pp in perms) / len(perms)
 
 
-def phi_het(P, grid, tau, gammas, h, symmetric=False):
-    """One Φ evaluation with kernel-smoothed contour evidence."""
+def phi_het(P, grid, tau, gammas, symmetric=False):
     G = len(grid)
     P_new = np.empty_like(P)
     M1 = np.empty_like(P); M2 = np.empty_like(P); M3 = np.empty_like(P)
@@ -105,17 +165,19 @@ def phi_het(P, grid, tau, gammas, h, symmetric=False):
         for j in range(G):
             for k in range(G):
                 p = float(P[i, j, k])
-                u1 = float(grid[i]); u2 = float(grid[j]); u3 = float(grid[k])
-                a0_1, a1_1 = contour_evidence_smooth(P[i, :, :], grid, p, tau, h)
-                a0_2, a1_2 = contour_evidence_smooth(P[:, j, :], grid, p, tau, h)
-                a0_3, a1_3 = contour_evidence_smooth(P[:, :, k], grid, p, tau, h)
+                u1, u2, u3 = float(grid[i]), float(grid[j]), float(grid[k])
+                a0_1, a1_1 = contour_evidence_jac(P[i, :, :], grid, p, tau)
+                a0_2, a1_2 = contour_evidence_jac(P[:, j, :], grid, p, tau)
+                a0_3, a1_3 = contour_evidence_jac(P[:, :, k], grid, p, tau)
+
                 def post(uo, A0, A1):
-                    f0 = math.sqrt(tau / (2 * math.pi)) * math.exp(-0.5 * tau * (uo + 0.5) ** 2)
-                    f1 = math.sqrt(tau / (2 * math.pi)) * math.exp(-0.5 * tau * (uo - 0.5) ** 2)
+                    f0 = _f_scalar(uo, 0, tau)
+                    f1 = _f_scalar(uo, 1, tau)
                     denom = f0 * A0 + f1 * A1
                     if denom <= 0:
                         return 0.5
                     return float(np.clip(f1 * A1 / denom, EPS, 1 - EPS))
+
                 mu1 = post(u1, a0_1, a1_1)
                 mu2 = post(u2, a0_2, a1_2)
                 mu3 = post(u3, a0_3, a1_3)
@@ -135,8 +197,8 @@ def deficit(P, grid, tau):
                 p = P[i, j, k]
                 if not (1e-9 < p < 1 - 1e-9): continue
                 T = tau * (grid[i] + grid[j] + grid[k])
-                f1 = _f_density(np.array([grid[i], grid[j], grid[k]]), 1, tau)
-                f0 = _f_density(np.array([grid[i], grid[j], grid[k]]), 0, tau)
+                f1 = _f_grid(np.array([grid[i], grid[j], grid[k]]), 1, tau)
+                f0 = _f_grid(np.array([grid[i], grid[j], grid[k]]), 0, tau)
                 w = 0.5 * (np.prod(f1) + np.prod(f0))
                 Y.append(logit(p)); X.append(T); W.append(w)
     Y, X, W = np.array(Y), np.array(X), np.array(W)
@@ -150,13 +212,13 @@ def deficit(P, grid, tau):
     return 1.0 - R2, slope
 
 
-def picard_anderson_het(P0, grid, tau, gammas, h, damping=0.3, anderson=5,
+def picard_anderson_het(P0, grid, tau, gammas, damping=0.3, anderson=5,
                         anderson_beta=1.0, max_iter=600, tol=1e-15,
                         progress=False, symmetric=False):
     P = P0.copy(); history = []
     x_hist, f_hist = [], []
     for it in range(1, max_iter + 1):
-        cand, _ = phi_het(P, grid, tau, gammas, h, symmetric=symmetric)
+        cand, _ = phi_het(P, grid, tau, gammas, symmetric=symmetric)
         F = cand - P
         residual = float(np.max(np.abs(F)))
         history.append(residual)
@@ -223,13 +285,13 @@ def _gmres(matvec, b, max_iter=80, tol=1e-3):
     return step, best_resid, best_iter
 
 
-def newton_krylov_het(P0, grid, tau, gammas, h, max_iter=20, tol=1e-15,
+def newton_krylov_het(P0, grid, tau, gammas, max_iter=20, tol=1e-15,
                      gmres_max_iter=80, gmres_tol=1e-3, fd_eps=1e-7,
                      newton_damping=1.0, min_step=1e-4, progress=False,
                      symmetric=False):
     P = P0.copy(); history = []
     for it in range(1, max_iter + 1):
-        cand, _ = phi_het(P, grid, tau, gammas, h, symmetric=symmetric)
+        cand, _ = phi_het(P, grid, tau, gammas, symmetric=symmetric)
         F = P - cand
         residual = float(np.max(np.abs(F)))
         history.append(residual)
@@ -242,7 +304,7 @@ def newton_krylov_het(P0, grid, tau, gammas, h, max_iter=20, tol=1e-15,
             if v_norm == 0: return np.zeros_like(v)
             eps = jvp_scale / v_norm
             P_eps = np.clip((p_flat + eps * v).reshape(P.shape), 1e-8, 1 - 1e-8)
-            cand_e, _ = phi_het(P_eps, grid, tau, gammas, h, symmetric=symmetric)
+            cand_e, _ = phi_het(P_eps, grid, tau, gammas, symmetric=symmetric)
             F_e = P_eps - cand_e
             return (F_e.ravel() - f_flat) / eps
         step, gres, git = _gmres(matvec, -f_flat, max_iter=gmres_max_iter, tol=gmres_tol)
@@ -251,7 +313,7 @@ def newton_krylov_het(P0, grid, tau, gammas, h, max_iter=20, tol=1e-15,
         best_P = P; best_residual = residual
         while alpha >= min_step:
             trial = np.clip((p_flat + alpha * step).reshape(P.shape), 1e-8, 1 - 1e-8)
-            ct, _ = phi_het(trial, grid, tau, gammas, h, symmetric=symmetric)
+            ct, _ = phi_het(trial, grid, tau, gammas, symmetric=symmetric)
             tr = float(np.max(np.abs(trial - ct)))
             if tr < best_residual:
                 best_P = trial; best_residual = tr; accepted = True
@@ -274,13 +336,12 @@ def main():
     ap.add_argument("--gammas", type=str, required=True)
     ap.add_argument("--seed-array", type=str, required=True)
     ap.add_argument("--label", type=str, required=True)
-    ap.add_argument("--h", type=float, required=True, help="Gaussian kernel bandwidth")
-    ap.add_argument("--method", choices=["picard", "newton"], default="picard")
     ap.add_argument("--max-iter", type=int, default=600)
     ap.add_argument("--tol", type=float, default=1e-14)
     ap.add_argument("--damping", type=float, default=0.3)
     ap.add_argument("--anderson", type=int, default=5)
     ap.add_argument("--anderson-beta", type=float, default=0.7)
+    ap.add_argument("--method", choices=["picard", "newton"], default="picard")
     ap.add_argument("--gmres-max-iter", type=int, default=80)
     ap.add_argument("--gmres-tol", type=float, default=1e-3)
     ap.add_argument("--fd-eps", type=float, default=1e-7)
@@ -307,13 +368,13 @@ def main():
     t0 = time.time()
     if args.method == "picard":
         P_final, hist, conv = picard_anderson_het(
-            P0, grid, args.tau, gammas, args.h,
+            P0, grid, args.tau, gammas,
             damping=args.damping, anderson=args.anderson,
             anderson_beta=args.anderson_beta, max_iter=args.max_iter,
             tol=args.tol, progress=args.progress, symmetric=args.symmetric)
     else:
         P_final, hist, conv = newton_krylov_het(
-            P0, grid, args.tau, gammas, args.h,
+            P0, grid, args.tau, gammas,
             max_iter=args.max_iter, tol=args.tol,
             gmres_max_iter=args.gmres_max_iter, gmres_tol=args.gmres_tol,
             fd_eps=args.fd_eps, newton_damping=args.newton_damping,
@@ -325,14 +386,14 @@ def main():
     i_m1 = int(np.argmin(np.abs(grid + 1.0)))
     T_can = args.tau * (grid[i_p1] + grid[i_m1] + grid[i_p1])
     fr_can = float(logistic(T_can))
-    _, posts = phi_het(P_final, grid, args.tau, gammas, args.h, symmetric=args.symmetric)
+    _, posts = phi_het(P_final, grid, args.tau, gammas, symmetric=args.symmetric)
     M1, M2, M3 = posts
     P_fr = logistic(args.tau * (grid[:, None, None] + grid[None, :, None] + grid[None, None, :]))
     max_fr = float(np.max(np.abs(P_final - P_fr)))
 
     summary = {
         "G": args.G, "umax": args.umax, "tau": args.tau,
-        "gammas": gammas, "h": args.h, "method": args.method,
+        "gammas": gammas, "method": "picard_jac",
         "seed_array": args.seed_array, "label": args.label,
         "iterations": len(hist), "converged": conv,
         "residual_inf": hist[-1] if hist else None,
@@ -349,9 +410,9 @@ def main():
     }
     outdir = Path(args.outdir); outdir.mkdir(parents=True, exist_ok=True)
     g_str = "_".join(f"{g:g}" for g in gammas)
-    np.savez(outdir / f"G{args.G}_tau{args.tau:g}_smoothh{args.h:g}_het{g_str}_{args.label}_prices.npz",
+    np.savez(outdir / f"G{args.G}_tau{args.tau:g}_jac_het{g_str}_{args.label}_prices.npz",
              P=P_final, grid=grid)
-    with open(outdir / f"G{args.G}_tau{args.tau:g}_smoothh{args.h:g}_het{g_str}_{args.label}_summary.json", "w") as f:
+    with open(outdir / f"G{args.G}_tau{args.tau:g}_jac_het{g_str}_{args.label}_summary.json", "w") as f:
         json.dump(summary, f, indent=2)
     print(json.dumps(summary, indent=2))
 

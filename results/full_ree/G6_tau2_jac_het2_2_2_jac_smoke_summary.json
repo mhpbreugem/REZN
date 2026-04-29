@@ -1,0 +1,34 @@
+{
+  "G": 6,
+  "umax": 2.0,
+  "tau": 2.0,
+  "gammas": [
+    2.0,
+    2.0,
+    2.0
+  ],
+  "method": "picard_jac",
+  "seed_array": "results/full_ree/G6_tau2_gamma2_up_picard_0_prices.npz",
+  "label": "jac_smoke",
+  "iterations": 100,
+  "converged": false,
+  "residual_inf": 0.03084775181556193,
+  "revelation_deficit": 0.010533317533364728,
+  "slope": 1.0068280807621184,
+  "max_fr_error": 0.2725650022388151,
+  "elapsed_seconds": 33.51387047767639,
+  "representative_realization": {
+    "u": [
+      1.2000000000000002,
+      -1.2,
+      1.2000000000000002
+    ],
+    "price": 0.9480508381477989,
+    "fr_price": 0.9168273035060777,
+    "posteriors": [
+      0.9579191546558256,
+      0.9255082264199469,
+      0.9579191546558256
+    ]
+  }
+}
