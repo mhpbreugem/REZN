@@ -14,7 +14,7 @@ import numpy as np
 REPO = Path(__file__).resolve().parent.parent
 RESULTS = REPO / "results" / "full_ree"
 SOLVER = REPO / "python" / "full_ree_solver_het_smooth.py"
-G_USE = 9    # the largest where we have a converged h=0.005 seed
+G_USE = 6    # G=6 has converged h=0.005 seed (1-R²=0.0156, slope=0.948)
 H = 0.005
 
 # starting tensor: prefer G_USE/h=0.005 from g_scan; fall back to interpolating cursor
