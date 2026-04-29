@@ -401,6 +401,7 @@ fixed point.
 |---|---|---:|---:|---|
 | `K=4,G=5` | no-learning | 220 | `1.3792e-03` | not converged |
 | `K=4,G=5` | from converged `K=3` PR tensor | 220 | `1.0210e-02` | not converged |
+| `K=4,G=5` | 20 slight perturbations of best checkpoint | 80 each | best `1.5666e-03` | not converged |
 | `K=4,G=5` | FR tensor | 1 | `6.66e-16` | converged FR sanity check |
 | `K=5,G=5` | from best `K=4` checkpoint | 8 | `3.5232e-02` | not converged |
 | `K=5,G=5` | FR tensor | 1 | `7.94e-09` | FR sanity check; contour floor |
@@ -408,6 +409,10 @@ fixed point.
 The `K=4` no-learning run reaches a non-FR-like checkpoint at
 `(1,-1,1,1)` with price `0.990187` and posteriors
 `(0.992472,0.985309,0.992472,0.992472)`, versus FR price `0.982014`.
+Twenty logit-space perturbation restarts around that checkpoint, with
+amplitudes between `1e-8` and `1e-4`, did not improve it.  The best perturbed
+run had residual `1.5666e-03`, so the original no-learning checkpoint remains
+the best `K=4` non-FR attempt.
 The `K=5` bounded checkpoint at `(1,-1,1,1,1)` has price `0.998534` and
 posteriors around `(0.999087,0.998360,0.999087,0.999087,0.999087)`, versus
 FR price `0.997527`.
