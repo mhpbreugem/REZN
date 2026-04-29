@@ -1,0 +1,33 @@
+{
+  "G": 6,
+  "umax": 2.0,
+  "tau": 2.0,
+  "gammas": [
+    1.999,
+    2.0,
+    2.002
+  ],
+  "seed_array": "/home/user/REZN/results/full_ree/G6_tau2_gamma2_perturbed_1em10.npz",
+  "label": "newtladder_t0.001_0",
+  "iterations": 7,
+  "converged": false,
+  "residual_inf": 0.0028358648594140343,
+  "revelation_deficit": 0.015587148340078905,
+  "slope": 0.9967737357554792,
+  "max_fr_error": 0.19847296416185478,
+  "elapsed_seconds": 356.40948820114136,
+  "representative_realization": {
+    "u": [
+      1.2000000000000002,
+      -1.2,
+      1.2000000000000002
+    ],
+    "price": 0.9478409445331394,
+    "fr_price": 0.9168273035060777,
+    "posteriors": [
+      0.9573886958311091,
+      0.9259382454324167,
+      0.9574830299324633
+    ]
+  }
+}
