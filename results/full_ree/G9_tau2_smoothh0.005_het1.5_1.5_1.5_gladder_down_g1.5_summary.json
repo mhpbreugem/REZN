@@ -1,0 +1,35 @@
+{
+  "G": 9,
+  "umax": 2.0,
+  "tau": 2.0,
+  "gammas": [
+    1.5,
+    1.5,
+    1.5
+  ],
+  "h": 0.005,
+  "method": "picard",
+  "seed_array": "/home/user/REZN/results/full_ree/G9_tau2_smoothh0.005_het2_2_2_gladder_down_g2_prices.npz",
+  "label": "gladder_down_g1.5",
+  "iterations": 600,
+  "converged": false,
+  "residual_inf": 0.0001343494285920288,
+  "revelation_deficit": 0.020449100161674005,
+  "slope": 0.9317880286925739,
+  "max_fr_error": 0.010887278141931356,
+  "elapsed_seconds": 610.6791086196899,
+  "representative_realization": {
+    "u": [
+      1.0,
+      -1.0,
+      1.0
+    ],
+    "price": 0.8807970779778822,
+    "fr_price": 0.8807970779778823,
+    "posteriors": [
+      0.8807970779778825,
+      0.8807970779778824,
+      0.8807970779778825
+    ]
+  }
+}
