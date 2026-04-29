@@ -11,13 +11,13 @@
   "method": "picard_smooth_fast",
   "seed_array": "/home/user/REZN/results/full_ree/G20_tau2_smoothfasth0.004_het0.1_0.1_0.1_hladderG20_g0.1_h0.004_a0_prices.npz",
   "label": "hladderG20_g0.1_h0.00375_a0",
-  "iterations": 228,
+  "iterations": 231,
   "converged": true,
-  "residual_inf": 7.216449660063518e-15,
-  "revelation_deficit": 0.03043967779972545,
-  "slope": 0.879005566889465,
+  "residual_inf": 9.048577859216422e-14,
+  "revelation_deficit": 0.030439677799611875,
+  "slope": 0.8790055668896687,
   "max_fr_error": 0.021632970905641424,
-  "elapsed_seconds": 2947.6795840263367,
+  "elapsed_seconds": 2914.086366176605,
   "representative_realization": {
     "u": [
       0.9473684210526314,
