@@ -420,3 +420,53 @@ FR price `0.997527`.
 The generic `K` solver confirms exact/near-exact FR behavior, but the non-FR
 branches for `K=4` and `K=5` require a stronger nonlinear solver or more
 runtime than the bounded Picard-Anderson attempts here.
+
+## K=3, G=25 continuation from the G=6 non-FR solution
+
+The `G=25` run uses the converged `G=6` non-FR tensor
+(`G6_tau2_gamma0.5_G6_floor_check_prices.npz`) as an interpolated starting
+point.  A single map evaluation at `G=25` costs roughly 33 seconds.
+
+Probe command:
+
+```bash
+python3 python/full_ree_solver.py \
+  --G 25 --umax 2 --tau 2 --gamma 0.5 \
+  --seed array \
+  --seed-array results/full_ree/G6_tau2_gamma0.5_G6_floor_check_prices.npz \
+  --label G25_probe_from_G6 --method picard --max-iter 1 \
+  --damping 0.15 --anderson 0 --tol 1e-12 --save-array --progress
+```
+
+The interpolated `G=6` seed has residual `5.5664e-02` before the update.  The
+saved one-step checkpoint has residual `4.8056e-02`.
+
+Bounded continuation command:
+
+```bash
+python3 python/full_ree_solver.py \
+  --G 25 --umax 2 --tau 2 --gamma 0.5 \
+  --seed array \
+  --seed-array results/full_ree/G25_tau2_gamma0.5_G25_probe_from_G6_prices.npz \
+  --label G25_from_G6_picard --method picard --max-iter 24 \
+  --damping 0.12 --anderson 5 --anderson-beta 0.7 \
+  --tol 1e-12 --save-array --progress
+```
+
+Result after 24 Picard-Anderson iterations:
+
+| quantity | value |
+|---|---:|
+| residual `||Phi(P)-P||_inf` | `1.6990e-03` |
+| `1-R^2` | `6.7486e-05` |
+| max absolute distance from FR price array | `0.1610` |
+| converged to `1e-12` | false |
+
+At `(1,-1,1)` the checkpoint price is `0.889993`; the posteriors are
+`(0.891037,0.889249,0.891037)`, versus FR price `0.880797`.
+
+A short Newton-Krylov continuation was attempted from this checkpoint.  The
+first Newton step cost about 540 seconds and improved the residual only from
+`1.6990e-03` to `1.5615e-03`; the second step was stopped because the marginal
+improvement was too small for the cost.  The `G=25` non-FR branch is therefore
+not solved to `1e-12` under the current implementation.
