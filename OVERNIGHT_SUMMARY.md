@@ -150,14 +150,54 @@ times larger than at h=0.005.
 This is the test I wanted: the PR signal at γ=0.1 **survives bandwidth shrinkage**
 while the artifact at γ=20 **shrinks**. The gap is robust, not a bandwidth artifact.
 
-A follow-up at h ∈ {0.0005, 0.00025, 0.0001} is queued.
+## **Walk-back: very small h gives noise, not signal**
 
-## TL;DR
+Follow-up at h ∈ {0.0005, 0.00025, 0.0001}:
 
-**The paper's PR claim is confirmed.** With the kernel-smoothed contour Φ at G=6, all
-runs converge to machine epsilon. The genuine NET PR signal — γ=0.1 minus γ=20 (CARA)
-1−R² — is +0.0073 at h=0.0005, robust to further bandwidth shrinkage based on the
-trend. The slope at γ=0.1 is 0.96 (vs FR slope=1), and at γ=20 it's 0.99 (CARA limit
-should be exactly 1; the residual 0.01 is the remaining h=0.0005 artifact). The
-genuine PR signal is real and matches the paper's prediction in both magnitude and
-direction. Finer h confirmation is running.
+| h | 1−R² γ=0.1 | 1−R² γ=20 | NET PR |
+|---:|---:|---:|---:|
+| 0.0005 | 0.01123 | 0.00394 | +0.00730 |
+| 0.00025 | 0.00316 | 0.00309 | +0.00007 |
+| **0.0001** | 0.00036 | 0.00156 | **−0.00120** (sign flip) |
+
+At h ≤ 0.00025 the NET signal collapses; at h = 0.0001 it goes **negative**. What
+appeared to be a "robust gap surviving h → 0" at h=0.0005 was a peak in the
+discretization noise, not the genuine continuous-limit PR.
+
+**Why**: the kernel localizes within ±h of the contour. With G=6 (Δu = 0.8) and a
+typical price gradient of ~0.5/cell, the kernel covers ~2h/0.5 ≈ 4h cells in
+contour-thickness. At h=0.0005 that's ~2e-3 cells — fewer than one. The "fixed point"
+the smooth Picard finds at very small h is dominated by 1–2 cells per slice and is
+essentially noise, not a controlled approximation.
+
+The genuine PR signal at G=6 lives in the h ∈ {0.005, 0.001} band (where the kernel
+covers a few-cell neighborhood). In that band the NET PR is +0.0008. The h-asymptotic
+extrapolation cannot be done from G=6 alone — we need the joint limit G → ∞, h → 0
+with h kept above the per-G grid noise.
+
+## TL;DR (revised)
+
+**Provisional confirmation of the paper's PR direction; magnitude undetermined at G=6.**
+
+What's solid:
+- The γ ladder at G=6 shows 1−R² strictly monotone increasing as γ decreases, slope
+  decreasing from 0.948 at γ=20 toward 0.935 at γ=0.1. This is the paper's predicted
+  direction.
+- The het-γ ladder (partial) shows 1−R² rising with heterogeneity, also paper-predicted.
+- Smooth Φ converges to machine epsilon for symmetric γ at any tested h ≥ 0.0005.
+- All findings are reproducible from the seeds and scripts under `python/` and
+  `results/full_ree/`.
+
+What's not solid:
+- The magnitude of NET PR depends strongly on h at fixed G=6. At the "best" h
+  (around 0.005–0.001) NET PR is ~10⁻³; below the per-G noise threshold the signal is
+  noise.
+- The h → 0 limit cannot be taken at G=6 because the kernel bandwidth fights the grid
+  spacing. To get a clean PR magnitude, we'd need a G-scan at multiple bandwidths
+  with h → 0 paired with G → ∞.
+- The G=12 attempt this session ran but did not converge for h ≤ 0.005 within
+  reasonable time.
+
+Bottom line: the paper's qualitative claim looks supported (PR direction is right);
+the quantitative claim about how big PR is at γ=0.5, τ=2 needs a faster solver or
+finer grid before it can be settled.

@@ -2,366 +2,6 @@
   "G": 6,
   "rows": [
     {
-      "h": 0.02,
-      "gamma": 0.1,
-      "G": 6,
-      "umax": 2.0,
-      "tau": 2.0,
-      "gammas": [
-        0.1,
-        0.1,
-        0.1
-      ],
-      "method": "picard",
-      "seed_array": "/home/user/REZN/results/full_ree/G6_tau2_smoothh0.005_het0.1_0.1_0.1_gladder_down_g0.1_prices.npz",
-      "label": "hscan_g0.1_h0.02",
-      "iterations": 1000,
-      "converged": false,
-      "residual_inf": 0.006669553842829537,
-      "revelation_deficit": 0.05255273159897267,
-      "slope": 0.8363933570346684,
-      "max_fr_error": 0.017986199962091554,
-      "elapsed_seconds": 305.98014974594116,
-      "representative_realization": {
-        "u": [
-          1.2000000000000002,
-          -1.2,
-          1.2000000000000002
-        ],
-        "price": 0.9171618846025225,
-        "fr_price": 0.9168273035060777,
-        "posteriors": [
-          0.91730364972399,
-          0.91688416797631,
-          0.91730364972399
-        ]
-      }
-    },
-    {
-      "h": 0.02,
-      "gamma": 20.0,
-      "G": 6,
-      "umax": 2.0,
-      "tau": 2.0,
-      "gammas": [
-        20.0,
-        20.0,
-        20.0
-      ],
-      "method": "picard",
-      "seed_array": "/home/user/REZN/results/full_ree/G6_tau2_smoothh0.005_het20_20_20_gladder_up_g20_prices.npz",
-      "label": "hscan_g20_h0.02",
-      "iterations": 20,
-      "converged": true,
-      "residual_inf": 2.6645352591003757e-15,
-      "revelation_deficit": 0.049122663831148716,
-      "slope": 0.8626401645657555,
-      "max_fr_error": 0.009811750609877046,
-      "elapsed_seconds": 6.105580806732178,
-      "representative_realization": {
-        "u": [
-          1.2000000000000002,
-          -1.2,
-          1.2000000000000002
-        ],
-        "price": 0.9170728954387135,
-        "fr_price": 0.9168273035060777,
-        "posteriors": [
-          0.9171868397437354,
-          0.9168446003769118,
-          0.9171868397437354
-        ]
-      }
-    },
-    {
-      "h": 0.01,
-      "gamma": 0.1,
-      "G": 6,
-      "umax": 2.0,
-      "tau": 2.0,
-      "gammas": [
-        0.1,
-        0.1,
-        0.1
-      ],
-      "method": "picard",
-      "seed_array": "/home/user/REZN/results/full_ree/G6_tau2_smoothh0.005_het0.1_0.1_0.1_gladder_down_g0.1_prices.npz",
-      "label": "hscan_g0.1_h0.01",
-      "iterations": 21,
-      "converged": true,
-      "residual_inf": 8.43769498715119e-15,
-      "revelation_deficit": 0.05229516927953559,
-      "slope": 0.838175831468634,
-      "max_fr_error": 0.012860859147946657,
-      "elapsed_seconds": 6.411325693130493,
-      "representative_realization": {
-        "u": [
-          1.2000000000000002,
-          -1.2,
-          1.2000000000000002
-        ],
-        "price": 0.9168273035084716,
-        "fr_price": 0.9168273035060777,
-        "posteriors": [
-          0.9168273035090263,
-          0.9168273035073625,
-          0.9168273035090263
-        ]
-      }
-    },
-    {
-      "h": 0.01,
-      "gamma": 20.0,
-      "G": 6,
-      "umax": 2.0,
-      "tau": 2.0,
-      "gammas": [
-        20.0,
-        20.0,
-        20.0
-      ],
-      "method": "picard",
-      "seed_array": "/home/user/REZN/results/full_ree/G6_tau2_smoothh0.005_het20_20_20_gladder_up_g20_prices.npz",
-      "label": "hscan_g20_h0.01",
-      "iterations": 21,
-      "converged": true,
-      "residual_inf": 8.104628079763643e-15,
-      "revelation_deficit": 0.04881146039844764,
-      "slope": 0.863336513472635,
-      "max_fr_error": 0.009976880608818406,
-      "elapsed_seconds": 6.162079811096191,
-      "representative_realization": {
-        "u": [
-          1.2000000000000002,
-          -1.2,
-          1.2000000000000002
-        ],
-        "price": 0.916827303506735,
-        "fr_price": 0.9168273035060777,
-        "posteriors": [
-          0.9168273035070528,
-          0.9168273035060999,
-          0.9168273035070528
-        ]
-      }
-    },
-    {
-      "h": 0.005,
-      "gamma": 0.1,
-      "G": 6,
-      "umax": 2.0,
-      "tau": 2.0,
-      "gammas": [
-        0.1,
-        0.1,
-        0.1
-      ],
-      "method": "picard",
-      "seed_array": "/home/user/REZN/results/full_ree/G6_tau2_smoothh0.005_het0.1_0.1_0.1_gladder_down_g0.1_prices.npz",
-      "label": "hscan_g0.1_h0.005",
-      "iterations": 4,
-      "converged": true,
-      "residual_inf": 5.551115123125783e-15,
-      "revelation_deficit": 0.016406163620882763,
-      "slope": 0.9352850238908165,
-      "max_fr_error": 0.012491406138658692,
-      "elapsed_seconds": 1.2342050075531006,
-      "representative_realization": {
-        "u": [
-          1.2000000000000002,
-          -1.2,
-          1.2000000000000002
-        ],
-        "price": 0.9168273035060777,
-        "fr_price": 0.9168273035060777,
-        "posteriors": [
-          0.9168273035060778,
-          0.9168273035060777,
-          0.9168273035060778
-        ]
-      }
-    },
-    {
-      "h": 0.005,
-      "gamma": 20.0,
-      "G": 6,
-      "umax": 2.0,
-      "tau": 2.0,
-      "gammas": [
-        20.0,
-        20.0,
-        20.0
-      ],
-      "method": "picard",
-      "seed_array": "/home/user/REZN/results/full_ree/G6_tau2_smoothh0.005_het20_20_20_gladder_up_g20_prices.npz",
-      "label": "hscan_g20_h0.005",
-      "iterations": 3,
-      "converged": true,
-      "residual_inf": 2.6645352591003757e-15,
-      "revelation_deficit": 0.015512156007327138,
-      "slope": 0.9483222377022261,
-      "max_fr_error": 0.0022600555714187287,
-      "elapsed_seconds": 0.8826117515563965,
-      "representative_realization": {
-        "u": [
-          1.2000000000000002,
-          -1.2,
-          1.2000000000000002
-        ],
-        "price": 0.9168273035060777,
-        "fr_price": 0.9168273035060777,
-        "posteriors": [
-          0.9168273035060778,
-          0.9168273035060777,
-          0.9168273035060778
-        ]
-      }
-    },
-    {
-      "h": 0.002,
-      "gamma": 0.1,
-      "G": 6,
-      "umax": 2.0,
-      "tau": 2.0,
-      "gammas": [
-        0.1,
-        0.1,
-        0.1
-      ],
-      "method": "picard",
-      "seed_array": "/home/user/REZN/results/full_ree/G6_tau2_smoothh0.005_het0.1_0.1_0.1_gladder_down_g0.1_prices.npz",
-      "label": "hscan_g0.1_h0.002",
-      "iterations": 19,
-      "converged": true,
-      "residual_inf": 3.885780586188048e-15,
-      "revelation_deficit": 0.016230546136505652,
-      "slope": 0.9458028814878301,
-      "max_fr_error": 0.013859964553706527,
-      "elapsed_seconds": 6.072436332702637,
-      "representative_realization": {
-        "u": [
-          1.2000000000000002,
-          -1.2,
-          1.2000000000000002
-        ],
-        "price": 0.9168273035060777,
-        "fr_price": 0.9168273035060777,
-        "posteriors": [
-          0.9168273035060778,
-          0.9168273035060777,
-          0.9168273035060778
-        ]
-      }
-    },
-    {
-      "h": 0.002,
-      "gamma": 20.0,
-      "G": 6,
-      "umax": 2.0,
-      "tau": 2.0,
-      "gammas": [
-        20.0,
-        20.0,
-        20.0
-      ],
-      "method": "picard",
-      "seed_array": "/home/user/REZN/results/full_ree/G6_tau2_smoothh0.005_het20_20_20_gladder_up_g20_prices.npz",
-      "label": "hscan_g20_h0.002",
-      "iterations": 18,
-      "converged": true,
-      "residual_inf": 4.551914400963142e-15,
-      "revelation_deficit": 0.015525730492211842,
-      "slope": 0.95333401417887,
-      "max_fr_error": 0.0021760683974475503,
-      "elapsed_seconds": 5.63339900970459,
-      "representative_realization": {
-        "u": [
-          1.2000000000000002,
-          -1.2,
-          1.2000000000000002
-        ],
-        "price": 0.9168273035060777,
-        "fr_price": 0.9168273035060777,
-        "posteriors": [
-          0.9168273035060778,
-          0.9168273035060777,
-          0.9168273035060778
-        ]
-      }
-    },
-    {
-      "h": 0.001,
-      "gamma": 0.1,
-      "G": 6,
-      "umax": 2.0,
-      "tau": 2.0,
-      "gammas": [
-        0.1,
-        0.1,
-        0.1
-      ],
-      "method": "picard",
-      "seed_array": "/home/user/REZN/results/full_ree/G6_tau2_smoothh0.005_het0.1_0.1_0.1_gladder_down_g0.1_prices.npz",
-      "label": "hscan_g0.1_h0.001",
-      "iterations": 21,
-      "converged": true,
-      "residual_inf": 3.086506744631734e-15,
-      "revelation_deficit": 0.016064909376833136,
-      "slope": 0.9459446143124753,
-      "max_fr_error": 0.013851809353124911,
-      "elapsed_seconds": 6.336183547973633,
-      "representative_realization": {
-        "u": [
-          1.2000000000000002,
-          -1.2,
-          1.2000000000000002
-        ],
-        "price": 0.9168273035060777,
-        "fr_price": 0.9168273035060777,
-        "posteriors": [
-          0.9168273035060778,
-          0.9168273035060777,
-          0.9168273035060778
-        ]
-      }
-    },
-    {
-      "h": 0.001,
-      "gamma": 20.0,
-      "G": 6,
-      "umax": 2.0,
-      "tau": 2.0,
-      "gammas": [
-        20.0,
-        20.0,
-        20.0
-      ],
-      "method": "picard",
-      "seed_array": "/home/user/REZN/results/full_ree/G6_tau2_smoothh0.005_het20_20_20_gladder_up_g20_prices.npz",
-      "label": "hscan_g20_h0.001",
-      "iterations": 19,
-      "converged": true,
-      "residual_inf": 3.885780586188048e-15,
-      "revelation_deficit": 0.015244601193462382,
-      "slope": 0.953108658510304,
-      "max_fr_error": 0.0021295956054436793,
-      "elapsed_seconds": 5.8271262645721436,
-      "representative_realization": {
-        "u": [
-          1.2000000000000002,
-          -1.2,
-          1.2000000000000002
-        ],
-        "price": 0.9168273035060777,
-        "fr_price": 0.9168273035060777,
-        "posteriors": [
-          0.9168273035060778,
-          0.9168273035060777,
-          0.9168273035060778
-        ]
-      }
-    },
-    {
       "h": 0.0005,
       "gamma": 0.1,
       "G": 6,
@@ -381,7 +21,7 @@
       "revelation_deficit": 0.011232482397503296,
       "slope": 0.9617951120140069,
       "max_fr_error": 0.0027063520971797317,
-      "elapsed_seconds": 105.37900924682617,
+      "elapsed_seconds": 104.93282628059387,
       "representative_realization": {
         "u": [
           1.2000000000000002,
@@ -417,7 +57,7 @@
       "revelation_deficit": 0.003937365950677507,
       "slope": 0.9878867132215534,
       "max_fr_error": 0.003211571385395563,
-      "elapsed_seconds": 93.98559856414795,
+      "elapsed_seconds": 94.96784400939941,
       "representative_realization": {
         "u": [
           1.2000000000000002,
@@ -430,6 +70,150 @@
           0.9168273035060778,
           0.9168273035060777,
           0.9168273035060778
+        ]
+      }
+    },
+    {
+      "h": 0.00025,
+      "gamma": 0.1,
+      "G": 6,
+      "umax": 2.0,
+      "tau": 2.0,
+      "gammas": [
+        0.1,
+        0.1,
+        0.1
+      ],
+      "method": "picard",
+      "seed_array": "/home/user/REZN/results/full_ree/G6_tau2_smoothh0.005_het0.1_0.1_0.1_gladder_down_g0.1_prices.npz",
+      "label": "hscan_g0.1_h0.00025",
+      "iterations": 237,
+      "converged": true,
+      "residual_inf": 5.88418203051333e-15,
+      "revelation_deficit": 0.0031633522508479617,
+      "slope": 0.9881323380796483,
+      "max_fr_error": 0.0005467717181448959,
+      "elapsed_seconds": 71.72724080085754,
+      "representative_realization": {
+        "u": [
+          1.2000000000000002,
+          -1.2,
+          1.2000000000000002
+        ],
+        "price": 0.9168273035060777,
+        "fr_price": 0.9168273035060777,
+        "posteriors": [
+          0.9168273035060778,
+          0.9168273035060777,
+          0.9168273035060778
+        ]
+      }
+    },
+    {
+      "h": 0.00025,
+      "gamma": 20.0,
+      "G": 6,
+      "umax": 2.0,
+      "tau": 2.0,
+      "gammas": [
+        20.0,
+        20.0,
+        20.0
+      ],
+      "method": "picard",
+      "seed_array": "/home/user/REZN/results/full_ree/G6_tau2_smoothh0.005_het20_20_20_gladder_up_g20_prices.npz",
+      "label": "hscan_g20_h0.00025",
+      "iterations": 65,
+      "converged": true,
+      "residual_inf": 3.3306690738754696e-15,
+      "revelation_deficit": 0.0030930986949281314,
+      "slope": 0.9895334287737683,
+      "max_fr_error": 0.0005246336016992286,
+      "elapsed_seconds": 19.880284309387207,
+      "representative_realization": {
+        "u": [
+          1.2000000000000002,
+          -1.2,
+          1.2000000000000002
+        ],
+        "price": 0.9168273035060777,
+        "fr_price": 0.9168273035060777,
+        "posteriors": [
+          0.9168273035060778,
+          0.9168273035060777,
+          0.9168273035060778
+        ]
+      }
+    },
+    {
+      "h": 0.0001,
+      "gamma": 0.1,
+      "G": 6,
+      "umax": 2.0,
+      "tau": 2.0,
+      "gammas": [
+        0.1,
+        0.1,
+        0.1
+      ],
+      "method": "picard",
+      "seed_array": "/home/user/REZN/results/full_ree/G6_tau2_smoothh0.005_het0.1_0.1_0.1_gladder_down_g0.1_prices.npz",
+      "label": "hscan_g0.1_h0.0001",
+      "iterations": 22,
+      "converged": true,
+      "residual_inf": 3.1643524606161932e-15,
+      "revelation_deficit": 0.0003550163659179484,
+      "slope": 0.9984875534989607,
+      "max_fr_error": 0.00012081607501779335,
+      "elapsed_seconds": 6.62553071975708,
+      "representative_realization": {
+        "u": [
+          1.2000000000000002,
+          -1.2,
+          1.2000000000000002
+        ],
+        "price": 0.9168273035060777,
+        "fr_price": 0.9168273035060777,
+        "posteriors": [
+          0.9168273035060777,
+          0.9168273035060777,
+          0.9168273035060777
+        ]
+      }
+    },
+    {
+      "h": 0.0001,
+      "gamma": 20.0,
+      "G": 6,
+      "umax": 2.0,
+      "tau": 2.0,
+      "gammas": [
+        20.0,
+        20.0,
+        20.0
+      ],
+      "method": "picard",
+      "seed_array": "/home/user/REZN/results/full_ree/G6_tau2_smoothh0.005_het20_20_20_gladder_up_g20_prices.npz",
+      "label": "hscan_g20_h0.0001",
+      "iterations": 38,
+      "converged": true,
+      "residual_inf": 4.884981308350689e-15,
+      "revelation_deficit": 0.0015557344832698439,
+      "slope": 0.9929152941567553,
+      "max_fr_error": 0.0004391805429253548,
+      "elapsed_seconds": 11.689728498458862,
+      "representative_realization": {
+        "u": [
+          1.2000000000000002,
+          -1.2,
+          1.2000000000000002
+        ],
+        "price": 0.9168273035060776,
+        "fr_price": 0.9168273035060777,
+        "posteriors": [
+          0.9168273035060777,
+          0.9168273035060777,
+          0.9168273035060777
         ]
       }
     }
