@@ -191,6 +191,23 @@ The Newton step improved the residual only marginally, to
 `||Phi(P)-P||_inf = 2.2292e-06`, and then the line search stalled. Thus the
 `G=7` non-FR branch is a checkpoint, not a converged fixed point.
 
+Direct Newton from the interpolated `G=6` tensor was also attempted, without
+the adaptive Picard preconditioner:
+
+```bash
+python3 python/full_ree_solver.py \
+  --G 7 --umax 2 --tau 2 --gamma 0.5 \
+  --seed array \
+  --seed-array results/full_ree/G6_tau2_gamma0.5_G6_tight_prices.npz \
+  --label G7_direct_newton_from_G6 --method newton --max-iter 12 \
+  --newton-damping 0.5 --gmres-max-iter 60 --gmres-tol 1e-6 \
+  --fd-eps 1e-6 --tol 1e-10 --save-array --progress
+```
+
+This direct Newton path performed worse: after 12 Newton steps the residual was
+`7.8038e-03`, with `1-R^2 = 1.6106e-02`. It moved away from the low-deficit
+checkpoint rather than converging.
+
 At the representative grid point `(1.333333,-0.666667,1.333333)`:
 
 | variable | value |

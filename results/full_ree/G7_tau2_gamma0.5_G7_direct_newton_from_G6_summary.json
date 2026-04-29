@@ -1,0 +1,39 @@
+{
+  "G": 7,
+  "umax": 2.0,
+  "tau": 2.0,
+  "gamma": 0.5,
+  "seed": "array",
+  "seed_array": "results/full_ree/G6_tau2_gamma0.5_G6_tight_prices.npz",
+  "method": "newton",
+  "damping": 0.3,
+  "anderson_window": 0,
+  "anderson_beta": 1.0,
+  "gmres_max_iter": 60,
+  "gmres_tol": 1e-06,
+  "fd_eps": 1e-06,
+  "iterations": 12,
+  "converged": false,
+  "residual_inf": 0.007803828581170347,
+  "revelation_deficit": 0.016106300620482128,
+  "max_fr_error": 0.44514786516468935,
+  "representative_realization": {
+    "u": [
+      1.333333333333333,
+      -0.6666666666666667,
+      1.333333333333333
+    ],
+    "price": 0.9883578015889226,
+    "posteriors": [
+      0.9897650172295136,
+      0.985191823483924,
+      0.9897650172301719
+    ],
+    "private_priors": [
+      0.935030830871336,
+      0.2086085273260449,
+      0.935030830871336
+    ],
+    "fr_price": 0.9820137900379085
+  }
+}
