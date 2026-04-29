@@ -1,0 +1,63 @@
+{
+  "G": 6,
+  "taus": [
+    1.9999,
+    2.0,
+    2.0001
+  ],
+  "tau_spread": 0.00020000000000020002,
+  "gamma": 0.5,
+  "rng_seed": 20260429,
+  "requested_seeds": 100,
+  "tolerance": 1e-14,
+  "stage1_iterations": 60,
+  "stage1_nearest_counts": {
+    "FR": 45,
+    "non-FR": 55
+  },
+  "distinct_converged_clusters": 1,
+  "clusters": [
+    {
+      "name": "FR",
+      "stage1_nearest_count": 45,
+      "refine_iterations": 0,
+      "refine_converged": true,
+      "residual_inf": 2.220446049250313e-16,
+      "revelation_deficit": 1.1102230246251565e-16,
+      "max_fr_error": 0.0,
+      "representative_u": [
+        1.2000000000000002,
+        -1.2,
+        1.2000000000000002
+      ],
+      "representative_price": 0.9168273035060777,
+      "representative_posteriors": [
+        0.9168273035060777,
+        0.9168273035060778,
+        0.9168273035060777
+      ],
+      "fr_price": 0.9168273035060777
+    },
+    {
+      "name": "non-FR",
+      "stage1_nearest_count": 55,
+      "refine_iterations": 220,
+      "refine_converged": false,
+      "residual_inf": 7.166553055992786e-07,
+      "revelation_deficit": 1.0485502466295316e-09,
+      "max_fr_error": 0.0003255747363403727,
+      "representative_u": [
+        1.2000000000000002,
+        -1.2,
+        1.2000000000000002
+      ],
+      "representative_price": 0.9167685382736354,
+      "representative_posteriors": [
+        0.9167690286260657,
+        0.9167675850646145,
+        0.9167692653111539
+      ],
+      "fr_price": 0.9168273035060777
+    }
+  ]
+}

@@ -322,3 +322,38 @@ Result:
 No third equilibrium was found among the 100 random seeds under the
 `1e-14` refinement criterion.  The full per-seed outcomes are stored in
 `g6_random_search/seed_results.csv`.
+
+## G=6 random-seed search with slightly heterogeneous precision
+
+The heterogeneous-precision experiment perturbs the common precision by
+`0.0001` across agents:
+
+```text
+tau = (1.9999, 2.0000, 2.0001).
+```
+
+Because heterogeneous precision breaks exchangeability, the solver for this
+experiment does not symmetrize the price tensor.  Contours are traced in
+logit-price space; otherwise the discretized contour method creates a small
+artificial residual even at the analytically fully revealing price tensor.
+
+Command:
+
+```bash
+python3 python/g6_hetero_tau_search.py \
+  --seeds 100 --tol 1e-14 --stage1-iter 60 --refine-iter 220 \
+  --workers 4 --outdir results/full_ree/g6_hetero_tau_search
+```
+
+Result:
+
+| candidate | stage-1 nearest seeds | final residual | `1-R^2` | strict convergence |
+|---|---:|---:|---:|---|
+| FR | 45 | `2.22e-16` | `1.11e-16` | true |
+| non-FR candidate | 55 | `7.1666e-07` | `1.05e-09` | false |
+
+Thus, for `tau=(1.9999,2.0,2.0001)`, the 100-seed search found only the fully
+revealing equilibrium below the `1e-14` tolerance.  The non-FR candidate is
+pulled close to the FR tensor and does not satisfy the strict residual
+criterion under the current hetero-tau contour map.  Per-seed outcomes are
+stored in `g6_hetero_tau_search/seed_results.csv`.
