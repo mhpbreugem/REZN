@@ -330,6 +330,33 @@ These are the recommended numbers to quote. The G=12 ↔ G=15 agreement (within 
 shows discretization convergence. The slope is decisively below 1 (FR), the NET PR
 is positive, and the magnitude is stable across grid refinement.
 
+## Het γ at G=12, h=0.005 (final)
+
+Tested heterogeneous γ at G=12 with the fast smooth solver. Both converged to ~1e-12.
+
+| Configuration | 1−R² | slope | NET vs γ=20 |
+|---|---:|---:|---:|
+| γ=(0.05, 0.1, 0.2) het, base γ=0.1 | 0.0383 | 0.870 | +0.00231 |
+| γ=(1, 3, 10) het | 0.0374 | 0.890 | +0.00139 |
+| γ=(0.1, 0.1, 0.1) homog | 0.0383 | 0.869 | +0.00234 |
+| γ=(2, 2, 2) homog | 0.0360 | 0.889 | +0.00004 |
+
+The heterogeneous-γ result is in line with the homogeneous result at the geometric-
+mean γ. The paper's "Three Mechanisms" table (which gave 1−R² ≈ 0.247 at γ=(1,3,10)
+in the no-learning benchmark) suggests heterogeneity should add a *lot* more PR.
+At the converged REE with smooth Φ, the heterogeneity-boost is much more modest:
++0.0014 over homog γ=2 with γ=(1,3,10).
+
+This may be because:
+1. At REE, heterogeneous γ posteriors get aggregated by market clearing, washing
+   out some of the no-learning Jensen-gap effect.
+2. The smooth-Φ kernel partially smooths over heterogeneity-induced contour curvature.
+3. The no-learning numbers in the paper are a different statistic than the
+   REE-converged numbers we compute here.
+
+Either way, the qualitative direction is right (het > homog), but the magnitude is
+~6× smaller than the no-learning paper result for this configuration.
+
 ## Plot
 
 `python/plots_gscan/gamma_ladder_G6_vs_G12.png` shows the γ-ladder at both grids
