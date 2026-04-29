@@ -1,0 +1,35 @@
+{
+  "G": 12,
+  "umax": 2.0,
+  "tau": 2.0,
+  "gammas": [
+    0.05,
+    0.1,
+    0.2
+  ],
+  "h": 0.005,
+  "method": "picard_smooth_fast",
+  "seed_array": "results/full_ree/G12_tau2_smoothfasth0.005_het0.1_0.1_0.1_g12ladder_g0.1_prices.npz",
+  "label": "het_g12_t1",
+  "iterations": 18,
+  "converged": true,
+  "residual_inf": 7.025491299827991e-13,
+  "revelation_deficit": 0.038271626960114435,
+  "slope": 0.8699814802807405,
+  "max_fr_error": 0.06504444471713933,
+  "elapsed_seconds": 42.13158130645752,
+  "representative_realization": {
+    "u": [
+      0.9090909090909092,
+      -0.9090909090909092,
+      0.9090909090909092
+    ],
+    "price": 0.860386787320975,
+    "fr_price": 0.86034781658324,
+    "posteriors": [
+      0.860406924114709,
+      0.86034781658324,
+      0.8603843561537133
+    ]
+  }
+}
