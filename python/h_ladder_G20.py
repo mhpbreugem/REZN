@@ -17,11 +17,13 @@ RESULTS = REPO / "results" / "full_ree"
 SOLVER = REPO / "python" / "full_ree_solver_het_smooth_fast.py"
 G = 20
 
-H_LADDER = [0.01, 0.005, 0.002, 0.001, 0.0005, 0.0002, 0.0001]
+H_LADDER = [0.005, 0.004, 0.0035, 0.003, 0.0025, 0.002, 0.0017, 0.0014,
+            0.0012, 0.001, 0.0008, 0.0006, 0.0005, 0.0004, 0.0003, 0.0002, 0.0001]
 ACCEPT_TOL = 1.0e-13
 
-# Seeds: deeply converged G=20 h=0.01 tensors
-SEED_G01 = RESULTS / "G20_tau2_smoothfasth0.01_het0.1_0.1_0.1_g0.1_G20_deep_prices.npz"
+# Seeds: deeply converged G=20 h=0.005 tensors (h=0.005 already gave us
+# a clean fixed point in the previous run).
+SEED_G01 = RESULTS / "G20_tau2_smoothfasth0.005_het0.1_0.1_0.1_hladderG20_g0.1_h0.005_a0_prices.npz"
 SEED_G20 = RESULTS / "G20_tau2_smoothfasth0.01_het20_20_20_g20_G20_h01_prices.npz"
 
 
