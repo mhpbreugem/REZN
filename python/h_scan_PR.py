@@ -12,7 +12,7 @@ RESULTS = REPO / "results" / "full_ree"
 SOLVER = REPO / "python" / "full_ree_solver_het_smooth.py"
 G = 6
 
-H_VALUES = [0.02, 0.01, 0.005, 0.002, 0.001, 0.0005]
+H_VALUES = [0.0005, 0.00025, 0.0001]   # very small h follow-up
 # seed: γ=0.1 ladder result
 SEED_01 = RESULTS / "G6_tau2_smoothh0.005_het0.1_0.1_0.1_gladder_down_g0.1_prices.npz"
 SEED_20 = RESULTS / "G6_tau2_smoothh0.005_het20_20_20_gladder_up_g20_prices.npz"
