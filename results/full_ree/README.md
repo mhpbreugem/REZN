@@ -222,6 +222,23 @@ At the representative grid point `(1.333333,-0.666667,1.333333)`:
 As a sanity check, the `G=7` fully revealing branch is exact: starting from the
 FR tensor gives residual `3.33e-16`.
 
+### Extrapolated seed from `G=5` and `G=6`
+
+We also tried a more aggressive continuation seed that combines the converged
+`G=5` and `G=6` tensors. Both tensors were interpolated to the `G=7` grid and
+linearly extrapolated in logit-price space according to grid spacing:
+
+```text
+logit P_7^seed = logit P_6 + ((h_7-h_6)/(h_6-h_5)) (logit P_6 - logit P_5),
+where h_5=1.0, h_6=0.8, h_7=2/3.
+```
+
+This seed was not an improvement. Its initial residual was `7.4792e-02`, and
+after 120 adaptive Picard iterations it remained at
+`||Phi(P)-P||_inf = 1.6638e-03`, with `1-R^2 = 1.6248e-04`. The previous
+`G=6`-only interpolation followed by adaptive Picard/Newton remains the best
+`G=7` non-FR checkpoint (`2.2292e-06`).
+
 ## G=6 continuation from the G=5 solution
 
 The `G=6` non-FR branch uses the converged `G=5` non-FR tensor as an
