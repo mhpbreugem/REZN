@@ -1,0 +1,440 @@
+{
+  "bandwidth_sweep": [
+    {
+      "h": 0.02,
+      "G": 6,
+      "umax": 2.0,
+      "tau": 2.0,
+      "gammas": [
+        2.0,
+        2.0,
+        2.0
+      ],
+      "method": "picard",
+      "seed_array": "/home/user/REZN/results/full_ree/G6_tau2_gamma2_up_picard_0_prices.npz",
+      "label": "bw_0.02",
+      "iterations": 34,
+      "converged": true,
+      "residual_inf": 5.689893001203927e-15,
+      "revelation_deficit": 0.05140086755267259,
+      "slope": 0.8544278182215633,
+      "max_fr_error": 0.06469069820706941,
+      "elapsed_seconds": 12.103296995162964,
+      "representative_realization": {
+        "u": [
+          1.2000000000000002,
+          -1.2,
+          1.2000000000000002
+        ],
+        "price": 0.9171078875059888,
+        "fr_price": 0.9168273035060777,
+        "posteriors": [
+          0.9172353864155708,
+          0.9168526219633174,
+          0.9172353864155708
+        ]
+      }
+    },
+    {
+      "h": 0.01,
+      "G": 6,
+      "umax": 2.0,
+      "tau": 2.0,
+      "gammas": [
+        2.0,
+        2.0,
+        2.0
+      ],
+      "method": "picard",
+      "seed_array": "/home/user/REZN/results/full_ree/G6_tau2_gamma2_up_picard_0_prices.npz",
+      "label": "bw_0.01",
+      "iterations": 22,
+      "converged": true,
+      "residual_inf": 7.438494264988549e-15,
+      "revelation_deficit": 0.04907071572080779,
+      "slope": 0.8610820697462961,
+      "max_fr_error": 0.009302766130652729,
+      "elapsed_seconds": 7.733065366744995,
+      "representative_realization": {
+        "u": [
+          1.2000000000000002,
+          -1.2,
+          1.2000000000000002
+        ],
+        "price": 0.9168273035067716,
+        "fr_price": 0.9168273035060777,
+        "posteriors": [
+          0.9168273035071025,
+          0.9168273035061095,
+          0.9168273035071025
+        ]
+      }
+    },
+    {
+      "h": 0.005,
+      "G": 6,
+      "umax": 2.0,
+      "tau": 2.0,
+      "gammas": [
+        2.0,
+        2.0,
+        2.0
+      ],
+      "method": "picard",
+      "seed_array": "/home/user/REZN/results/full_ree/G6_tau2_gamma2_up_picard_0_prices.npz",
+      "label": "bw_0.005",
+      "iterations": 23,
+      "converged": true,
+      "residual_inf": 6.102757188486407e-15,
+      "revelation_deficit": 0.015548743449999791,
+      "slope": 0.9475502434092388,
+      "max_fr_error": 0.0022739531214507336,
+      "elapsed_seconds": 8.052625894546509,
+      "representative_realization": {
+        "u": [
+          1.2000000000000002,
+          -1.2,
+          1.2000000000000002
+        ],
+        "price": 0.9168273035060777,
+        "fr_price": 0.9168273035060777,
+        "posteriors": [
+          0.9168273035060777,
+          0.9168273035060777,
+          0.9168273035060777
+        ]
+      }
+    },
+    {
+      "h": 0.002,
+      "G": 6,
+      "umax": 2.0,
+      "tau": 2.0,
+      "gammas": [
+        2.0,
+        2.0,
+        2.0
+      ],
+      "method": "picard",
+      "seed_array": "/home/user/REZN/results/full_ree/G6_tau2_gamma2_up_picard_0_prices.npz",
+      "label": "bw_0.002",
+      "iterations": 22,
+      "converged": true,
+      "residual_inf": 3.552713678800501e-15,
+      "revelation_deficit": 0.015560982270266477,
+      "slope": 0.9528202869659933,
+      "max_fr_error": 0.0021872886057375807,
+      "elapsed_seconds": 7.5075013637542725,
+      "representative_realization": {
+        "u": [
+          1.2000000000000002,
+          -1.2,
+          1.2000000000000002
+        ],
+        "price": 0.9168273035060777,
+        "fr_price": 0.9168273035060777,
+        "posteriors": [
+          0.9168273035060777,
+          0.9168273035060777,
+          0.9168273035060777
+        ]
+      }
+    },
+    {
+      "h": 0.001,
+      "G": 6,
+      "umax": 2.0,
+      "tau": 2.0,
+      "gammas": [
+        2.0,
+        2.0,
+        2.0
+      ],
+      "method": "picard",
+      "seed_array": "/home/user/REZN/results/full_ree/G6_tau2_gamma2_up_picard_0_prices.npz",
+      "label": "bw_0.001",
+      "iterations": 22,
+      "converged": true,
+      "residual_inf": 3.552713678800501e-15,
+      "revelation_deficit": 0.0031677970767146624,
+      "slope": 0.9858565236646971,
+      "max_fr_error": 0.000557341138384158,
+      "elapsed_seconds": 7.804896593093872,
+      "representative_realization": {
+        "u": [
+          1.2000000000000002,
+          -1.2,
+          1.2000000000000002
+        ],
+        "price": 0.9168273035060777,
+        "fr_price": 0.9168273035060777,
+        "posteriors": [
+          0.9168273035060777,
+          0.9168273035060777,
+          0.9168273035060777
+        ]
+      }
+    }
+  ],
+  "perturbations": [
+    {
+      "kind": "iid",
+      "scale": 1e-06,
+      "G": 6,
+      "umax": 2.0,
+      "tau": 2.0,
+      "gammas": [
+        2.0,
+        2.0,
+        2.0
+      ],
+      "h": 0.005,
+      "method": "picard",
+      "seed_array": "/home/user/REZN/results/full_ree/G6_tau2_smooth_perturb_iid_1e-06.npz",
+      "label": "pert_iid_1e-06",
+      "iterations": 16,
+      "converged": true,
+      "residual_inf": 3.4698806328226084e-15,
+      "revelation_deficit": 0.015548743449999791,
+      "slope": 0.9475502434092413,
+      "max_fr_error": 0.0022739531214507336,
+      "elapsed_seconds": 5.425379991531372,
+      "representative_realization": {
+        "u": [
+          1.2000000000000002,
+          -1.2,
+          1.2000000000000002
+        ],
+        "price": 0.9168273035060777,
+        "fr_price": 0.9168273035060777,
+        "posteriors": [
+          0.9168273035060777,
+          0.9168273035060777,
+          0.9168273035060777
+        ]
+      }
+    },
+    {
+      "kind": "iid",
+      "scale": 0.0001,
+      "G": 6,
+      "umax": 2.0,
+      "tau": 2.0,
+      "gammas": [
+        2.0,
+        2.0,
+        2.0
+      ],
+      "h": 0.005,
+      "method": "picard",
+      "seed_array": "/home/user/REZN/results/full_ree/G6_tau2_smooth_perturb_iid_0.0001.npz",
+      "label": "pert_iid_0.0001",
+      "iterations": 19,
+      "converged": true,
+      "residual_inf": 4.884981308350689e-15,
+      "revelation_deficit": 0.015548743449999902,
+      "slope": 0.9475502434092422,
+      "max_fr_error": 0.0022739531214507336,
+      "elapsed_seconds": 6.583610534667969,
+      "representative_realization": {
+        "u": [
+          1.2000000000000002,
+          -1.2,
+          1.2000000000000002
+        ],
+        "price": 0.9168273035060777,
+        "fr_price": 0.9168273035060777,
+        "posteriors": [
+          0.9168273035060777,
+          0.9168273035060777,
+          0.9168273035060777
+        ]
+      }
+    },
+    {
+      "kind": "iid",
+      "scale": 0.01,
+      "G": 6,
+      "umax": 2.0,
+      "tau": 2.0,
+      "gammas": [
+        2.0,
+        2.0,
+        2.0
+      ],
+      "h": 0.005,
+      "method": "picard",
+      "seed_array": "/home/user/REZN/results/full_ree/G6_tau2_smooth_perturb_iid_0.01.npz",
+      "label": "pert_iid_0.01",
+      "iterations": 400,
+      "converged": false,
+      "residual_inf": 0.0005809030870460585,
+      "revelation_deficit": 0.018324805354344442,
+      "slope": 0.9362705250746013,
+      "max_fr_error": 0.012510756089207598,
+      "elapsed_seconds": 139.64032220840454,
+      "representative_realization": {
+        "u": [
+          1.2000000000000002,
+          -1.2,
+          1.2000000000000002
+        ],
+        "price": 0.9168273035060777,
+        "fr_price": 0.9168273035060777,
+        "posteriors": [
+          0.9168273035060777,
+          0.9168273035060777,
+          0.9168273035060777
+        ]
+      }
+    },
+    {
+      "kind": "antisym",
+      "scale": 0.0001,
+      "G": 6,
+      "umax": 2.0,
+      "tau": 2.0,
+      "gammas": [
+        2.0,
+        2.0,
+        2.0
+      ],
+      "h": 0.005,
+      "method": "picard",
+      "seed_array": "/home/user/REZN/results/full_ree/G6_tau2_smooth_perturb_antisym_0.0001.npz",
+      "label": "pert_antisym_0.0001",
+      "iterations": 18,
+      "converged": true,
+      "residual_inf": 8.98586760555986e-15,
+      "revelation_deficit": 0.01554874344999968,
+      "slope": 0.9475502434092395,
+      "max_fr_error": 0.0022739531214507336,
+      "elapsed_seconds": 6.119645357131958,
+      "representative_realization": {
+        "u": [
+          1.2000000000000002,
+          -1.2,
+          1.2000000000000002
+        ],
+        "price": 0.9168273035060777,
+        "fr_price": 0.9168273035060777,
+        "posteriors": [
+          0.9168273035060777,
+          0.9168273035060777,
+          0.9168273035060777
+        ]
+      }
+    },
+    {
+      "kind": "antisym",
+      "scale": 0.01,
+      "G": 6,
+      "umax": 2.0,
+      "tau": 2.0,
+      "gammas": [
+        2.0,
+        2.0,
+        2.0
+      ],
+      "h": 0.005,
+      "method": "picard",
+      "seed_array": "/home/user/REZN/results/full_ree/G6_tau2_smooth_perturb_antisym_0.01.npz",
+      "label": "pert_antisym_0.01",
+      "iterations": 400,
+      "converged": false,
+      "residual_inf": 0.0006884237724470443,
+      "revelation_deficit": 0.018686012182999034,
+      "slope": 0.9343673125288492,
+      "max_fr_error": 0.012349351853654822,
+      "elapsed_seconds": 136.4772036075592,
+      "representative_realization": {
+        "u": [
+          1.2000000000000002,
+          -1.2,
+          1.2000000000000002
+        ],
+        "price": 0.9168273035060777,
+        "fr_price": 0.9168273035060777,
+        "posteriors": [
+          0.9168273035060777,
+          0.9168273035060777,
+          0.9168273035060777
+        ]
+      }
+    },
+    {
+      "kind": "tilt",
+      "scale": 0.001,
+      "G": 6,
+      "umax": 2.0,
+      "tau": 2.0,
+      "gammas": [
+        2.0,
+        2.0,
+        2.0
+      ],
+      "h": 0.005,
+      "method": "picard",
+      "seed_array": "/home/user/REZN/results/full_ree/G6_tau2_smooth_perturb_tilt_0.001.npz",
+      "label": "pert_tilt_0.001",
+      "iterations": 21,
+      "converged": true,
+      "residual_inf": 4.6074255521944e-15,
+      "revelation_deficit": 0.015548743449999458,
+      "slope": 0.9475502434092403,
+      "max_fr_error": 0.0022739531214507336,
+      "elapsed_seconds": 7.215181112289429,
+      "representative_realization": {
+        "u": [
+          1.2000000000000002,
+          -1.2,
+          1.2000000000000002
+        ],
+        "price": 0.9168273035060777,
+        "fr_price": 0.9168273035060777,
+        "posteriors": [
+          0.9168273035060777,
+          0.9168273035060777,
+          0.9168273035060777
+        ]
+      }
+    },
+    {
+      "kind": "tilt",
+      "scale": 0.1,
+      "G": 6,
+      "umax": 2.0,
+      "tau": 2.0,
+      "gammas": [
+        2.0,
+        2.0,
+        2.0
+      ],
+      "h": 0.005,
+      "method": "picard",
+      "seed_array": "/home/user/REZN/results/full_ree/G6_tau2_smooth_perturb_tilt_0.1.npz",
+      "label": "pert_tilt_0.1",
+      "iterations": 271,
+      "converged": true,
+      "residual_inf": 3.0531133177191805e-15,
+      "revelation_deficit": 0.015908927912856696,
+      "slope": 0.9456153928657857,
+      "max_fr_error": 0.06352857286949132,
+      "elapsed_seconds": 92.19182682037354,
+      "representative_realization": {
+        "u": [
+          1.2000000000000002,
+          -1.2,
+          1.2000000000000002
+        ],
+        "price": 0.9168273035060777,
+        "fr_price": 0.9168273035060777,
+        "posteriors": [
+          0.9168273035060778,
+          0.9168273035060777,
+          0.9168273035060778
+        ]
+      }
+    }
+  ]
+}
