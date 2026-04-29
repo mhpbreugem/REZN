@@ -273,7 +273,7 @@ Final non-FR result:
 | parameters | `tau=2`, `gamma=0.5` |
 | total continuation iterations | `89 + 17` |
 | converged | `true` |
-| residual `||Phi(P)-P||_inf` | `6.9529e-13` |
+| residual `||Phi(P)-P||_inf` | `6.5850e-15` |
 | revelation deficit `1-R^2` | `2.2149e-04` |
 | `R^2` | `0.9997785142` |
 | max absolute distance from FR price array | `0.1692` |
@@ -293,3 +293,32 @@ The representative grid point nearest `(1,-1,1)` is `(1.2,-1.2,1.2)`:
 
 As a sanity check, the `G=6` fully revealing branch is also an exact fixed
 point: starting from the FR tensor returns residual `1.11e-16`.
+
+## G=6 random-seed basin search
+
+The `G=6` branch structure was also tested with 100 random seeds.  The search
+uses random perturbations around the FR branch, the non-FR branch, mixtures of
+FR/non-FR, and mixtures involving the no-learning price tensor.  Stage 1 runs
+each seed with Picard-Anderson for 90 iterations to identify the nearest basin;
+Stage 2 tightens the distinct basin representatives to the requested
+`1e-14` tolerance.
+
+Command:
+
+```bash
+python3 python/g6_random_seed_search.py \
+  --seeds 100 --tol 1e-14 --stage1-tol 1e-7 \
+  --stage1-iter 90 --refine-iter 260 --workers 4 \
+  --outdir results/full_ree/g6_random_search
+```
+
+Result:
+
+| equilibrium | stage-1 nearest seeds | final residual | `1-R^2` |
+|---|---:|---:|---:|
+| FR | 50 | `2.22e-16` | `0` |
+| non-FR | 50 | `6.5850e-15` | `2.214858e-04` |
+
+No third equilibrium was found among the 100 random seeds under the
+`1e-14` refinement criterion.  The full per-seed outcomes are stored in
+`g6_random_search/seed_results.csv`.
