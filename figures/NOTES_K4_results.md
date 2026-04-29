@@ -47,11 +47,12 @@ CRRA at the same parameters does **not** reach 1e-11 tolerance.
 (~2e-3 documented in `CHAT_MEMORY.md` and `SESSION_SUMMARY.md` §
 "Anderson convergence at this point"). 60 iterations.
 
-| G | anchor | iters | ‖F‖∞ at stop | 1−R² | p | μ |
-|---|--------|-------|--------------|------|---|---|
-| 5 | (1,−1,1,−1) | 60 | 2.9e-3 | 0.02656 | 0.49998 | (0.4980, 0.5019, 0.4980, 0.5019) |
-| 5 | (1,−1,1, 1) | 60 | 2.9e-3 | 0.02656 | 0.99049 | (0.9927, 0.9856, 0.9927, 0.9927) |
-| 7 | (1,−1,1, 1) | (in progress) | | | | |
+| G | γ   | anchor       | iters | ‖F‖∞ at stop | 1−R²    | p       | μ |
+|---|-----|--------------|-------|--------------|---------|---------|---|
+| 5 | 0.5 | (1,−1,1,−1)  | 60    | 2.9e-3       | 0.02656 | 0.49998 | (0.4980, 0.5019, 0.4980, 0.5019) |
+| 5 | 0.5 | (1,−1,1, 1)  | 60    | 2.9e-3       | 0.02656 | 0.99049 | (0.9927, 0.9856, 0.9927, 0.9927) |
+| 5 | 1.0 | (1,−1,1, 1)  | 40    | 4.2e-3       | 0.02100 | 0.99156 | (0.9933, 0.9859, 0.9933, 0.9933) |
+| 7 | 0.5 | (1,−1,1, 1)  | 60    | 1.5e-2       | 0.03178 | 0.99065 | (0.9928, 0.9861, 0.9928, 0.9928) |
 
 The (1,−1,1,−1) anchor is informationally degenerate (T*=0 → p=0.5 by
 symmetry) and gives no info on disagreement. The (1,−1,1,1) anchor is
@@ -72,15 +73,32 @@ disagreement shrinks with K, consistent with the no-learning K-sweep
 ## 3. NET = CRRA − CARA (the meaningful diagnostic)
 
 The discretisation floor cancels when subtracting CARA from CRRA at the
-same G. From the (1,−1,1,−1) anchor result already reported:
+same G:
 
-- G=5: 1−R² (CRRA) = 0.0266, 1−R² (CARA) = 0.0173, **NET = +0.0093**
+| G | γ   | 1−R² (CRRA) | 1−R² (CARA) | NET    |
+|---|-----|-------------|-------------|--------|
+| 5 | 1.0 | 0.02100     | 0.01729     | +0.0037 |
+| 5 | 0.5 | 0.02656     | 0.01729     | +0.0093 |
+| 7 | 0.5 | 0.03178     | 0.01835     | **+0.0134** |
 
-NET is positive — same sign as the K=3 PR-survival result. Magnitude is
-small at G=5 and the K=4 solver has the same FR-collapse pathology as
-K=3 documented in `figures/NOTES_full_eq_status.md`: the global
-attractor of damped Anderson sits near the FR fixed point even when
-seeded with the no-learning PR price.
+NET is positive at every (G, γ) tested — same sign as the K=3
+PR-survival result. **NET grows with G** (G=5 → G=7 at γ=0.5: +0.0093 →
++0.0134), consistent with the discretisation floor cancelling and a
+genuine PR signal that strengthens with resolution. NET grows as γ
+falls (γ=1.0 → γ=0.5 at G=5: +0.0037 → +0.0093), consistent with the
+no-learning K=4 sweep above and with `theory.md` Prop 8 (smooth
+transition).
+
+Posteriors at the (1,−1,1,1) anchor are robust across (G, γ) — μ_4 and
+μ_1=μ_3 stay near 0.993, μ_2 (the contrarian) stays near 0.986.
+
+That said, the K=4 solver has the same FR-collapse pathology as K=3
+documented in `figures/NOTES_full_eq_status.md`: damped Anderson's
+attractor sits near the FR fixed point even when seeded with the
+no-learning PR price (no-learning seed at G=7 has 1−R² = 0.060;
+Anderson stalls at 0.032). The PR signal we measure is the *gap*
+between this stalled point and the CARA floor at the same G, not a
+fully-converged PR fixed point.
 
 ## 4. K=4 no-learning smooth-transition table (paper Table 1 layout)
 
@@ -117,13 +135,32 @@ CARA-knife-edge ranking is preserved exactly.
 
 ## 5. Open items
 
-1. **G-scaling**: CARA floor at G=5 and G=7 is essentially flat
-   (~0.018). Need G≥10 to confirm whether floor decreases as 1/G² or
-   plateaus.
-2. **Basin selection**: Anderson at K=4 G=5/7 lands near FR for both
-   CARA and CRRA. The PR signal (NET ≈ 0.01) is small. Same
-   recommendation as `NOTES_full_eq_status.md` — globalised
-   Newton–Krylov with perturbation homotopy — applies at K=4.
-3. **Wealth heterogeneity / mechanisms**: K=4 + heterogeneous (γ_k,
-   τ_k) would extend `figures/fig6_mechanisms` once a working REE
+1. **CARA floor**: ~0.018 at both G=5 and G=7. Need G ≥ 10 (and a
+   faster solver — G=9 is already 25 s/Φ at K=4) to characterise the
+   floor scaling.
+2. **CRRA convergence**: Anderson at K=4 G=7 stalls at ‖F‖∞ ≈ 1.5e-2
+   after 60 iterations — worse than G=5 (~3e-3). Mixing β=0.5 may be
+   too aggressive at higher G; either tune β downward or use the
+   globalised Newton–Krylov with perturbation homotopy recommended in
+   `NOTES_full_eq_status.md`.
+3. **Wealth / preference heterogeneity**: K=4 + heterogeneous (γ_k,
+   τ_k) would extend `figures/fig6_mechanisms` to four agents
+   (including the het-α channel from Mechanism 4) once a working REE
    solver is in hand.
+
+## 6. Bottom line
+
+K=4 inherits both the qualitative result (PR survives, CARA is FR
+knife-edge) and the quantitative pathology (Anderson stalls below the
+1e-11 tolerance) from K=3. The CARA→FR mapping is exact at the
+realisation level (μ_k = p = Λ(T*) for all k, to machine precision).
+The CRRA fingerprint is preserved structurally: the contrarian agent
+discounts the price, the consensus agents over-shoot, and the gap
+shrinks with K and grows with τ.
+
+Run details:
+- 5 full-REE Anderson chains (CARA G=5/7, CRRA G=5 ×2 anchors, CRRA
+  G=5 γ=1, CRRA G=7) — wall-clock ~15 minutes total
+- 1 no-learning sweep at G=15 (21 cells × 7 s = ~2.5 min)
+- All scripts kept ephemeral (`/tmp/k4_full_ree.py`,
+  `/tmp/k4_no_learning.py`); only this notes file committed.
