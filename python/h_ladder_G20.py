@@ -68,12 +68,13 @@ def best_resid(s):
 
 
 def attempt(label, gammas, h, seed, attempt_idx):
+    # Inner tol matches ACCEPT_TOL=1e-13 -- no point converging below.
     if attempt_idx == 0:
-        kw = dict(max_iter=600, tol=1e-14, damping=0.3, anderson=5, anderson_beta=0.7)
+        kw = dict(max_iter=300, tol=ACCEPT_TOL, damping=0.3, anderson=5, anderson_beta=0.7)
     elif attempt_idx == 1:
-        kw = dict(max_iter=2000, tol=1e-14, damping=0.2, anderson=5, anderson_beta=0.7)
+        kw = dict(max_iter=1000, tol=ACCEPT_TOL, damping=0.2, anderson=5, anderson_beta=0.7)
     else:
-        kw = dict(max_iter=4000, tol=1e-14, damping=0.1, anderson=8, anderson_beta=0.5)
+        kw = dict(max_iter=2000, tol=ACCEPT_TOL, damping=0.1, anderson=8, anderson_beta=0.5)
     return call(f"{label}_a{attempt_idx}", gammas, h, seed, **kw)
 
 
