@@ -1,0 +1,35 @@
+{
+  "G": 9,
+  "umax": 2.0,
+  "tau": 2.0,
+  "gammas": [
+    2.0,
+    2.0,
+    2.0
+  ],
+  "h": 0.02,
+  "method": "picard",
+  "seed_array": "/home/user/REZN/results/full_ree/G6_tau2_gamma2_up_picard_0_prices.npz",
+  "label": "gscan_G9_h0.02",
+  "iterations": 27,
+  "converged": true,
+  "residual_inf": 8.43769498715119e-15,
+  "revelation_deficit": 0.0705039043039104,
+  "slope": 0.7962206248968452,
+  "max_fr_error": 0.21664272323142664,
+  "elapsed_seconds": 28.12963080406189,
+  "representative_realization": {
+    "u": [
+      1.0,
+      -1.0,
+      1.0
+    ],
+    "price": 0.8807991156521754,
+    "fr_price": 0.8807970779778823,
+    "posteriors": [
+      0.8807999746030241,
+      0.8807973977424498,
+      0.8807999746030241
+    ]
+  }
+}
