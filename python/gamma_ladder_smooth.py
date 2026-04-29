@@ -19,10 +19,10 @@ H = 0.005
 
 # starting tensor: prefer G_USE/h=0.005 from g_scan; fall back to interpolating cursor
 def find_start_tensor():
-    for G in (12, 9, 6):
-        cand = RESULTS / f"G{G}_tau2_smoothh{H:g}_het2_2_2_gscan_G{G}_h{H:g}_prices.npz"
-        if cand.exists():
-            return G, cand
+    """Force G=6 (fast; converged smooth seed exists)."""
+    cand = RESULTS / f"G6_tau2_smoothh{H:g}_het2_2_2_gscan_G6_h{H:g}_prices.npz"
+    if cand.exists():
+        return 6, cand
     return 6, REPO / "results/full_ree/G6_tau2_gamma2_up_picard_0_prices.npz"
 
 
