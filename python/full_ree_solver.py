@@ -357,7 +357,7 @@ def solve_newton(
     gmres_tol: float = 1.0e-3,
     fd_eps: float = 1.0e-5,
     min_alpha: float = 1.0e-4,
-    step_cap: float = 0.25,
+    step_cap: float = 0.5,
 ) -> SolveResult:
     if initial_P is not None:
         P = np.asarray(initial_P, dtype=float)
@@ -404,7 +404,7 @@ def solve_newton(
             delta_inf = step_cap
 
         accepted = False
-        alpha = 1.0
+        alpha = min(1.0, step_cap)
         trial_residual = math.inf
         trial_post = post
         trial_P = P
@@ -471,6 +471,8 @@ def solve(
     start_iteration: int = 0,
     anderson_m: int = 0,
     anderson_beta: float = 1.0,
+    adaptive_picard: bool = False,
+    min_damping: float = 1.0e-4,
 ) -> SolveResult:
     if initial_P is not None:
         P = np.asarray(initial_P, dtype=float)
@@ -516,7 +518,26 @@ def solve(
                         relaxed = (1.0 - damping) * relaxed + damping * aa_flat.reshape(P.shape)
                 except np.linalg.LinAlgError:
                     pass
-        P = np.clip(relaxed, 1.0e-8, 1.0 - 1.0e-8)
+        damping_used = damping
+        if adaptive_picard:
+            step = relaxed - P
+            scale = 1.0
+            best_trial = np.clip(P + step, 1.0e-8, 1.0 - 1.0e-8)
+            best_trial_residual = math.inf
+            while damping * scale >= min_damping:
+                trial = np.clip(P + scale * step, 1.0e-8, 1.0 - 1.0e-8)
+                trial_candidate, _ = phi(trial, grid, tau, gamma)
+                trial_residual = float(np.max(np.abs(trial_candidate - trial)))
+                if trial_residual < best_trial_residual:
+                    best_trial = trial
+                    best_trial_residual = trial_residual
+                    damping_used = damping * scale
+                if trial_residual <= residual:
+                    break
+                scale *= 0.5
+            P = best_trial
+        else:
+            P = np.clip(relaxed, 1.0e-8, 1.0 - 1.0e-8)
         deficit = revelation_deficit(P, grid, tau)
         max_fr_error = float(np.max(np.abs(P - fr_prices)))
         hist = {
@@ -524,6 +545,7 @@ def solve(
             "residual_inf": residual,
             "revelation_deficit": deficit,
             "max_fr_error": max_fr_error,
+            "damping_used": damping_used,
         }
         history.append(hist)
         if progress:
@@ -531,6 +553,7 @@ def solve(
             print(
                 f"iter={it} residual={residual:.6e} "
                 f"1-R2={deficit:.6e} max_fr_error={max_fr_error:.6e} "
+                f"damping={damping_used:.3e} "
                 f"seconds={elapsed:.2f}",
                 flush=True,
             )
@@ -604,6 +627,7 @@ def solve_newton(
     gmres_iter: int = 20,
     jvp_eps: float = 1.0e-5,
     min_step: float = 1.0e-4,
+    step_cap: float = 1.0,
 ) -> SolveResult:
     if initial_P is not None:
         P = np.asarray(initial_P, dtype=float)
@@ -661,7 +685,7 @@ def solve_newton(
 
         step, krylov_resid, krylov_iter = gmres(matvec, -f_flat, max_iter=gmres_iter, tol=1.0e-2)
         accepted = False
-        alpha = 1.0
+        alpha = min(1.0, step_cap)
         best_P = P
         best_residual = residual
         while alpha >= min_step:
@@ -722,6 +746,9 @@ def main() -> None:
     parser.add_argument("--gmres-max-iter", type=int, default=40)
     parser.add_argument("--gmres-tol", type=float, default=1.0e-4)
     parser.add_argument("--fd-eps", type=float, default=1.0e-5)
+    parser.add_argument("--adaptive-picard", action="store_true", help="backtrack Picard/Anderson steps when residual rises")
+    parser.add_argument("--min-damping", type=float, default=1.0e-4)
+    parser.add_argument("--newton-damping", type=float, default=1.0, help="maximum Newton line-search step")
     parser.add_argument("--progress", action="store_true", help="print one progress line after each Picard iteration")
     parser.add_argument("--outdir", type=Path, default=Path("results/full_ree"))
     args = parser.parse_args()
@@ -740,6 +767,7 @@ def main() -> None:
             progress=args.progress,
             gmres_iter=args.gmres_max_iter,
             jvp_eps=args.fd_eps,
+            step_cap=args.newton_damping,
         )
     else:
         result = solve(
@@ -754,6 +782,8 @@ def main() -> None:
             progress=args.progress,
             anderson_m=args.anderson,
             anderson_beta=args.anderson_beta,
+            adaptive_picard=args.adaptive_picard,
+            min_damping=args.min_damping,
         )
     args.outdir.mkdir(parents=True, exist_ok=True)
 
@@ -791,10 +821,14 @@ def main() -> None:
     seed_label = args.label or args.seed
     stem = f"G{args.G}_tau{args.tau:g}_gamma{args.gamma:g}_{seed_label}"
     (args.outdir / f"{stem}_summary.json").write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
+    history_fields = sorted({key for row in result.history for key in row.keys()})
+    preferred_fields = ["iteration", "residual_inf", "revelation_deficit", "max_fr_error"]
+    fieldnames = [field for field in preferred_fields if field in history_fields]
+    fieldnames.extend(field for field in history_fields if field not in fieldnames)
     with (args.outdir / f"{stem}_history.csv").open("w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(
             f,
-            fieldnames=["iteration", "residual_inf", "revelation_deficit", "max_fr_error"],
+            fieldnames=fieldnames,
             lineterminator="\n",
         )
         writer.writeheader()

@@ -154,6 +154,57 @@ At `(u1,u2,u3)=(1,-1,1)` for the best non-FR checkpoint:
 As a sanity check, the `G=9` fully revealing branch is an exact fixed point:
 starting Newton from the FR tensor gives residual `3.33e-16`.
 
+## G=7 continuation from the G=6 solution
+
+The `G=7` non-FR branch was attempted from the converged `G=6` tensor using
+the requested conservative Picard damping:
+
+```bash
+python3 python/full_ree_solver.py \
+  --G 7 --umax 2 --tau 2 --gamma 0.5 \
+  --seed array \
+  --seed-array results/full_ree/G6_tau2_gamma0.5_G6_tight_prices.npz \
+  --label G7_picard_adaptive --method picard --max-iter 123 \
+  --damping 0.1 --adaptive-picard --min-damping 1e-5 \
+  --anderson 5 --anderson-beta 0.7 --tol 1e-10 \
+  --save-array --progress
+```
+
+This checkpoint did not converge. The residual fell from `6.2844e-02` to
+`2.3024e-06`, but the adaptive line search then had to reduce damping to very
+small values and progress stalled.
+
+Newton continuation from that checkpoint used a maximum Newton damping of
+`0.5`:
+
+```bash
+python3 python/full_ree_solver.py \
+  --G 7 --umax 2 --tau 2 --gamma 0.5 \
+  --seed array \
+  --seed-array results/full_ree/G7_tau2_gamma0.5_G7_picard_adaptive_prices.npz \
+  --label G7_newton_d05 --method newton --max-iter 8 \
+  --newton-damping 0.5 --gmres-max-iter 50 --gmres-tol 1e-6 \
+  --fd-eps 1e-6 --tol 1e-10 --save-array --progress
+```
+
+The Newton step improved the residual only marginally, to
+`||Phi(P)-P||_inf = 2.2292e-06`, and then the line search stalled. Thus the
+`G=7` non-FR branch is a checkpoint, not a converged fixed point.
+
+At the representative grid point `(1.333333,-0.666667,1.333333)`:
+
+| variable | value |
+|---|---:|
+| FR price | `0.982014` |
+| checkpoint posterior `mu1` | `0.987784` |
+| checkpoint posterior `mu2` | `0.983939` |
+| checkpoint posterior `mu3` | `0.987784` |
+| checkpoint price | `0.986383` |
+| checkpoint `1-R^2` | `2.4075e-04` |
+
+As a sanity check, the `G=7` fully revealing branch is exact: starting from the
+FR tensor gives residual `3.33e-16`.
+
 ## G=6 continuation from the G=5 solution
 
 The `G=6` non-FR branch uses the converged `G=5` non-FR tensor as an
