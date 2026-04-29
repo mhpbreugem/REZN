@@ -207,7 +207,39 @@ faster than the signal).
 
 File: `results/full_ree/G12_PR_test_h0.005.json`.
 
-## TL;DR (revised, after G=12)
+## **Full γ ladder at G=12: clean monotone PR signal**
+
+After the head-to-head, I ran the full ladder. All converged to ~1e-13 in 16-273 iters.
+
+| γ | 1−R² | slope | **NET PR (vs γ=20)** |
+|---:|---:|---:|---:|
+| 0.10 | 0.03830 | 0.8690 | **+0.002335** |
+| 0.25 | 0.03719 | 0.8779 | +0.001219 |
+| 0.50 | 0.03644 | 0.8836 | +0.000470 |
+| 1.00 | 0.03610 | 0.8872 | +0.000135 |
+| 2.00 | 0.03600 | 0.8892 | +0.000035 |
+| 5.00 | 0.03597 | 0.8903 | +0.0000054 |
+| 20 | 0.03597 | 0.8909 | 0 (baseline) |
+
+**NET PR is monotone, strictly positive, and growing as γ → 0** — exactly matching the
+paper's prediction that lower γ (more risk-tolerant) gives more partial revelation.
+
+G=6 vs G=12 NET PR comparison:
+
+| γ | G=6 | **G=12** | ratio |
+|---:|---:|---:|---:|
+| 0.10 | +0.00089 | +0.00234 | 2.6× |
+| 0.25 | +0.00041 | +0.00122 | 3.0× |
+| 0.50 | +0.00018 | +0.00047 | 2.6× |
+
+NET PR is uniformly **~2.6× larger at G=12 than at G=6**, while the kernel-bandwidth
+artifact (the γ=20 baseline) only grew from 0.0155 to 0.0360 (2.3× — essentially the
+G²/G² scaling expected from finer Riemann sums). The genuine PR signal grows faster
+than the artifact, which is the signature of real PR.
+
+File: `results/full_ree/G12_smooth_gamma_ladder_h0.005.json`.
+
+## TL;DR (final, after G=12 γ-ladder)
 
 **The paper's qualitative claim is well-supported.**
 
