@@ -1,0 +1,72 @@
+[
+  {
+    "gammas": [
+      0.1,
+      0.1,
+      0.1
+    ],
+    "G": 12,
+    "umax": 2.0,
+    "tau": 2.0,
+    "h": 0.005,
+    "method": "picard_smooth_fast",
+    "seed_array": "/home/user/REZN/results/full_ree/G6_tau2_smoothh0.005_het0.1_0.1_0.1_gladder_down_g0.1_prices.npz",
+    "label": "g0.1_PR",
+    "iterations": 243,
+    "converged": true,
+    "residual_inf": 3.1861145666223223e-13,
+    "revelation_deficit": 0.03842688505761649,
+    "slope": 0.8693476177174961,
+    "max_fr_error": 0.010877442130367678,
+    "elapsed_seconds": 558.0902986526489,
+    "representative_realization": {
+      "u": [
+        0.9090909090909092,
+        -0.9090909090909092,
+        0.9090909090909092
+      ],
+      "price": 0.86034781658324,
+      "fr_price": 0.86034781658324,
+      "posteriors": [
+        0.8603478165832399,
+        0.86034781658324,
+        0.8603478165832399
+      ]
+    }
+  },
+  {
+    "gammas": [
+      20.0,
+      20.0,
+      20.0
+    ],
+    "G": 12,
+    "umax": 2.0,
+    "tau": 2.0,
+    "h": 0.005,
+    "method": "picard_smooth_fast",
+    "seed_array": "/home/user/REZN/results/full_ree/G6_tau2_smoothh0.005_het20_20_20_gladder_up_g20_prices.npz",
+    "label": "g20_PR",
+    "iterations": 310,
+    "converged": true,
+    "residual_inf": 5.21027665456586e-13,
+    "revelation_deficit": 0.035647863021518345,
+    "slope": 0.8917102092905339,
+    "max_fr_error": 0.016106795653731187,
+    "elapsed_seconds": 743.3462522029877,
+    "representative_realization": {
+      "u": [
+        0.9090909090909092,
+        -0.9090909090909092,
+        0.9090909090909092
+      ],
+      "price": 0.8603478165832396,
+      "fr_price": 0.86034781658324,
+      "posteriors": [
+        0.8603478165832399,
+        0.86034781658324,
+        0.8603478165832399
+      ]
+    }
+  }
+]
