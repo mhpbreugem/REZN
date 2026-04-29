@@ -19,10 +19,10 @@ RESULTS = REPO / "results" / "full_ree"
 SOLVER = REPO / "python" / "full_ree_solver_het_smooth_fast.py"
 G = 20; H = 0.01
 
-# Start at γ=0.1 (the seed's γ) and ladder outward in both directions.
-GAMMAS = [0.10, 0.20, 0.50, 1.0, 5.0, 20.0, 0.05]
-# Start at τ=2 (the seed's τ) and ladder outward.
-TAUS   = [2.0, 2.5, 1.5, 3.0, 1.0]
+# Tight scope around (γ=0.1, τ=2) — the 4.5% reference point.
+# Start at the seed and ladder outward in tiny steps (γ=0.1, τ=2 first).
+GAMMAS = [0.10, 0.15, 0.075, 0.20, 0.05]
+TAUS   = [2.0, 2.5, 1.7, 1.5]
 ACCEPT_TOL = 1.0e-13
 
 # Initial seed: the deeply converged G=20 γ=0.1 τ=2 h=0.01 tensor (residual 9.7e-14)
@@ -32,7 +32,7 @@ INITIAL_SEED = RESULTS / "G20_tau2_smoothfasth0.01_het0.1_0.1_0.1_g0.1_G20_deep_
 def call(label, gammas, tau, seed, max_iter=600, tol=1e-14,
          damping=0.3, anderson=5, anderson_beta=0.7):
     cmd = [
-        "python3", str(SOLVER),
+        "python3", "-u", str(SOLVER),
         "--G", str(G), "--umax", "2", "--tau", str(tau),
         "--gammas", ",".join(f"{g:g}" for g in gammas),
         "--seed-array", str(seed),
@@ -41,10 +41,12 @@ def call(label, gammas, tau, seed, max_iter=600, tol=1e-14,
         "--damping", str(damping),
         "--anderson", str(anderson), "--anderson-beta", str(anderson_beta),
         "--symmetric",
+        "--progress",       # show inner-solver iter prints in real time
     ]
-    out = subprocess.run(cmd, capture_output=True, text=True)
-    if out.returncode != 0:
-        sys.stdout.write(out.stdout[-1000:] + "\nSTDERR:\n" + out.stderr[-1000:])
+    print(f"  >> running {label}: γ={gammas}, τ={tau}", flush=True)
+    # Stream stdout/stderr live (no capture) so iter prints appear in our log
+    res = subprocess.run(cmd, stdout=sys.stdout, stderr=sys.stderr)
+    if res.returncode != 0:
         return None
     g_str = "_".join(f"{g:g}" for g in gammas)
     sf = RESULTS / f"G{G}_tau{tau:g}_smoothfasth{H:g}_het{g_str}_{label}_summary.json"
