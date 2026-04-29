@@ -1,0 +1,35 @@
+{
+  "G": 20,
+  "umax": 2.0,
+  "tau": 2.0,
+  "gammas": [
+    0.1,
+    0.1,
+    0.1
+  ],
+  "h": 0.00375,
+  "method": "picard_smooth_fast",
+  "seed_array": "/home/user/REZN/results/full_ree/G20_tau2_smoothfasth0.004_het0.1_0.1_0.1_hladderG20_g0.1_h0.004_a0_prices.npz",
+  "label": "hladderG20_g0.1_h0.00375_a0",
+  "iterations": 228,
+  "converged": true,
+  "residual_inf": 7.216449660063518e-15,
+  "revelation_deficit": 0.03043967779972545,
+  "slope": 0.879005566889465,
+  "max_fr_error": 0.021632970905641424,
+  "elapsed_seconds": 2947.6795840263367,
+  "representative_realization": {
+    "u": [
+      0.9473684210526314,
+      -0.9473684210526316,
+      0.9473684210526314
+    ],
+    "price": 0.8692946795011326,
+    "fr_price": 0.8692946795011327,
+    "posteriors": [
+      0.8692946795011326,
+      0.8692946795011326,
+      0.8692946795011326
+    ]
+  }
+}
