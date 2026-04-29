@@ -123,3 +123,33 @@ mechanism, but it remains a coarse-grid result. Higher-resolution production
 runs should use the same checks: report the FR seed, no-learning seed,
 residual, revelation deficit, representative posteriors, and the max distance
 between the solved price array and the FR array.
+
+## G=9 damped Newton attempt
+
+The `G=9` non-FR branch was attempted with damped Newton-Krylov, seeded from
+the interpolated converged `G=5` tensor.
+
+Best non-FR checkpoint:
+
+| stage | residual `||Phi(P)-P||_inf` | `1-R^2` | converged |
+|---|---:|---:|---|
+| Picard-Anderson preconditioner, 300 steps | `2.3567e-04` | `4.9726e-04` | false |
+| Damped Newton from preconditioner | `2.1361e-04` | `5.1173e-04` | false |
+
+The Newton step uses matrix-free finite-difference Jacobian-vector products,
+GMRES, and backtracking line search.  From the best checkpoint, tighter Krylov
+settings (`gmres_max_iter=80`, `fd_eps=1e-7`) did not find a descent step, so
+the non-FR `G=9` solve is not converged under the current method.
+
+At `(u1,u2,u3)=(1,-1,1)` for the best non-FR checkpoint:
+
+| variable | value |
+|---|---:|
+| FR price | `0.880797` |
+| checkpoint posterior `mu1` | `0.918962` |
+| checkpoint posterior `mu2` | `0.904241` |
+| checkpoint posterior `mu3` | `0.918962` |
+| checkpoint price | `0.913803` |
+
+As a sanity check, the `G=9` fully revealing branch is an exact fixed point:
+starting Newton from the FR tensor gives residual `3.33e-16`.

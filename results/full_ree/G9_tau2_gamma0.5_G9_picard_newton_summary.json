@@ -1,0 +1,39 @@
+{
+  "G": 9,
+  "umax": 2.0,
+  "tau": 2.0,
+  "gamma": 0.5,
+  "seed": "array",
+  "seed_array": "results/full_ree/G9_tau2_gamma0.5_G9_picard_pre_prices.npz",
+  "method": "newton",
+  "damping": 0.3,
+  "anderson_window": 0,
+  "anderson_beta": 1.0,
+  "gmres_max_iter": 45,
+  "gmres_tol": 1e-06,
+  "fd_eps": 1e-06,
+  "iterations": 2,
+  "converged": false,
+  "residual_inf": 0.00021360544711035434,
+  "revelation_deficit": 0.0005117313720230943,
+  "max_fr_error": 0.121788734000361,
+  "representative_realization": {
+    "u": [
+      1.0,
+      -1.0,
+      1.0
+    ],
+    "price": 0.9138028182704345,
+    "posteriors": [
+      0.9189623522881722,
+      0.904241479568398,
+      0.9189623522881464
+    ],
+    "private_priors": [
+      0.8807970779778823,
+      0.11920292202211755,
+      0.8807970779778823
+    ],
+    "fr_price": 0.8807970779778823
+  }
+}
