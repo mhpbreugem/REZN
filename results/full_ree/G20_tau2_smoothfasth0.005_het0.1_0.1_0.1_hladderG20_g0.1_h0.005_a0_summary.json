@@ -13,11 +13,11 @@
   "label": "hladderG20_g0.1_h0.005_a0",
   "iterations": 1,
   "converged": true,
-  "residual_inf": 1.5543122344752192e-15,
-  "revelation_deficit": 0.04197639019783206,
-  "slope": 0.8521866813502601,
-  "max_fr_error": 0.02163232604492482,
-  "elapsed_seconds": 12.48951005935669,
+  "residual_inf": 7.311859451242242e-16,
+  "revelation_deficit": 0.04197639019783184,
+  "slope": 0.8521866813502604,
+  "max_fr_error": 0.021632326044924932,
+  "elapsed_seconds": 13.036748170852661,
   "representative_realization": {
     "u": [
       0.9473684210526314,
