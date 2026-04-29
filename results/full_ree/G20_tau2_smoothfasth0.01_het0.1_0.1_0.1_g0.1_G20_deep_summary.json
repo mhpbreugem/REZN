@@ -1,0 +1,35 @@
+{
+  "G": 20,
+  "umax": 2.0,
+  "tau": 2.0,
+  "gammas": [
+    0.1,
+    0.1,
+    0.1
+  ],
+  "h": 0.01,
+  "method": "picard_smooth_fast",
+  "seed_array": "results/full_ree/G20_tau2_smoothfasth0.01_het0.1_0.1_0.1_g0.1_G20_h01_prices.npz",
+  "label": "g0.1_G20_deep",
+  "iterations": 129,
+  "converged": true,
+  "residual_inf": 9.670042544485113e-14,
+  "revelation_deficit": 0.04529908566961871,
+  "slope": 0.845882546397906,
+  "max_fr_error": 0.016217052971385315,
+  "elapsed_seconds": 1607.894658088684,
+  "representative_realization": {
+    "u": [
+      0.9473684210526314,
+      -0.9473684210526316,
+      0.9473684210526314
+    ],
+    "price": 0.8693035419587201,
+    "fr_price": 0.8692946795011327,
+    "posteriors": [
+      0.8693046478828923,
+      0.8693013303250304,
+      0.8693046478828922
+    ]
+  }
+}
