@@ -4,6 +4,7 @@
   "tau": 2.0,
   "gamma": 0.5,
   "seed": "no-learning",
+  "seed_array": null,
   "damping": 0.3,
   "iterations": 1029,
   "converged": true,

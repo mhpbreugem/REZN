@@ -11,6 +11,7 @@ import argparse
 import csv
 import json
 import math
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
@@ -44,6 +45,11 @@ def logit(p: np.ndarray | float) -> np.ndarray | float:
 def signal_density(u: float | np.ndarray, v: int, tau: float) -> float | np.ndarray:
     mean = v - 0.5
     return math.sqrt(tau / (2.0 * math.pi)) * np.exp(-0.5 * tau * (np.asarray(u) - mean) ** 2)
+
+
+def signal_density_scalar(u: float, v: int, tau: float) -> float:
+    mean = v - 0.5
+    return math.sqrt(tau / (2.0 * math.pi)) * math.exp(-0.5 * tau * (u - mean) ** 2)
 
 
 def crra_demand(mu: float, p: float, gamma: float, wealth: float = 1.0) -> float:
@@ -110,24 +116,48 @@ def full_revelation_prices(u: np.ndarray, tau: float) -> np.ndarray:
     return logistic(tau * (U1 + U2 + U3))
 
 
+def interpolate_price_array(P: np.ndarray, old_grid: np.ndarray, new_grid: np.ndarray) -> np.ndarray:
+    """Trilinearly prolong a coarse price array to a finer tensor grid."""
+    tmp0 = np.empty((len(new_grid), P.shape[1], P.shape[2]), dtype=float)
+    for j in range(P.shape[1]):
+        for k in range(P.shape[2]):
+            tmp0[:, j, k] = np.interp(new_grid, old_grid, P[:, j, k])
+
+    tmp1 = np.empty((len(new_grid), len(new_grid), P.shape[2]), dtype=float)
+    for i in range(len(new_grid)):
+        for k in range(P.shape[2]):
+            tmp1[i, :, k] = np.interp(new_grid, old_grid, tmp0[i, :, k])
+
+    out = np.empty((len(new_grid), len(new_grid), len(new_grid)), dtype=float)
+    for i in range(len(new_grid)):
+        for j in range(len(new_grid)):
+            out[i, j, :] = np.interp(new_grid, old_grid, tmp1[i, j, :])
+    return np.clip(out, 1.0e-8, 1.0 - 1.0e-8)
+
+
+def load_seed_array(path: Path, grid: np.ndarray) -> np.ndarray:
+    data = np.load(path)
+    old_grid = np.asarray(data["grid"], dtype=float)
+    old_P = np.asarray(data["P"], dtype=float)
+    if old_P.shape == (len(grid), len(grid), len(grid)) and np.allclose(old_grid, grid):
+        return old_P
+    return interpolate_price_array(old_P, old_grid, grid)
+
+
 def _axis_crossings(values: np.ndarray, grid: np.ndarray, target: float) -> list[float]:
     roots: list[float] = []
-    for a in range(len(grid) - 1):
-        y0 = float(values[a] - target)
-        y1 = float(values[a + 1] - target)
-        if abs(y0) < 1.0e-12:
-            roots.append(float(grid[a]))
-        if y0 == 0.0 and y1 == 0.0:
-            continue
-        if y0 * y1 < 0.0 or abs(y1) < 1.0e-12:
-            denom = float(values[a + 1] - values[a])
-            if abs(denom) < 1.0e-14:
-                root = float(grid[a + 1])
-            else:
-                root = float(grid[a] + (target - values[a]) * (grid[a + 1] - grid[a]) / denom)
-            roots.append(root)
-    if abs(float(values[-1] - target)) < 1.0e-12:
-        roots.append(float(grid[-1]))
+    diff = values - target
+    exact = np.flatnonzero(np.abs(diff) < 1.0e-12)
+    roots.extend(float(grid[int(a)]) for a in exact)
+    signs = diff[:-1] * diff[1:]
+    for a in np.flatnonzero(signs < 0.0):
+        denom = float(values[a + 1] - values[a])
+        if abs(denom) < 1.0e-14:
+            root = float(grid[a + 1])
+        else:
+            root = float(grid[a] + (target - values[a]) * (grid[a + 1] - grid[a]) / denom)
+        roots.append(root)
+    roots.sort()
     # Deduplicate roots created when the target hits a grid point exactly.
     out: list[float] = []
     for r in roots:
@@ -142,16 +172,20 @@ def contour_evidence(slice2d: np.ndarray, grid: np.ndarray, p: float, tau: float
 
     # Pass A: first coordinate on grid, second coordinate off grid.
     for a, ua in enumerate(grid):
+        f0a = signal_density_scalar(float(ua), 0, tau)
+        f1a = signal_density_scalar(float(ua), 1, tau)
         for ub in _axis_crossings(slice2d[a, :], grid, p):
-            sums[0] += signal_density(ua, 0, tau) * signal_density(ub, 0, tau)
-            sums[1] += signal_density(ua, 1, tau) * signal_density(ub, 1, tau)
+            sums[0] += f0a * signal_density_scalar(ub, 0, tau)
+            sums[1] += f1a * signal_density_scalar(ub, 1, tau)
             hits += 1
 
     # Pass B: second coordinate on grid, first coordinate off grid.
     for b, ub in enumerate(grid):
+        f0b = signal_density_scalar(float(ub), 0, tau)
+        f1b = signal_density_scalar(float(ub), 1, tau)
         for ua in _axis_crossings(slice2d[:, b], grid, p):
-            sums[0] += signal_density(ua, 0, tau) * signal_density(ub, 0, tau)
-            sums[1] += signal_density(ua, 1, tau) * signal_density(ub, 1, tau)
+            sums[0] += signal_density_scalar(ua, 0, tau) * f0b
+            sums[1] += signal_density_scalar(ua, 1, tau) * f1b
             hits += 1
 
     if hits == 0:
@@ -215,8 +249,15 @@ def solve(
     max_iter: int,
     tol: float,
     damping: float,
+    initial_P: np.ndarray | None = None,
+    progress: bool = False,
+    start_iteration: int = 0,
+    anderson_m: int = 0,
+    anderson_beta: float = 1.0,
 ) -> SolveResult:
-    if seed == "fr":
+    if initial_P is not None:
+        P = np.asarray(initial_P, dtype=float)
+    elif seed == "fr":
         P = full_revelation_prices(grid, tau)
     elif seed == "no-learning":
         P = no_learning_prices(grid, tau, gamma)
@@ -230,18 +271,52 @@ def solve(
     history: list[dict[str, float]] = []
     converged = False
     residual = math.inf
+    fr_prices = full_revelation_prices(grid, tau)
+    x_hist: list[np.ndarray] = []
+    f_hist: list[np.ndarray] = []
 
-    for it in range(1, max_iter + 1):
+    for local_it in range(1, max_iter + 1):
+        it = start_iteration + local_it
+        start = time.perf_counter()
         candidate, post = phi(P, grid, tau, gamma)
         residual = float(np.max(np.abs(candidate - P)))
-        P = np.clip((1.0 - damping) * P + damping * candidate, 1.0e-8, 1.0 - 1.0e-8)
+        relaxed = (1.0 - damping) * P + damping * candidate
+        if anderson_m > 0:
+            x_flat = P.ravel()
+            f_flat = (candidate - P).ravel()
+            x_hist.append(x_flat.copy())
+            f_hist.append(f_flat.copy())
+            if len(f_hist) > anderson_m + 1:
+                x_hist.pop(0)
+                f_hist.pop(0)
+            if len(f_hist) >= 2:
+                df = np.column_stack([f_hist[q + 1] - f_hist[q] for q in range(len(f_hist) - 1)])
+                dx = np.column_stack([x_hist[q + 1] - x_hist[q] for q in range(len(x_hist) - 1)])
+                try:
+                    coef, *_ = np.linalg.lstsq(df, f_flat, rcond=None)
+                    aa_flat = x_flat + f_flat - (dx + df) @ coef
+                    if np.all(np.isfinite(aa_flat)):
+                        relaxed = (1.0 - damping) * relaxed + damping * aa_flat.reshape(P.shape)
+                except np.linalg.LinAlgError:
+                    pass
+        P = np.clip(relaxed, 1.0e-8, 1.0 - 1.0e-8)
+        deficit = revelation_deficit(P, grid, tau)
+        max_fr_error = float(np.max(np.abs(P - fr_prices)))
         hist = {
             "iteration": float(it),
             "residual_inf": residual,
-            "revelation_deficit": revelation_deficit(P, grid, tau),
-            "max_fr_error": float(np.max(np.abs(P - full_revelation_prices(grid, tau)))),
+            "revelation_deficit": deficit,
+            "max_fr_error": max_fr_error,
         }
         history.append(hist)
+        if progress:
+            elapsed = time.perf_counter() - start
+            print(
+                f"iter={it} residual={residual:.6e} "
+                f"1-R2={deficit:.6e} max_fr_error={max_fr_error:.6e} "
+                f"seconds={elapsed:.2f}",
+                flush=True,
+            )
         if residual < tol:
             converged = True
             break
@@ -262,15 +337,34 @@ def main() -> None:
     parser.add_argument("--umax", type=float, default=2.0)
     parser.add_argument("--tau", type=float, default=2.0)
     parser.add_argument("--gamma", type=float, default=0.5)
-    parser.add_argument("--seed", choices=["no-learning", "fr", "tilted"], default="no-learning")
+    parser.add_argument("--seed", choices=["no-learning", "fr", "tilted", "array"], default="no-learning")
+    parser.add_argument("--seed-array", type=Path, help="npz file with arrays named grid and P; interpolated if needed")
+    parser.add_argument("--save-array", action="store_true", help="write the solved price tensor as an npz file")
+    parser.add_argument("--label", help="optional filename seed label")
     parser.add_argument("--max-iter", type=int, default=200)
     parser.add_argument("--tol", type=float, default=1.0e-8)
     parser.add_argument("--damping", type=float, default=0.3)
+    parser.add_argument("--anderson", type=int, default=0, help="Anderson window; 0 uses damped Picard")
+    parser.add_argument("--anderson-beta", type=float, default=1.0, help="relaxation applied to Anderson candidate")
+    parser.add_argument("--progress", action="store_true", help="print one progress line after each Picard iteration")
     parser.add_argument("--outdir", type=Path, default=Path("results/full_ree"))
     args = parser.parse_args()
 
     grid = np.linspace(-args.umax, args.umax, args.G)
-    result = solve(grid, args.tau, args.gamma, args.seed, args.max_iter, args.tol, args.damping)
+    initial_P = load_seed_array(args.seed_array, grid) if args.seed_array is not None else None
+    result = solve(
+        grid,
+        args.tau,
+        args.gamma,
+        args.seed,
+        args.max_iter,
+        args.tol,
+        args.damping,
+        initial_P=initial_P,
+        progress=args.progress,
+        anderson_m=args.anderson,
+        anderson_beta=args.anderson_beta,
+    )
     args.outdir.mkdir(parents=True, exist_ok=True)
 
     i = nearest_index(grid, 1.0)
@@ -282,7 +376,10 @@ def main() -> None:
         "tau": args.tau,
         "gamma": args.gamma,
         "seed": args.seed,
+        "seed_array": str(args.seed_array) if args.seed_array is not None else None,
         "damping": args.damping,
+        "anderson_window": args.anderson,
+        "anderson_beta": args.anderson_beta,
         "iterations": result.iterations,
         "converged": result.converged,
         "residual_inf": result.residual_inf,
@@ -297,7 +394,8 @@ def main() -> None:
         },
     }
 
-    stem = f"G{args.G}_tau{args.tau:g}_gamma{args.gamma:g}_{args.seed}"
+    seed_label = args.label or args.seed
+    stem = f"G{args.G}_tau{args.tau:g}_gamma{args.gamma:g}_{seed_label}"
     (args.outdir / f"{stem}_summary.json").write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
     with (args.outdir / f"{stem}_history.csv").open("w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(
@@ -307,6 +405,8 @@ def main() -> None:
         )
         writer.writeheader()
         writer.writerows(result.history)
+    if args.save_array:
+        np.savez_compressed(args.outdir / f"{stem}_prices.npz", grid=grid, P=result.P)
 
     print(json.dumps(summary, indent=2))
 

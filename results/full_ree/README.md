@@ -41,6 +41,63 @@ At the representative realization `(u1,u2,u3)=(1,-1,1)`:
 | CRRA REE price | `0.905507` |
 | logit price | `2.259972` |
 
+The converged price tensor is saved in
+`G5_tau2_gamma0.5_no-learning_prices.npz` and can be used as a continuation
+seed for finer grids.
+
+## G=15 continuation from the G=5 solution
+
+The `G=15` run uses the converged `G=5` non-FR tensor as an intelligent
+starting point. The solver trilinearly interpolates
+`G5_tau2_gamma0.5_no-learning_prices.npz` onto the `G=15` grid, then applies
+the same contour map.
+
+Picard continuation command:
+
+```bash
+python3 python/full_ree_solver.py \
+  --G 15 --umax 2 --tau 2 --gamma 0.5 \
+  --seed array \
+  --seed-array results/full_ree/G5_tau2_gamma0.5_no-learning_prices.npz \
+  --label from_G5 --max-iter 200 --damping 0.2 --tol 1e-8 \
+  --save-array --progress
+```
+
+This run did not converge to `1e-8`; after 200 iterations it reached
+`||Phi(P)-P||_inf = 2.4385e-03`, with `1-R^2 = 2.5277e-04`.
+
+Anderson continuation from that `G=15` checkpoint:
+
+```bash
+python3 python/full_ree_solver.py \
+  --G 15 --umax 2 --tau 2 --gamma 0.5 \
+  --seed array \
+  --seed-array results/full_ree/G15_tau2_gamma0.5_from_G5_prices.npz \
+  --label from_G5_anderson --max-iter 100 --damping 0.3 \
+  --anderson 5 --anderson-beta 0.7 --tol 1e-8 \
+  --save-array --progress
+```
+
+This also did not converge to `1e-8`; after 100 Anderson-accelerated
+iterations it reached `||Phi(P)-P||_inf = 1.1144e-03`, with
+`1-R^2 = 3.6302e-04`. The representative grid point nearest
+`(1,-1,1)` is `(1.142857,-1.142857,1.142857)`; at the final checkpoint:
+
+| variable | value |
+|---|---:|
+| private prior `mu1` | `0.907687` |
+| private prior `mu2` | `0.092313` |
+| private prior `mu3` | `0.907687` |
+| FR price | `0.907687` |
+| CRRA checkpoint posterior `mu1` | `0.909888` |
+| CRRA checkpoint posterior `mu2` | `0.908853` |
+| CRRA checkpoint posterior `mu3` | `0.909888` |
+| CRRA checkpoint price | `0.909459` |
+
+The `G=15` arrays are therefore checkpoints, not converged fixed points. They
+are useful continuation seeds for a stronger nonlinear solve, but should not
+be reported as solved equilibria.
+
 ## Branches of the contour map
 
 The same script confirms that the fully revealing price array is also an
