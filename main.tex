@@ -785,13 +785,17 @@ converged equilibria.
 
 \todopar{Numerical state. Smooth-kernel-regularised Picard with Anderson
 acceleration converges to machine precision ($\|F\|_{\infty}\!<\!10^{-12}$)
-on the contour fixed point at $G\!\in\!\{12,15\}$, kernel bandwidth
-$h\!=\!0.005$. The discretisation-converged result (G=12 vs G=15 agreement
-within 5\%) is that the rational-expectations equilibrium under
-homogeneous CRRA at $\tau\!=\!2$ has slope $\beta_{T}\approx 0.87$--$0.89$
-in the regression of $\logit P^{\star}$ on $\Tstar$ (vs.\ the
+on the contour fixed point at $G\!\in\!\{12,15,20\}$. At
+$G\!\in\!\{12,15\}$ with kernel bandwidth $h\!=\!0.005$, the
+rational-expectations equilibrium under homogeneous CRRA at $\tau\!=\!2$
+has slope $\beta_{T}\approx 0.87$--$0.89$ on $\Tstar$ (vs.\ the
 fully-revealing benchmark of $\beta_{T}\!=\!1$), with revelation deficit
-$1\!-\!R^{2}\approx 0.034$--$0.038$ for $\gamma\!\in\![0.1, 0.5]$.
+$1\!-\!R^{2}\approx 0.034$ at $\gamma\!=\!0.5$ and $0.036$ at
+$\gamma\!=\!0.1$. At $G\!=\!20$, $h\!=\!0.01$, the deficit grows to
+$0.0444$--$0.0453$ and the slope drops further to $0.85$, in the same
+qualitative direction (the bandwidth difference between the two grids
+prevents direct quantitative comparison; both grids agree on the sign
+and ordering).
 Heterogeneous-$\gamma$ configurations at higher precision ($\tau\!=\!3$)
 deliver substantially larger deficits (weighted $1\!-\!R^{2}$ up to $0.37$
 at $\gamma\!=\!(0.3, 50, 50)$). All numbers in this section come from
@@ -807,8 +811,7 @@ points (rather than as the FR fixed point in disguise) only at
 sufficiently small $\gamma$ and/or sufficiently large $\tau$. The
 homogeneous-CRRA case at $\gamma\!=\!0.5$, $\tau\!=\!2$ sits in this
 region: the converged equilibrium is partially revealing with slope
-clearly below 1 and a stable NET deficit (vs.\ the CARA limit at
-$\gamma\!=\!20$) of $+0.0005$.}
+clearly below unity at every grid resolution tested.}
 
 \subsection{The price-function fixed point}
 
@@ -967,7 +970,7 @@ following table converged to $\|F\|_{\infty}<10^{-12}$:
 \renewcommand{\arraystretch}{1.05}
 \begin{tabular}{rcccc}
 \toprule
-$\gamma$ & $1-R^{2}$ ($G\!=\!15$) & slope on $\Tstar$ & NET $1-R^{2}$ vs $\gamma\!=\!20$ \\
+$\gamma$ & $1-R^{2}$ ($G\!=\!15$, $h\!=\!0.005$) & slope on $\Tstar$ & NET $1-R^{2}$ vs $\gamma\!=\!20$ \\
 \midrule
 0.10 & 0.0361 & 0.876 & $+2.17\times 10^{-3}$\\
 0.25 & 0.0351 & 0.884 & $+1.13\times 10^{-3}$\\
@@ -984,12 +987,39 @@ Proposition~\ref{prop:ree} predicts. The non-zero baseline at
 $\gamma=20$ is the kernel-bandwidth artefact at $h=0.005$ and is
 subtracted in the NET column. NET PR at $\gamma=0.1$ grew from
 $+0.0009$ at $G=6$ to $+0.0023$ at $G=12$ and stabilised at $+0.0022$
-at $G=15$, indicating discretisation convergence. Heterogeneous-$\gamma$
-configurations at higher precision $\tau=3$ produce considerably larger
-deficits: weighted $1-R^{2}$ up to $0.37$ at $\gamma=(0.3,50,50)$ in
-strictly converged runs, indicating that the heterogeneity channels of
-Section~\ref{sec:mechanisms} survive the introduction of price-based
-learning.
+at $G=15$, indicating discretisation convergence at this bandwidth.
+Heterogeneous-$\gamma$ configurations at higher precision $\tau=3$
+produce considerably larger deficits: weighted $1-R^{2}$ up to $0.37$
+at $\gamma=(0.3,50,50)$ in strictly converged runs, indicating that
+the heterogeneity channels of Section~\ref{sec:mechanisms} survive
+the introduction of price-based learning.
+
+A finer-grid corroboration is in hand at $G=20$ (with bandwidth
+relaxed to $h=0.01$ to keep the smooth-$\Phi$ kernel coverage at a few
+cells per contour-thickness):
+\begin{center}
+\begin{tabular}{rcccc}
+\toprule
+$\gamma$ & $1-R^{2}$ ($G\!=\!20$, $h\!=\!0.01$) & slope on $\Tstar$ & residual $\|F\|_{\infty}$ & iterations \\
+\midrule
+0.10 & 0.0453 & 0.846 & $9.7\times 10^{-14}$ & 129 \\
+0.20 & 0.0444 & 0.854 & $8.8\times 10^{-15}$ & 171 \\
+\bottomrule
+\end{tabular}
+\end{center}
+The slope at $\gamma=0.1$, $G=20$, $h=0.01$ has dropped further from
+unity (to $0.846$ from $0.876$ at $G=15$), and the deficit has grown
+to $0.0453$. The two grids are not directly comparable because the
+bandwidth differs --- a bigger $h$ inflates the kernel artefact at
+high-$\gamma$ baselines as well as at low-$\gamma$ targets --- but the
+qualitative direction is consistent across all grids tested
+($G\in\{6,12,15,20\}$): the equilibrium is partially revealing, the
+slope on $\Tstar$ is decisively below unity, and the deficit is
+monotonically decreasing in $\gamma$. The $G=20$ runs at $h=0.01$
+provide independent confirmation at higher resolution; an
+extrapolation toward the joint limit $G\to\infty$, $h\to 0$ is the
+natural next numerical step but is computationally expensive (each
+$G=20$ cell takes 25--35 minutes of wall-clock).
 
 \todopar{Outstanding analytical task. An existence proof and a
 perturbation argument explaining why the partially-revealing branch
