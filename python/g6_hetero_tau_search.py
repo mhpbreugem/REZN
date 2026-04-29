@@ -221,7 +221,7 @@ def solve_seed(task: dict) -> dict:
         amp = 10 ** rng.uniform(-10.0, -3.0)
     elif family == "near_nonfr":
         base = P_nonfr_ref
-        amp = 10 ** rng.uniform(-10.0, -3.0)
+        amp = 10 ** rng.uniform(task["amp_min_log10"], task["amp_max_log10"])
     elif family == "mixed_fr_nonfr":
         w = rng.uniform(0.0, 1.0)
         base = w * P_nonfr_ref + (1.0 - w) * P_fr
@@ -293,6 +293,9 @@ def main() -> None:
     parser.add_argument("--stage1-tol", type=float, default=1.0e-7)
     parser.add_argument("--refine-iter", type=int, default=320)
     parser.add_argument("--workers", type=int, default=4)
+    parser.add_argument("--seed-mode", choices=["mixed", "near_nonfr"], default="mixed")
+    parser.add_argument("--amp-min-log10", type=float, default=-14.0)
+    parser.add_argument("--amp-max-log10", type=float, default=-8.0)
     parser.add_argument("--outdir", type=Path, default=Path("results/full_ree/g6_hetero_tau_search"))
     args = parser.parse_args()
 
@@ -320,14 +323,17 @@ def main() -> None:
     tasks = []
     families = ["near_fr", "near_nonfr", "mixed_fr_nonfr", "mixed_no_learning"]
     for idx in range(args.seeds):
+        family = "near_nonfr" if args.seed_mode == "near_nonfr" else families[idx % len(families)]
         tasks.append(
             {
                 "seed_index": idx,
                 "rng_seed": args.rng_seed + 7919 * idx,
-                "family": families[idx % len(families)],
+                "family": family,
                 "taus": list(map(float, taus)),
                 "stage1_iter": args.stage1_iter,
                 "stage1_tol": args.stage1_tol,
+                "amp_min_log10": args.amp_min_log10,
+                "amp_max_log10": args.amp_max_log10,
                 "nonfr_path": str(args.outdir / "hetero_nonfr_ref_prices.npz"),
             }
         )
@@ -363,6 +369,9 @@ def main() -> None:
         "rng_seed": args.rng_seed,
         "requested_seeds": args.seeds,
         "tolerance": args.tol,
+        "seed_mode": args.seed_mode,
+        "amp_min_log10": args.amp_min_log10,
+        "amp_max_log10": args.amp_max_log10,
         "stage1_iterations": args.stage1_iter,
         "stage1_nearest_counts": counts,
         "distinct_converged_clusters": int(fr_summary["refine_converged"]) + int(nonfr_summary["refine_converged"]),

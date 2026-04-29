@@ -357,3 +357,29 @@ revealing equilibrium below the `1e-14` tolerance.  The non-FR candidate is
 pulled close to the FR tensor and does not satisfy the strict residual
 criterion under the current hetero-tau contour map.  Per-seed outcomes are
 stored in `g6_hetero_tau_search/seed_results.csv`.
+
+A second run forces all 100 random seeds to be extremely close to the
+homogeneous `tau=2` PR solution.  The seeds are logit-space perturbations of
+the homogeneous PR tensor with amplitudes between `1e-14` and `1e-8`:
+
+```bash
+python3 python/g6_hetero_tau_search.py \
+  --seeds 100 --seed-mode near_nonfr \
+  --amp-min-log10 -14 --amp-max-log10 -8 \
+  --tol 1e-14 --stage1-iter 120 --refine-iter 500 \
+  --workers 4 --outdir results/full_ree/g6_hetero_tau_close_pr_search
+```
+
+All 100 seeds remained nearest to the non-FR candidate in Stage 1, but the
+candidate still did not converge below `1e-14` after refinement:
+
+| candidate | stage-1 nearest seeds | final residual | `1-R^2` | strict convergence |
+|---|---:|---:|---:|---|
+| FR | 0 | `2.22e-16` | `1.11e-16` | true |
+| non-FR candidate | 100 | `2.9030e-07` | `1.46e-10` | false |
+
+The close-seed run therefore supports the same conclusion: even when initialized
+arbitrarily close to the homogeneous PR equilibrium, the slightly heterogeneous
+`tau` case does not yield a distinct non-FR fixed point below `1e-14` under the
+current contour solver.  Per-seed outcomes are stored in
+`g6_hetero_tau_close_pr_search/seed_results.csv`.
