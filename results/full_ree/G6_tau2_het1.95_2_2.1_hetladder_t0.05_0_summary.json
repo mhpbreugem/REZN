@@ -1,0 +1,33 @@
+{
+  "G": 6,
+  "umax": 2.0,
+  "tau": 2.0,
+  "gammas": [
+    1.95,
+    2.0,
+    2.1
+  ],
+  "seed_array": "/home/user/REZN/results/full_ree/G6_tau2_het2_2_2_hetladder_t0_0_prices.npz",
+  "label": "hetladder_t0.05_0",
+  "iterations": 600,
+  "converged": false,
+  "residual_inf": 0.0018793254238158585,
+  "revelation_deficit": 0.0008236651845339171,
+  "slope": 1.0069664988768487,
+  "max_fr_error": 0.22071073647525907,
+  "elapsed_seconds": 255.08270716667175,
+  "representative_realization": {
+    "u": [
+      1.2000000000000002,
+      -1.2,
+      1.2000000000000002
+    ],
+    "price": 0.947746503270871,
+    "fr_price": 0.9168273035060777,
+    "posteriors": [
+      0.9573276786290613,
+      0.9261289768973118,
+      0.9573325198802164
+    ]
+  }
+}
