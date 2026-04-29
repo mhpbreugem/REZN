@@ -1,0 +1,35 @@
+{
+  "G": 6,
+  "umax": 2.0,
+  "tau": 2.0,
+  "gammas": [
+    3.0,
+    3.0,
+    3.0
+  ],
+  "h": 0.005,
+  "method": "picard",
+  "seed_array": "/home/user/REZN/results/full_ree/G6_tau2_smoothh0.005_het2_2_2_gladder_up_g2_prices.npz",
+  "label": "gladder_up_g3",
+  "iterations": 16,
+  "converged": true,
+  "residual_inf": 7.567948004383318e-14,
+  "revelation_deficit": 0.015534843749979821,
+  "slope": 0.9478363106298969,
+  "max_fr_error": 0.002268851458046584,
+  "elapsed_seconds": 5.113000869750977,
+  "representative_realization": {
+    "u": [
+      1.2000000000000002,
+      -1.2,
+      1.2000000000000002
+    ],
+    "price": 0.9168273035060777,
+    "fr_price": 0.9168273035060777,
+    "posteriors": [
+      0.9168273035060778,
+      0.9168273035060777,
+      0.9168273035060778
+    ]
+  }
+}
