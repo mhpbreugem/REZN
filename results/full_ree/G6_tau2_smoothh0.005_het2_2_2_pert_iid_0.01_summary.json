@@ -1,0 +1,35 @@
+{
+  "G": 6,
+  "umax": 2.0,
+  "tau": 2.0,
+  "gammas": [
+    2.0,
+    2.0,
+    2.0
+  ],
+  "h": 0.005,
+  "method": "picard",
+  "seed_array": "/home/user/REZN/results/full_ree/G6_tau2_smooth_perturb_iid_0.01.npz",
+  "label": "pert_iid_0.01",
+  "iterations": 400,
+  "converged": false,
+  "residual_inf": 0.0005809030870460585,
+  "revelation_deficit": 0.018324805354344442,
+  "slope": 0.9362705250746013,
+  "max_fr_error": 0.012510756089207598,
+  "elapsed_seconds": 139.64032220840454,
+  "representative_realization": {
+    "u": [
+      1.2000000000000002,
+      -1.2,
+      1.2000000000000002
+    ],
+    "price": 0.9168273035060777,
+    "fr_price": 0.9168273035060777,
+    "posteriors": [
+      0.9168273035060777,
+      0.9168273035060777,
+      0.9168273035060777
+    ]
+  }
+}
