@@ -218,6 +218,103 @@ def picard_anderson_het(P0, grid, tau, gammas, damping=0.3, anderson=5,
     return P, history, False
 
 
+# ---------- GMRES (matrix-free) ----------
+
+def _gmres(matvec, b, max_iter=40, tol=1e-2):
+    n = b.size
+    beta = float(np.linalg.norm(b))
+    if beta == 0:
+        return np.zeros_like(b), 0.0, 0
+    V = np.zeros((n, max_iter + 1))
+    H = np.zeros((max_iter + 1, max_iter))
+    V[:, 0] = b / beta
+    g = np.zeros(max_iter + 1)
+    g[0] = beta
+    cs = np.zeros(max_iter); sn = np.zeros(max_iter)
+    best_y = np.zeros(0); best_resid = beta; best_iter = 0
+    for k in range(max_iter):
+        w = matvec(V[:, k])
+        for j in range(k + 1):
+            H[j, k] = float(V[:, j] @ w)
+            w = w - H[j, k] * V[:, j]
+        H[k + 1, k] = float(np.linalg.norm(w))
+        if H[k + 1, k] < 1e-30:
+            best_iter = k + 1
+            best_y = np.linalg.lstsq(H[:k + 1, :k + 1], g[:k + 1], rcond=None)[0]
+            best_resid = 0.0
+            break
+        V[:, k + 1] = w / H[k + 1, k]
+        for i in range(k):
+            t1 = cs[i] * H[i, k] + sn[i] * H[i + 1, k]
+            t2 = -sn[i] * H[i, k] + cs[i] * H[i + 1, k]
+            H[i, k] = t1; H[i + 1, k] = t2
+        denom = math.hypot(H[k, k], H[k + 1, k])
+        cs[k] = H[k, k] / denom; sn[k] = H[k + 1, k] / denom
+        H[k, k] = denom; H[k + 1, k] = 0.0
+        t1 = cs[k] * g[k]; g[k + 1] = -sn[k] * g[k]; g[k] = t1
+        resid = abs(g[k + 1])
+        y = np.linalg.solve(H[:k + 1, :k + 1], g[:k + 1])
+        if resid < best_resid:
+            best_y = y; best_resid = resid; best_iter = k + 1
+        if resid <= tol * beta:
+            break
+    step = V[:, :best_iter] @ best_y
+    return step, best_resid, best_iter
+
+
+def newton_krylov_het(P0, grid, tau, gammas, max_iter=20, tol=1e-15,
+                     gmres_max_iter=80, gmres_tol=1e-2, fd_eps=1e-7,
+                     newton_damping=1.0, min_step=1e-4, progress=False,
+                     symmetric=False):
+    """Matrix-free Newton-Krylov for F(P) = P - phi(P, gammas) = 0."""
+    P = P0.copy()
+    history = []
+    for it in range(1, max_iter + 1):
+        cand, _ = phi_het(P, grid, tau, gammas, symmetric=symmetric)
+        F = P - cand   # so a fixed point has F = 0; Newton: J * step = -F
+        residual = float(np.max(np.abs(F)))
+        history.append(residual)
+        if residual < tol:
+            return P, history, True
+        f_flat = F.ravel()
+        p_flat = P.ravel()
+        jvp_scale = fd_eps * max(1.0, float(np.linalg.norm(p_flat)))
+
+        def matvec(v):
+            v_norm = float(np.linalg.norm(v))
+            if v_norm == 0:
+                return np.zeros_like(v)
+            eps = jvp_scale / v_norm
+            P_eps = np.clip((p_flat + eps * v).reshape(P.shape), 1e-8, 1 - 1e-8)
+            cand_eps, _ = phi_het(P_eps, grid, tau, gammas, symmetric=symmetric)
+            F_eps = P_eps - cand_eps
+            return (F_eps.ravel() - f_flat) / eps
+
+        step, gmres_resid, gmres_it = _gmres(matvec, -f_flat,
+                                              max_iter=gmres_max_iter, tol=gmres_tol)
+        # Backtracking line search
+        alpha = min(1.0, newton_damping)
+        accepted = False
+        best_P = P; best_residual = residual
+        while alpha >= min_step:
+            trial = np.clip((p_flat + alpha * step).reshape(P.shape), 1e-8, 1 - 1e-8)
+            cand_trial, _ = phi_het(trial, grid, tau, gammas, symmetric=symmetric)
+            trial_residual = float(np.max(np.abs(trial - cand_trial)))
+            if trial_residual < best_residual:
+                best_P = trial; best_residual = trial_residual; accepted = True
+                if trial_residual <= (1 - 1e-4 * alpha) * residual:
+                    break
+            alpha *= 0.5
+        P = best_P
+        if progress:
+            print(f"  newton={it} resid={residual:.4e} -> {best_residual:.4e}  "
+                  f"gmres({gmres_it})={gmres_resid:.2e}  alpha={alpha:.3e}",
+                  flush=True)
+        if not accepted:
+            return P, history, False
+    return P, history, False
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--G", type=int, default=6)
@@ -232,6 +329,11 @@ def main():
     ap.add_argument("--damping", type=float, default=0.3)
     ap.add_argument("--anderson", type=int, default=5)
     ap.add_argument("--anderson-beta", type=float, default=0.7)
+    ap.add_argument("--method", choices=["picard", "newton"], default="picard")
+    ap.add_argument("--gmres-max-iter", type=int, default=80)
+    ap.add_argument("--gmres-tol", type=float, default=1e-2)
+    ap.add_argument("--fd-eps", type=float, default=1e-7)
+    ap.add_argument("--newton-damping", type=float, default=1.0)
     ap.add_argument("--progress", action="store_true")
     ap.add_argument("--symmetric", action="store_true",
                     help="symmetrize over (i,j,k) permutations after each Phi (only valid if all gammas equal)")
@@ -256,12 +358,21 @@ def main():
     P0 = np.clip(P0, 1e-5, 1 - 1e-5)
 
     t0 = time.time()
-    P_final, hist, converged = picard_anderson_het(
-        P0, grid, args.tau, gammas,
-        damping=args.damping, anderson=args.anderson,
-        anderson_beta=args.anderson_beta, max_iter=args.max_iter,
-        tol=args.tol, progress=args.progress, symmetric=args.symmetric,
-    )
+    if args.method == "picard":
+        P_final, hist, converged = picard_anderson_het(
+            P0, grid, args.tau, gammas,
+            damping=args.damping, anderson=args.anderson,
+            anderson_beta=args.anderson_beta, max_iter=args.max_iter,
+            tol=args.tol, progress=args.progress, symmetric=args.symmetric,
+        )
+    else:
+        P_final, hist, converged = newton_krylov_het(
+            P0, grid, args.tau, gammas,
+            max_iter=args.max_iter, tol=args.tol,
+            gmres_max_iter=args.gmres_max_iter, gmres_tol=args.gmres_tol,
+            fd_eps=args.fd_eps, newton_damping=args.newton_damping,
+            progress=args.progress, symmetric=args.symmetric,
+        )
     elapsed = time.time() - t0
 
     R2def, slope = deficit(P_final, grid, args.tau)

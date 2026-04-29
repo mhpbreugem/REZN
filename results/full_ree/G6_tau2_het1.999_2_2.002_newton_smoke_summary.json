@@ -1,0 +1,33 @@
+{
+  "G": 6,
+  "umax": 2.0,
+  "tau": 2.0,
+  "gammas": [
+    1.999,
+    2.0,
+    2.002
+  ],
+  "seed_array": "results/full_ree/G6_tau2_gamma2_perturbed_1em10.npz",
+  "label": "newton_smoke",
+  "iterations": 1,
+  "converged": false,
+  "residual_inf": 0.005763510617940448,
+  "revelation_deficit": 0.00029656405158318133,
+  "slope": 1.0020441526907433,
+  "max_fr_error": 0.18211772911002033,
+  "elapsed_seconds": 46.34912705421448,
+  "representative_realization": {
+    "u": [
+      1.2000000000000002,
+      -1.2,
+      1.2000000000000002
+    ],
+    "price": 0.9480268093518344,
+    "fr_price": 0.9168273035060777,
+    "posteriors": [
+      0.9576991611641384,
+      0.9259104403145761,
+      0.9576991612411726
+    ]
+  }
+}
