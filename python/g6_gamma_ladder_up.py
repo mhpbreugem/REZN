@@ -22,6 +22,11 @@ GAMMAS = [0.50, 0.75, 1.0, 1.5, 2.0, 3.0, 5.0, 7.5, 10.0, 15.0, 20.0]
 START_TENSOR = REPO / "results/full_ree/G6_tau2_gamma0.5_G6_newton_polish_prices.npz"
 
 
+def gamma_tag(gamma):
+    """Match the solver's f"{gamma:g}" filename convention (1.0 -> '1', 0.75 -> '0.75')."""
+    return f"{gamma:g}"
+
+
 def call_solver(label, gamma, seed_npz, method="picard", **kw):
     cmd = [
         "python3", str(SOLVER),
@@ -49,7 +54,7 @@ def call_solver(label, gamma, seed_npz, method="picard", **kw):
         sys.stdout.write(out.stdout[-1500:])
         sys.stdout.write("\nSTDERR:\n" + out.stderr[-1500:])
         return None
-    summary_path = RESULTS / f"G6_tau2_gamma{gamma}_{label}_summary.json"
+    summary_path = RESULTS / f"G6_tau2_gamma{gamma_tag(gamma)}_{label}_summary.json"
     if not summary_path.exists():
         return None
     with open(summary_path) as f:
@@ -81,13 +86,13 @@ def attempt_step(gamma, seed_npz, attempt_idx):
     p_sum = call_solver(p_label, gamma, seed_npz, method="picard", **picard_kw)
     if p_sum is None:
         return None, None
-    p_npz = RESULTS / f"G6_tau2_gamma{gamma}_{p_label}_prices.npz"
+    p_npz = RESULTS / f"G6_tau2_gamma{gamma_tag(gamma)}_{p_label}_prices.npz"
     if best_residual(p_sum) <= ACCEPT_TOL:
         return p_sum, p_npz
 
     n_label = f"up_newton_{attempt_idx}"
     n_sum = call_solver(n_label, gamma, p_npz, method="newton", **newton_kw)
-    n_npz = RESULTS / f"G6_tau2_gamma{gamma}_{n_label}_prices.npz"
+    n_npz = RESULTS / f"G6_tau2_gamma{gamma_tag(gamma)}_{n_label}_prices.npz"
     if n_sum is not None and best_residual(n_sum) <= ACCEPT_TOL:
         return n_sum, n_npz
 
