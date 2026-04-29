@@ -19,8 +19,10 @@ RESULTS = REPO / "results" / "full_ree"
 SOLVER = REPO / "python" / "full_ree_solver_het_smooth_fast.py"
 G = 20; H = 0.01
 
-GAMMAS = [0.05, 0.10, 0.20, 0.50, 1.0, 5.0, 20.0]
-TAUS   = [1.0, 1.5, 2.0, 2.5, 3.0]
+# Start at γ=0.1 (the seed's γ) and ladder outward in both directions.
+GAMMAS = [0.10, 0.20, 0.50, 1.0, 5.0, 20.0, 0.05]
+# Start at τ=2 (the seed's τ) and ladder outward.
+TAUS   = [2.0, 2.5, 1.5, 3.0, 1.0]
 ACCEPT_TOL = 1.0e-13
 
 # Initial seed: the deeply converged G=20 γ=0.1 τ=2 h=0.01 tensor (residual 9.7e-14)
