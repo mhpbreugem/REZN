@@ -1,0 +1,35 @@
+{
+  "G": 12,
+  "umax": 2.0,
+  "tau": 1.0,
+  "gammas": [
+    0.1,
+    0.1,
+    0.1
+  ],
+  "h": 0.005,
+  "method": "picard_smooth_fast",
+  "seed_array": "/home/user/REZN/results/full_ree/G12_tau0.5_smoothfasth0.005_het20_20_20_sw_t0.5_g20_a0_prices.npz",
+  "label": "sw_t1_g0.1_a0",
+  "iterations": 600,
+  "converged": false,
+  "residual_inf": 4.103661854770735e-14,
+  "revelation_deficit": 0.0016662704945568096,
+  "slope": 0.9897451960489677,
+  "max_fr_error": 0.030613673818061016,
+  "elapsed_seconds": 1613.0808598995209,
+  "representative_realization": {
+    "u": [
+      0.9090909090909092,
+      -0.9090909090909092,
+      0.9090909090909092
+    ],
+    "price": 0.7128140986174972,
+    "fr_price": 0.7128140986174974,
+    "posteriors": [
+      0.7128140986174974,
+      0.7128140986174973,
+      0.7128140986174974
+    ]
+  }
+}
