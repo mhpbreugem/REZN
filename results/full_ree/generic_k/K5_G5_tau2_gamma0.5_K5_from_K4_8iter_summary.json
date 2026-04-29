@@ -1,0 +1,37 @@
+{
+  "K": 5,
+  "G": 5,
+  "tau": 2.0,
+  "gamma": 0.5,
+  "seed": "lower",
+  "lower_array": "results/full_ree/generic_k/K4_G5_tau2_gamma0.5_K4_G5_prices.npz",
+  "iterations": 8,
+  "converged": false,
+  "residual_inf": 0.03523241514223746,
+  "max_fr_error": 0.3597160937608195,
+  "representative": {
+    "index": [
+      3,
+      1,
+      3,
+      3,
+      3
+    ],
+    "u": [
+      1.0,
+      -1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "price": 0.9985338979084888,
+    "posteriors": [
+      0.9990866376945892,
+      0.9983598454907878,
+      0.9990866376945892,
+      0.9990866376945892,
+      0.9990866376945892
+    ],
+    "fr_price": 0.9975273768433653
+  }
+}

@@ -383,3 +383,35 @@ arbitrarily close to the homogeneous PR equilibrium, the slightly heterogeneous
 `tau` case does not yield a distinct non-FR fixed point below `1e-14` under the
 current contour solver.  Per-seed outcomes are stored in
 `g6_hetero_tau_close_pr_search/seed_results.csv`.
+
+## Symmetric K-agent exploratory runs at G=5
+
+The script `python/generic_k_symmetric_solver.py` generalizes the contour
+method to symmetric `K=4` and `K=5` cases at `G=5`.  It keeps the full
+`G^K` price tensor, but exploits symmetry by averaging each map evaluation over
+all agent permutations.  For an agent's `(K-1)`-dimensional slice, it sweeps
+`K-2` coordinates and root-finds the remaining coordinate, averaging over all
+choices of root axis.
+
+These runs are exploratory: the cost rises quickly with `K`, especially for
+`K=5`, and the current Picard-Anderson iteration did not converge to a non-FR
+fixed point.
+
+| run | seed | iterations | residual `||Phi(P)-P||_inf` | status |
+|---|---|---:|---:|---|
+| `K=4,G=5` | no-learning | 220 | `1.3792e-03` | not converged |
+| `K=4,G=5` | from converged `K=3` PR tensor | 220 | `1.0210e-02` | not converged |
+| `K=4,G=5` | FR tensor | 1 | `6.66e-16` | converged FR sanity check |
+| `K=5,G=5` | from best `K=4` checkpoint | 8 | `3.5232e-02` | not converged |
+| `K=5,G=5` | FR tensor | 1 | `7.94e-09` | FR sanity check; contour floor |
+
+The `K=4` no-learning run reaches a non-FR-like checkpoint at
+`(1,-1,1,1)` with price `0.990187` and posteriors
+`(0.992472,0.985309,0.992472,0.992472)`, versus FR price `0.982014`.
+The `K=5` bounded checkpoint at `(1,-1,1,1,1)` has price `0.998534` and
+posteriors around `(0.999087,0.998360,0.999087,0.999087,0.999087)`, versus
+FR price `0.997527`.
+
+The generic `K` solver confirms exact/near-exact FR behavior, but the non-FR
+branches for `K=4` and `K=5` require a stronger nonlinear solver or more
+runtime than the bounded Picard-Anderson attempts here.
