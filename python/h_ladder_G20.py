@@ -17,8 +17,14 @@ RESULTS = REPO / "results" / "full_ree"
 SOLVER = REPO / "python" / "full_ree_solver_het_smooth_fast.py"
 G = 20
 
-H_LADDER = [0.005, 0.004, 0.0035, 0.003, 0.0025, 0.002, 0.0017, 0.0014,
-            0.0012, 0.001, 0.0008, 0.0006, 0.0005, 0.0004, 0.0003, 0.0002, 0.0001]
+H_LADDER = [
+    # ~5% steps in the high-h region where iterate moves a lot
+    0.0050, 0.00475, 0.00450, 0.00425, 0.00400, 0.00375, 0.00350,
+    0.00325, 0.00300, 0.00280, 0.00260, 0.00240, 0.00220, 0.00200,
+    0.00180, 0.00160, 0.00140, 0.00120, 0.00100,
+    # ~20% steps in the noise-floor region
+    0.0008, 0.0006, 0.0005, 0.0004, 0.0003, 0.0002, 0.0001,
+]
 ACCEPT_TOL = 1.0e-13
 
 # Seeds: deeply converged G=20 h=0.005 tensors (h=0.005 already gave us
