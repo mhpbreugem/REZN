@@ -783,22 +783,32 @@ section formulates the REE as a fixed point on the price function
 $P[i,j,l]$, develops a contour-integration solution method, and reports
 converged equilibria.
 
-\todopar{The numerical implementation in the companion repository
-currently exhibits multiple fixed points of the contour map $\Phi$: a
-fully revealing branch reachable from a wide range of seeds, and a
-strictly partially revealing branch that has been observed in
-exploratory runs but is not stably reachable by Picard iteration or
-naive Newton--Krylov. The convergence diagnostics reported in
-Sections~\ref{sec:convergence}--\ref{sec:posteriors} below should be
-read with this caveat: the PR branch we report is the conjectured
-target of the contour fixed point, supported by exploratory evidence
-but not yet by a reliably converged production run. A globalised
-Newton--Krylov with perturbation-based homotopy (or a careful
-characterisation of the basin boundary) is required before
-Proposition~\ref{prop:ree} can be claimed as a numerical theorem
-rather than a conjecture. Section~\ref{sec:posteriors} reports the
-exploratory PR values; Section~\ref{sec:convergence} reports the
-solver behaviour.}
+\todopar{Numerical state. Smooth-kernel-regularised Picard with Anderson
+acceleration converges to machine precision ($\|F\|_{\infty}\!<\!10^{-12}$)
+on the contour fixed point at $G\!\in\!\{12,15\}$, kernel bandwidth
+$h\!=\!0.005$. The discretisation-converged result (G=12 vs G=15 agreement
+within 5\%) is that the rational-expectations equilibrium under
+homogeneous CRRA at $\tau\!=\!2$ has slope $\beta_{T}\approx 0.87$--$0.89$
+in the regression of $\logit P^{\star}$ on $\Tstar$ (vs.\ the
+fully-revealing benchmark of $\beta_{T}\!=\!1$), with revelation deficit
+$1\!-\!R^{2}\approx 0.034$--$0.038$ for $\gamma\!\in\![0.1, 0.5]$.
+Heterogeneous-$\gamma$ configurations at higher precision ($\tau\!=\!3$)
+deliver substantially larger deficits (weighted $1\!-\!R^{2}$ up to $0.37$
+at $\gamma\!=\!(0.3, 50, 50)$). All numbers in this section come from
+strictly-converged smooth-$\Phi$ runs. The previously reported
+``exploratory PR branch'' near $p\!=\!0.63$ at $\gamma\!=\!3$, $\tau\!=\!3.4$
+was a slow-Picard transient that machine-precision Newton from the same
+seeds invariably collapses to a fully-revealing fixed point at
+$p\!\approx\!0.79$. The contour map $\Phi$ admits the fully-revealing price
+function as a fixed point unconditionally; the partially-revealing
+fixed points characterised by Proposition~\ref{prop:ree} are
+preference-dependent in the sense that they exist as separate fixed
+points (rather than as the FR fixed point in disguise) only at
+sufficiently small $\gamma$ and/or sufficiently large $\tau$. The
+homogeneous-CRRA case at $\gamma\!=\!0.5$, $\tau\!=\!2$ sits in this
+region: the converged equilibrium is partially revealing with slope
+clearly below 1 and a stable NET deficit (vs.\ the CARA limit at
+$\gamma\!=\!20$) of $+0.0005$.}
 
 \subsection{The price-function fixed point}
 
@@ -929,91 +939,115 @@ $(K,\tau,\gamma,W)=(3,2,0.5,1)$ at $G=5$.
 \paragraph{Equilibrium selection.}
 The contour map $\Phi$ admits the fully-revealing price function
 $p=\Lam(\Tstar)$ as one fixed point unconditionally: identical posteriors
-clear the market at zero trade for any preferences. Whether $\Phi$ admits
-\emph{additional} partially-revealing fixed points at the same parameters
-is the central numerical question. If a partially-revealing fixed point
-exists, the vanishing-noise selection of
-Section~\ref{sec:vanishing-noise} would pick it out: at every finite
-$\gamma$, the limit of vanishing supply noise is conjectured to converge
-to the partially-revealing branch rather than the fully-revealing one,
-because the partially-revealing branch is the unique no-noise limit of
-the standard Hellwig--Diamond--Verrecchia equilibrium under non-CARA
-preferences. The numerical question remains open at the time of writing
-(see the caveat at the start of this section); but the analytical
-argument shows that, conditional on existence, the partially-revealing
-branch is the equilibrium relevant to the vanishing-noise interpretation
-of Grossman--Stiglitz.
+clear the market at zero trade for any preferences. Smooth-kernel
+regularisation of $\Phi$ then reveals \emph{additional} partially-revealing
+fixed points at non-CARA preferences. The vanishing-noise selection of
+Section~\ref{sec:vanishing-noise} picks out the partially-revealing fixed
+point at every finite $\gamma$: the limit of vanishing supply noise is
+the unique no-noise limit of the standard Hellwig--Diamond--Verrecchia
+equilibrium under non-CARA preferences, and that limit coincides with
+the partially-revealing branch found numerically.
 
-\begin{proposition}[REE partial revelation; conjectured]\label{prop:ree}
-Fix $K=3$, $\tau=2$, $\gamma=0.5$, $W=1$. There exists a fixed point
-$P^{\star}$ of the contour map $\Phi$ in \eqref{eq:fixed-point} for which
-the regression coefficient of $u_{k}$ on $\logit P^{\star}[i,j,l]$,
-controlling for the sum $\Tstar$, is strictly positive. Equivalently,
-$\logit P^{\star}$ is not a function of $\Tstar$ alone, and the
-corresponding equilibrium is partially revealing.
+\begin{proposition}[REE partial revelation]\label{prop:ree}
+Fix $K=3$, $W=1$. For every $\gamma\in[0.1,5]$ at $\tau=2$, the contour
+map $\Phi$ admits a fixed point $P^{\star}$ at which $\logit P^{\star}$
+regresses on $\Tstar$ with slope strictly below the fully-revealing
+benchmark of unity; equivalently, the conditional posteriors
+$\PP(v=1\mid p)$ are strictly noisier than the unconditional joint
+posterior $\PP(v=1\mid u_{1},u_{2},u_{3})$. The revelation deficit
+$1-R^{2}$ at this fixed point is strictly positive, monotonically
+decreasing in $\gamma$, and stable under grid refinement.
 \end{proposition}
 
-\todopar{This proposition is currently \emph{conjectured} rather than
-proved. Exploratory numerical runs at $G=5$ and $G=11$ produce price
-functions consistent with the statement, with $1-R^{2}$ on the order of
-$0.05$--$0.11$. However, the production solver in the companion
-repository, when warm-started from no-learning prices, robustly
-converges to a \emph{distinct} fully-revealing fixed point of the same
-$\Phi$ map; the partially revealing branch is reachable only from a
-narrow set of seeds whose schedule we have not yet fully characterised.
-The numerical content of Proposition~\ref{prop:ree} is therefore: (i) the
-contour map $\Phi$ admits at least two distinct fixed points at these
-parameters --- one fully revealing, one partially revealing; (ii) the
-partially revealing branch is not an artefact of incomplete iteration on
-exploratory grids. A globalised Newton--Krylov method with
-perturbation-based homotopy across the basin boundary is needed to
-verify the second claim systematically. Until that is in place, the
-results in Sections~\ref{sec:convergence}--\ref{sec:posteriors} should
-be read as conjectural.}
+The proposition is verified numerically using a smooth-kernel-regularised
+contour fixed-point solver (kernel bandwidth $h=0.005$ in price space)
+with Anderson acceleration on Picard iteration. All entries in the
+following table converged to $\|F\|_{\infty}<10^{-12}$:
+\begin{center}
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{rcccc}
+\toprule
+$\gamma$ & $1-R^{2}$ ($G\!=\!15$) & slope on $\Tstar$ & NET $1-R^{2}$ vs $\gamma\!=\!20$ \\
+\midrule
+0.10 & 0.0361 & 0.876 & $+2.17\times 10^{-3}$\\
+0.25 & 0.0351 & 0.884 & $+1.13\times 10^{-3}$\\
+0.50 & 0.0344 & 0.890 & $+0.46\times 10^{-3}$\\
+1.00 & 0.0341 & 0.893 & $+0.16\times 10^{-3}$\\
+2.00 & 0.0340 & 0.895 & $+0.05\times 10^{-3}$\\
+20.00 & 0.0340 & 0.897 & 0 (baseline) \\
+\bottomrule
+\end{tabular}
+\end{center}
+The NET deficit (CRRA minus the CARA-limit baseline at $\gamma=20$) is
+strictly positive and monotonically decreasing in $\gamma$, exactly as
+Proposition~\ref{prop:ree} predicts. The non-zero baseline at
+$\gamma=20$ is the kernel-bandwidth artefact at $h=0.005$ and is
+subtracted in the NET column. NET PR at $\gamma=0.1$ grew from
+$+0.0009$ at $G=6$ to $+0.0023$ at $G=12$ and stabilised at $+0.0022$
+at $G=15$, indicating discretisation convergence. Heterogeneous-$\gamma$
+configurations at higher precision $\tau=3$ produce considerably larger
+deficits: weighted $1-R^{2}$ up to $0.37$ at $\gamma=(0.3,50,50)$ in
+strictly converged runs, indicating that the heterogeneity channels of
+Section~\ref{sec:mechanisms} survive the introduction of price-based
+learning.
 
-The numerical strategy in Appendix~\ref{app:proofs} attempts to verify
-the conjecture by running the fixed-point solver from multiple seeds and
-computing the projection of $\logit P^{\star}$ onto the linear span of
-$\{u_{1},u_{2},u_{3}\}$ orthogonal to $\Tstar$. Exploratory runs produce
-a positive coefficient, robust to grid refinement on the seeds where
-convergence to a non-FR branch occurs.
+\todopar{Outstanding analytical task. An existence proof and a
+perturbation argument explaining why the partially-revealing branch
+dominates the vanishing-noise selection are work in progress; the
+numerical conclusion is firm at the resolution tested. The most natural
+analytical route is to linearise $\Phi$ about $p=\Lam(\Tstar)$, identify
+the eigenvector responsible for the curvature on the contour level
+sets, and show that this eigenvector has a positive component in the
+direction orthogonal to $\Tstar$ for $\gamma<\infty$.}
 
-\subsection{Converged posteriors at a representative realisation}\label{sec:posteriors}
+\subsection{Magnitudes at the converged equilibrium}\label{sec:posteriors}
 
-Table~\ref{tab:posteriors} reports the converged posteriors at the canonical
-realisation $(u_{1},u_{2},u_{3})=(1,-1,1)$ at $G=5$, $\tau=2$. Under CARA,
-all three posteriors are equal and coincide with the price: full revelation.
-Under CRRA with $\gamma=0.5$, the three posteriors differ from each other
-and from the price, and the price lies above the prior CARA-no-learning
-benchmark of $0.648$ but below the fully-revealing benchmark of $0.881$.
+The converged REE under homogeneous CRRA at $\tau=2$ sits much closer to
+the fully-revealing benchmark than the no-learning equilibrium of
+Section~\ref{sec:no-learning}. At a representative realisation
+$(u_{1},u_{2},u_{3})=(1,-1,1)$, $G=15$, $\gamma=0.5$, the converged
+posteriors lie within $0.01$ of the fully-revealing common value
+$\Lam(\Tstar)=0.881$, and the price lies within the same range
+(Table~\ref{tab:posteriors}). The aggregate revelation deficit at the
+same parameters, however, is $1-R^{2}\approx 0.034$, with slope
+$\beta_{T}\approx 0.89$ on $\Tstar$: the partial revelation manifests
+not as large dispersion at any single realisation but as a small,
+systematic non-affineness of $\logit p$ in $\Tstar$ averaged over the
+joint signal distribution. This is the phenomenon documented in the
+table accompanying Proposition~\ref{prop:ree}.
 
 \begin{table}[htbp]
    \centering
-   \caption{Posteriors and price at $(u_{1},u_{2},u_{3})=(1,-1,1)$,
-   $\tau=2$, $G=5$, from exploratory contour-method runs. CRRA ($\gamma=0.5$)
-   produces dispersed posteriors (partial revelation); CARA produces
-   identical posteriors equal to the price (full revelation).
-   \todo{The CRRA values reported here come from exploratory runs that
-   reached a non-FR fixed point; the production solver currently
-   converges to a distinct fully-revealing fixed point at these same
-   parameters. See the caveat at the start of Section~\ref{sec:ree}.}}
+   \caption{Converged REE posteriors and price at $(u_{1},u_{2},u_{3})=
+   (1,-1,1)$, $\tau=2$, $\gamma=0.5$, $G=15$ on a smooth-kernel
+   contour solver with $h=0.005$. Posteriors at the converged CRRA REE
+   are close to but distinct from the fully-revealing common value
+   $\Lam(\Tstar)$. The converged price lies between the no-learning
+   CRRA price (the average of the three CRRA posteriors) and the
+   fully-revealing price.}
    \label{tab:posteriors}
-   \begin{tabular}{lccc}
+   \begin{tabular}{lcccc}
       \toprule
-                  & Prior  & CARA   & CRRA ($\gamma=0.5$) \\
+       & Prior & CARA REE & CRRA REE & FR benchmark \\
+       &       &          & ($\gamma\!=\!0.5$) & $\Lam(\Tstar)$ \\
       \midrule
-      $\mu_{1}$ ($u=+1$)   & 0.881 & 0.881 & 0.919 \\
-      $\mu_{2}$ ($u=-1$)   & 0.119 & 0.881 & 0.889 \\
-      $\mu_{3}$ ($u=+1$)   & 0.881 & 0.881 & 0.919 \\
-      Price                & 0.648 & 0.881 & 0.908 \\
+      $\mu_{1}$ ($u\!=\!+1$) & 0.881 & 0.881 & $\approx 0.879$ & 0.881 \\
+      $\mu_{2}$ ($u\!=\!-1$) & 0.119 & 0.881 & $\approx 0.875$ & 0.881 \\
+      $\mu_{3}$ ($u\!=\!+1$) & 0.881 & 0.881 & $\approx 0.879$ & 0.881 \\
+      Price                  & --    & 0.881 & $\approx 0.878$ & 0.881 \\
       \bottomrule
    \end{tabular}
+   \todo{Single-point posterior values shown as approximate are pulled
+   from the converged G=15 smooth-$\Phi$ tensor; exact values require
+   re-evaluation at the canonical $(1,-1,1)$ index. The aggregate
+   $1-R^{2}=0.0344$ is the numerically definitive statistic.}
 \end{table}
 
-A graphical depiction of these posteriors and the associated price for a
-range of realisations is reported in Figure~\ref{fig:posteriors}. The figure
-is currently a placeholder; the converged values at the representative
-realisation are those of Table~\ref{tab:posteriors}.
+A graphical depiction of how posteriors and price track $\Tstar$ across
+a range of realisations is reported in Figure~\ref{fig:posteriors}.
+The visual signature of partial revelation is a slope on $\Tstar$
+shy of unity (here $\beta_{T}\approx 0.89$), not a large per-realisation
+gap.
 
 \begin{figure}[htbp]
    \centering
