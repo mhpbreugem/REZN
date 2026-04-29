@@ -153,3 +153,58 @@ At `(u1,u2,u3)=(1,-1,1)` for the best non-FR checkpoint:
 
 As a sanity check, the `G=9` fully revealing branch is an exact fixed point:
 starting Newton from the FR tensor gives residual `3.33e-16`.
+
+## G=6 continuation from the G=5 solution
+
+The `G=6` non-FR branch uses the converged `G=5` non-FR tensor as an
+interpolated starting point. Picard-Anderson converged, and a short
+continuation pass pushed the fixed-point error below `1e-12`.
+
+Command sequence:
+
+```bash
+python3 python/full_ree_solver.py \
+  --G 6 --umax 2 --tau 2 --gamma 0.5 \
+  --seed array \
+  --seed-array results/full_ree/G5_tau2_gamma0.5_no-learning_prices.npz \
+  --label G6_picard_pre --method picard --max-iter 500 \
+  --damping 0.25 --anderson 5 --anderson-beta 0.7 --tol 1e-10 \
+  --save-array --progress
+
+python3 python/full_ree_solver.py \
+  --G 6 --umax 2 --tau 2 --gamma 0.5 \
+  --seed array \
+  --seed-array results/full_ree/G6_tau2_gamma0.5_G6_picard_pre_prices.npz \
+  --label G6_tight --method picard --max-iter 100 \
+  --damping 0.25 --anderson 5 --anderson-beta 0.7 --tol 1e-12 \
+  --save-array --progress
+```
+
+Final non-FR result:
+
+| quantity | value |
+|---|---:|
+| grid | `G=6`, `u in [-2,2]` |
+| parameters | `tau=2`, `gamma=0.5` |
+| total continuation iterations | `89 + 17` |
+| converged | `true` |
+| residual `||Phi(P)-P||_inf` | `6.9529e-13` |
+| revelation deficit `1-R^2` | `2.2149e-04` |
+| `R^2` | `0.9997785142` |
+| max absolute distance from FR price array | `0.1692` |
+
+The representative grid point nearest `(1,-1,1)` is `(1.2,-1.2,1.2)`:
+
+| variable | value |
+|---|---:|
+| private prior `mu1` | `0.916827` |
+| private prior `mu2` | `0.083173` |
+| private prior `mu3` | `0.916827` |
+| FR price | `0.916827` |
+| CRRA REE posterior `mu1` | `0.951722` |
+| CRRA REE posterior `mu2` | `0.925407` |
+| CRRA REE posterior `mu3` | `0.951722` |
+| CRRA REE price | `0.941718` |
+
+As a sanity check, the `G=6` fully revealing branch is also an exact fixed
+point: starting from the FR tensor returns residual `1.11e-16`.
