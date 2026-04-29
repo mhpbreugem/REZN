@@ -1,0 +1,39 @@
+{
+  "G": 6,
+  "umax": 2.0,
+  "tau": 2.0,
+  "gamma": 0.4,
+  "seed": "array",
+  "seed_array": "/home/user/REZN/results/full_ree/G6_tau2_gamma0.5_ladder_polish_prices.npz",
+  "method": "picard",
+  "damping": 0.3,
+  "anderson_window": 5,
+  "anderson_beta": 0.7,
+  "gmres_max_iter": null,
+  "gmres_tol": null,
+  "fd_eps": null,
+  "iterations": 66,
+  "converged": true,
+  "residual_inf": 6.38378239159465e-14,
+  "revelation_deficit": 0.00020658287392694152,
+  "max_fr_error": 0.1653807158809898,
+  "representative_realization": {
+    "u": [
+      1.2000000000000002,
+      -1.2,
+      1.2000000000000002
+    ],
+    "price": 0.940225813258577,
+    "posteriors": [
+      0.950178490852429,
+      0.9252457798622167,
+      0.950178490852429
+    ],
+    "private_priors": [
+      0.9168273035060777,
+      0.08317269649392238,
+      0.9168273035060777
+    ],
+    "fr_price": 0.9168273035060777
+  }
+}
