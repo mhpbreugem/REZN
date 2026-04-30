@@ -67,7 +67,7 @@ def interp_mu_to_grid(mu_old, u_old, p_old, p_lo_old, p_hi_old,
 
 def solve_G(G, mu_warm=None, u_warm=None, p_warm=None,
             p_lo_warm=None, p_hi_warm=None,
-            picard_iters=200, nk_iters=120):
+            picard_iters=200, nk_iters=120, f_tol=1e-14):
     u_grid = np.linspace(-UMAX, UMAX, G)
     p_lo, p_hi, p_grid = init_p_grid(u_grid, TAU, GAMMA, G)
 
@@ -82,10 +82,10 @@ def solve_G(G, mu_warm=None, u_warm=None, p_warm=None,
               f"min={mu0.min():.4f}", flush=True)
 
     t0 = time.time()
-    # Brief picard polish
+    # Brief picard polish (don't over-spend if cycling)
     mu_warm_out, hist, _ = picard_anderson(
         mu0, u_grid, p_grid, p_lo, p_hi, TAU, GAMMA,
-        damping=0.05, anderson=0, max_iter=picard_iters, tol=1e-9, progress=False,
+        damping=0.05, anderson=0, max_iter=picard_iters, tol=1e-12, progress=False,
     )
     picard_resid = float(hist[-1][0])
     print(f"  [picard {picard_iters}] resid={picard_resid:.3e} "
@@ -97,7 +97,7 @@ def solve_G(G, mu_warm=None, u_warm=None, p_warm=None,
             lambda x: F_residual(x, mu_warm_out.shape, u_grid, p_grid,
                                   p_lo, p_hi, TAU, GAMMA),
             mu_warm_out.ravel(),
-            f_tol=1e-9, maxiter=nk_iters, verbose=False,
+            f_tol=f_tol, maxiter=nk_iters, verbose=False,
             method="lgmres",
         ).reshape(mu_warm_out.shape)
         mu_final = np.clip(mu_final, EPS, 1 - EPS)
@@ -105,7 +105,7 @@ def solve_G(G, mu_warm=None, u_warm=None, p_warm=None,
                                          TAU, GAMMA)
         residual = float(np.max(np.abs(cand - mu_final)[active_mask]))
         active = int(active_mask.sum())
-        conv = residual < 1e-7
+        conv = residual < 1e-12
     except (NoConvergence, ValueError) as e:
         print(f"  [NK failed: {e}]", flush=True)
         mu_final = mu_warm_out
@@ -152,7 +152,7 @@ for G in GS:
     r, mu, u_g, p_g, p_lo_g, p_hi_g = solve_G(
         G, mu_warm=mu_prev, u_warm=u_prev, p_warm=p_prev,
         p_lo_warm=p_lo_prev, p_hi_warm=p_hi_prev,
-        picard_iters=200, nk_iters=150,
+        picard_iters=300, nk_iters=400, f_tol=1e-14,
     )
     results.append(r)
     if r["converged"]:
