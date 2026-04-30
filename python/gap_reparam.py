@@ -101,20 +101,27 @@ def pava_p_only(mu):
     return out
 
 
-def F_residual_gap(x, Gu, Gp, u_grid, p_grid, p_lo, p_hi, tau, gamma,
-                    pava_p=False):
-    """F((base, c)) = encode(Φ(decode(base, c))) - (base, c).
+def pava_u_only(mu):
+    """Project μ to be non-decreasing in u (along axis 0 per column)."""
+    # PAVA along axis 0 by transposing
+    return pava_p_only(mu.T).T
 
-    With pava_p=True: project Φ-output to p-monotone before encoding.
-    Then any FP has both u-monotonicity (from gap reparam) and
-    p-monotonicity (from PAVA in p).
+
+def F_residual_gap(x, Gu, Gp, u_grid, p_grid, p_lo, p_hi, tau, gamma,
+                    pava_p=False, pava_u_pre_encode=True):
+    """F((base, c)) = encode(PAVA_2D(Φ(decode(base, c)))) - (base, c).
+
+    Always applies PAVA_u to the Φ-output before encoding so the
+    encode step uses true L²-monotone projection rather than the
+    log(max,ε)-clamp collapse. With pava_p=True, also applies PAVA_p.
     """
     base, c = unpack(x, Gu, Gp)
     mu = decode(base, c)
     cand, active, _ = phi_step(mu, u_grid, p_grid, p_lo, p_hi, tau, gamma)
     if pava_p:
         cand = pava_p_only(cand)
-    # Encode the (possibly p-projected) φ output with gap reparametrization
+    if pava_u_pre_encode:
+        cand = pava_u_only(cand)
     base_new, c_new = encode(cand)
     return pack(base_new - base, c_new - c)
 
