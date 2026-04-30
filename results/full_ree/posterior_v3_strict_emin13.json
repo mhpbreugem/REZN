@@ -85,6 +85,21 @@
       "status": "no_strict_conv_fallback"
     }
   ],
-  "gamma": [],
+  "gamma": [
+    {
+      "phase": "gamma",
+      "G": 14,
+      "tau": 2.0,
+      "gamma": 0.5,
+      "max": 6.5503158452884236e-15,
+      "med": 4.7704895589362195e-18,
+      "u_viol": 0,
+      "p_viol": 0,
+      "1-R^2": 0.10827588109753639,
+      "slope": 0.34084147710378254,
+      "elapsed_s": 296.5195746421814,
+      "status": "strict_conv"
+    }
+  ],
   "tau": []
 }
