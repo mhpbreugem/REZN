@@ -1820,6 +1820,19 @@ sets; the quadrature error from discretisation is $O(G^{-2})$ for
 equally-spaced nodes on a $C^{\infty}$ integrand, and the truncation error
 from restricting signals to $|u|\leq u_{\max}=4$ is
 $O(e^{-\tau u_{\max}^{2}})<10^{-14}$ at $\tau=2$.
+Figure~\ref{fig:convergence} shows a representative convergence path.
+
+\begin{figure}[htbp]
+   \centering
+   \includegraphics[width=0.55\textwidth]{figures/fig5_convergence.pdf}
+   \caption{Convergence of the posterior-function fixed point at $G=14$,
+   $\gamma=0.5$, $\tau=2$. Picard iteration with damping reduces the
+   residual to $\sim 10^{-3}$; Newton--Krylov polishing then reaches
+   machine precision ($\|F\|_{\infty}<10^{-14}$) in $\sim 10$ additional
+   steps.
+   \emph{Gray background: projected convergence path.}}
+   \label{fig:convergence}
+\end{figure}
 
 \paragraph{Software.} The reference implementation is in Python using the
 posterior-function method described above. The full source code is
