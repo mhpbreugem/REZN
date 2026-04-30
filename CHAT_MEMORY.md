@@ -486,3 +486,26 @@ must cancel demand curvature at exactly this point. Codimension-1.
 ### Proof dependencies:
 Prop 5 is the linchpin. Props 6-8 (welfare, value of info, GS) all depend on it.
 The analytical part (a) removes "conjecture" label. This is the key upgrade.
+
+## PAPER FIXES APPLIED (2026-04-30)
+
+### Done in this session:
+1. ✅ Prop 4: weakened (removed monotonicity claim + todo)
+2. ✅ Prop 5: new induction proof (analytical part a + numerical part b)
+3. ✅ Lemma 1: fixed proof (FOC not certainty equivalent)
+4. ✅ Lemma 3: moved proof to appendix
+5. ✅ Posteriors table: new numbers (μ2: 0.875→0.667, dramatic change)
+6. ✅ Convergence caption: G=14, posterior method
+7. ✅ Equilibrium selection: removed smooth-kernel language
+8. ✅ Appendix B: updated diagnostics + quadrature convergence
+9. ✅ All G=5 references → G=14
+10. ✅ Removed 3 todos (Prop 4 mono, Prop 5 analytical, posteriors approx)
+
+### Remaining todos in paper (10):
+- 5 placeholder figures (figs 4,7,8,9,6 mechanisms) → SOLVER
+- 2 mechanism table entries → SOLVER
+- Vanishing-noise continuity hypothesis → acknowledged, keep
+- V(τ) monotonicity → open analytical question
+- V monotonicity in Appendix → open
+
+Paper: 35 pages, compiles clean.
