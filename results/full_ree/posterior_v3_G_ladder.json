@@ -1,0 +1,44 @@
+[
+  {
+    "G": 8,
+    "tau": 2.0,
+    "gamma": 0.5,
+    "umax": 4.0,
+    "iterations": 368,
+    "converged": true,
+    "residual_inf": 9.643812207138502e-10,
+    "active_cells": 46,
+    "1-R^2": 0.10282901746847517,
+    "slope": 0.3359692287199891,
+    "n_samples": 512,
+    "elapsed_s": 1.3603911399841309
+  },
+  {
+    "G": 10,
+    "tau": 2.0,
+    "gamma": 0.5,
+    "umax": 4.0,
+    "iterations": 352,
+    "converged": true,
+    "residual_inf": 9.736673689531017e-10,
+    "active_cells": 78,
+    "1-R^2": 0.10831500383218928,
+    "slope": 0.3220307177629236,
+    "n_samples": 1000,
+    "elapsed_s": 2.333702564239502
+  },
+  {
+    "G": 12,
+    "tau": 2.0,
+    "gamma": 0.5,
+    "umax": 4.0,
+    "iterations": 800,
+    "converged": false,
+    "residual_inf": 0.3502705882637135,
+    "active_cells": 118,
+    "1-R^2": 0.0999497324298878,
+    "slope": 0.31918767692025124,
+    "n_samples": 1728,
+    "elapsed_s": 7.714840412139893
+  }
+]
