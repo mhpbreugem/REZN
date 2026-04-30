@@ -1,0 +1,14 @@
+{
+  "G": 24,
+  "tau": 2.0,
+  "gamma": 0.5,
+  "max": 0.26826704569002086,
+  "med": 2.512434704726729e-13,
+  "u_viol": 0,
+  "p_viol": 0,
+  "1-R^2": 0.10652844804803496,
+  "slope": 0.33688618299056233,
+  "strict_conv_nk": false,
+  "strict_conv_picard": false,
+  "nk_status": "noconv_kept"
+}
