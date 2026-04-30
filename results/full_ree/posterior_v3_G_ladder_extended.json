@@ -1,0 +1,105 @@
+{
+  "results": [
+    {
+      "G": 8,
+      "method": "picard",
+      "iterations": 368,
+      "converged": true,
+      "residual_inf": 9.643812207138502e-10,
+      "active_cells": 46,
+      "1-R^2": 0.10282901746847517,
+      "slope": 0.3359692287199891,
+      "n_samples": 512,
+      "elapsed_s": 1.2904646396636963
+    },
+    {
+      "G": 10,
+      "method": "picard",
+      "iterations": 352,
+      "converged": true,
+      "residual_inf": 9.736673689531017e-10,
+      "active_cells": 78,
+      "1-R^2": 0.10831500383218928,
+      "slope": 0.3220307177629236,
+      "n_samples": 1000,
+      "elapsed_s": 2.1010653972625732
+    },
+    {
+      "G": 12,
+      "method": "picard",
+      "iterations": 600,
+      "converged": false,
+      "residual_inf": 0.3502705882637135,
+      "active_cells": 118,
+      "1-R^2": 0.09994973242988758,
+      "slope": 0.3191876769202512,
+      "n_samples": 1728,
+      "elapsed_s": 5.576658487319946
+    },
+    {
+      "G": 12,
+      "method": "picard_warmed_nk",
+      "iterations": 280,
+      "converged": true,
+      "residual_inf": 9.781064846947629e-14,
+      "active_cells": 118,
+      "1-R^2": 0.10889797023949532,
+      "slope": 0.32330902220855406,
+      "n_samples": 1728,
+      "elapsed_s": 3.0314247608184814
+    },
+    {
+      "G": 14,
+      "method": "picard",
+      "iterations": 600,
+      "converged": false,
+      "residual_inf": 0.46605403663939954,
+      "active_cells": 166,
+      "1-R^2": 0.12817419660247187,
+      "slope": 0.2894967196945074,
+      "n_samples": 2744,
+      "elapsed_s": 8.345877170562744
+    },
+    {
+      "G": 14,
+      "method": "picard_warmed_nk",
+      "iterations": 280,
+      "converged": true,
+      "residual_inf": 1.754800638131826e-09,
+      "active_cells": 166,
+      "1-R^2": 0.11204479859468208,
+      "slope": 0.3243287915682189,
+      "n_samples": 2744,
+      "elapsed_s": 5.356237173080444
+    },
+    {
+      "G": 16,
+      "method": "picard",
+      "iterations": 600,
+      "converged": false,
+      "residual_inf": 0.5072036899646883,
+      "active_cells": 220,
+      "1-R^2": 0.2170609158321649,
+      "slope": 0.18218587671733344,
+      "n_samples": 4096,
+      "elapsed_s": 11.578352451324463
+    },
+    {
+      "G": 16,
+      "method": "picard_warmed_nk",
+      "iterations": 280,
+      "converged": false,
+      "residual_inf": 0.5072052276740203,
+      "active_cells": 220,
+      "1-R^2": 0.21705642395381397,
+      "slope": 0.1821868036301527,
+      "n_samples": 4096,
+      "elapsed_s": 11.40352749824524
+    }
+  ],
+  "params": {
+    "tau": 2.0,
+    "gamma": 0.5,
+    "umax": 4.0
+  }
+}
