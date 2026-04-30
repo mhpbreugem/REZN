@@ -113,6 +113,21 @@
       "good": false
     }
   ],
-  "gamma_ladder": [],
+  "gamma_ladder": [
+    {
+      "G": 14,
+      "tau": 2.0,
+      "gamma": 2.0,
+      "phi_resid_max": 0.915414134032924,
+      "phi_resid_med": 0.008582483661699225,
+      "phi_resid_l2": 0.16958909913128273,
+      "viol_u": 0,
+      "viol_p": 0,
+      "1-R^2": 0.1065540375883105,
+      "slope": 0.5859023547179812,
+      "elapsed_s": 11.527526378631592,
+      "good": false
+    }
+  ],
   "tau_ladder": []
 }
