@@ -1,0 +1,93 @@
+[
+  {
+    "gamma": 0.1,
+    "tau": 2.0,
+    "Gu": 8,
+    "Gp": 8,
+    "iterations": 600,
+    "converged": false,
+    "residual_inf": 0.1611557201669786,
+    "1-R^2": 0.12648869828737586,
+    "slope": 0.2323258551957862,
+    "n_samples": 512,
+    "elapsed_s": 2.1934947967529297
+  },
+  {
+    "gamma": 0.3,
+    "tau": 2.0,
+    "Gu": 8,
+    "Gp": 8,
+    "iterations": 354,
+    "converged": true,
+    "residual_inf": 9.626528463257955e-10,
+    "1-R^2": 0.10405442795049458,
+    "slope": 0.2732038585314421,
+    "n_samples": 512,
+    "elapsed_s": 1.295135259628296
+  },
+  {
+    "gamma": 0.5,
+    "tau": 2.0,
+    "Gu": 8,
+    "Gp": 8,
+    "iterations": 354,
+    "converged": true,
+    "residual_inf": 9.574598891504138e-10,
+    "1-R^2": 0.09897409396160417,
+    "slope": 0.3141935800171473,
+    "n_samples": 512,
+    "elapsed_s": 1.2778832912445068
+  },
+  {
+    "gamma": 1.0,
+    "tau": 2.0,
+    "Gu": 8,
+    "Gp": 8,
+    "iterations": 350,
+    "converged": true,
+    "residual_inf": 9.584644189430946e-10,
+    "1-R^2": 0.09137746118579648,
+    "slope": 0.4047288697006859,
+    "n_samples": 512,
+    "elapsed_s": 1.2639901638031006
+  },
+  {
+    "gamma": 2.0,
+    "tau": 2.0,
+    "Gu": 8,
+    "Gp": 8,
+    "iterations": 450,
+    "converged": true,
+    "residual_inf": 9.74507807782743e-10,
+    "1-R^2": 0.0919166483594448,
+    "slope": 0.5307351099256916,
+    "n_samples": 512,
+    "elapsed_s": 1.717578649520874
+  },
+  {
+    "gamma": 5.0,
+    "tau": 2.0,
+    "Gu": 8,
+    "Gp": 8,
+    "iterations": 600,
+    "converged": false,
+    "residual_inf": 0.3891475412826728,
+    "1-R^2": 0.07655486161670222,
+    "slope": 0.70545195571905,
+    "n_samples": 512,
+    "elapsed_s": 2.3005423545837402
+  },
+  {
+    "gamma": 10.0,
+    "tau": 2.0,
+    "Gu": 8,
+    "Gp": 8,
+    "iterations": 600,
+    "converged": false,
+    "residual_inf": 0.4455831642513733,
+    "1-R^2": 0.10144633305908723,
+    "slope": 0.7281831386946244,
+    "n_samples": 512,
+    "elapsed_s": 2.3248562812805176
+  }
+]

@@ -98,10 +98,11 @@ def extract_mu_col(mu, p_grid, p0, u_grid, tau, p_lo, p_hi):
     Gu = len(u_grid)
     mu_col = np.empty(Gu)
     for i in range(Gu):
-        if p0 < p_lo[i] or p0 > p_hi[i]:
-            mu_col[i] = Lam(tau * u_grid[i])
+        if p0 < p_grid[i, 0]:
+            mu_col[i] = mu[i, 0]      # clamp to lower edge of this row
+        elif p0 > p_grid[i, -1]:
+            mu_col[i] = mu[i, -1]     # clamp to upper edge
         else:
-            # 1D interp along this row's p-grid
             mu_col[i] = float(np.interp(p0, p_grid[i, :], mu[i, :]))
     return np.clip(mu_col, EPS, 1 - EPS)
 

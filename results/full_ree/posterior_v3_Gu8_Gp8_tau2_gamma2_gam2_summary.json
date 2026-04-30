@@ -1,0 +1,15 @@
+{
+  "method": "posterior_function_v3",
+  "Gu": 8,
+  "Gp": 8,
+  "tau": 2.0,
+  "gamma": 2.0,
+  "iterations": 450,
+  "converged": true,
+  "residual_inf": 9.74507807782743e-10,
+  "active_cells": 52,
+  "revelation_deficit": 0.0919166483594448,
+  "slope": 0.5307351099256916,
+  "n_samples": 512,
+  "elapsed_seconds": 1.7182238101959229
+}
