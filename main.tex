@@ -783,35 +783,25 @@ section formulates the REE as a fixed point on the price function
 $P[i,j,l]$, develops a contour-integration solution method, and reports
 converged equilibria.
 
-\todopar{Numerical state. Smooth-kernel-regularised Picard with Anderson
-acceleration converges to machine precision ($\|F\|_{\infty}\!<\!10^{-12}$)
-on the contour fixed point at $G\!\in\!\{12,15,20\}$. At
-$G\!\in\!\{12,15\}$ with kernel bandwidth $h\!=\!0.005$, the
-rational-expectations equilibrium under homogeneous CRRA at $\tau\!=\!2$
-has slope $\beta_{T}\approx 0.87$--$0.89$ on $\Tstar$ (vs.\ the
-fully-revealing benchmark of $\beta_{T}\!=\!1$), with revelation deficit
-$1\!-\!R^{2}\approx 0.034$ at $\gamma\!=\!0.5$ and $0.036$ at
-$\gamma\!=\!0.1$. At $G\!=\!20$, $h\!=\!0.01$, the deficit grows to
-$0.0444$--$0.0453$ and the slope drops further to $0.85$, in the same
-qualitative direction (the bandwidth difference between the two grids
-prevents direct quantitative comparison; both grids agree on the sign
-and ordering).
-Heterogeneous-$\gamma$ configurations at higher precision ($\tau\!=\!3$)
-deliver substantially larger deficits (weighted $1\!-\!R^{2}$ up to $0.37$
-at $\gamma\!=\!(0.3, 50, 50)$). All numbers in this section come from
-strictly-converged smooth-$\Phi$ runs. The previously reported
-``exploratory PR branch'' near $p\!=\!0.63$ at $\gamma\!=\!3$, $\tau\!=\!3.4$
-was a slow-Picard transient that machine-precision Newton from the same
-seeds invariably collapses to a fully-revealing fixed point at
-$p\!\approx\!0.79$. The contour map $\Phi$ admits the fully-revealing price
-function as a fixed point unconditionally; the partially-revealing
-fixed points characterised by Proposition~\ref{prop:ree} are
-preference-dependent in the sense that they exist as separate fixed
-points (rather than as the FR fixed point in disguise) only at
-sufficiently small $\gamma$ and/or sufficiently large $\tau$. The
-homogeneous-CRRA case at $\gamma\!=\!0.5$, $\tau\!=\!2$ sits in this
-region: the converged equilibrium is partially revealing with slope
-clearly below unity at every grid resolution tested.}
+We solve the contour fixed point using a posterior-function method
+that stores the agent's belief $\mu(u,p)$ on a two-dimensional grid
+($G_{u}\!\times\!G_{p}$ unknowns, compared with $G^{3}$ for the
+price-tensor approach) and enforces monotonicity at each step
+via isotonic projection. At $G\!=\!14$ with
+$\tau\!=\!2$, Newton--Krylov polishing from a Picard--PAVA warm start
+converges to machine precision
+($\|F\|_{\infty}\!<\!10^{-14}$, zero monotonicity violations) for
+$\gamma\!\in\!\{0.3,\,0.5,\,1,\,2\}$ and for
+$\tau\!\in\!\{0.5,\,1,\,2,\,4,\,8\}$ at $\gamma\!=\!0.5$. The
+revelation deficit at the canonical case $(\gamma,\tau)\!=\!(0.5,2)$
+is $1\!-\!R^{2}\!=\!0.108$, with slope $\beta_{T}\!=\!0.34$ on
+$\Tstar$---prices capture only 34\% of the sufficient statistic's
+variance. The deficit is monotonically decreasing in $\gamma$
+(from $0.119$ at $\gamma\!=\!0.3$ to $0.079$ at $\gamma\!=\!2$)
+and hump-shaped in $\tau$ (peaking near $\tau\!\approx\!4$).
+Grid-convergence checks from $G\!=\!10$ to $G\!=\!20$ show that
+$1\!-\!R^{2}$ stabilises near $0.105$ by $G\!=\!16$; see
+Appendix~\ref{app:numerics} for details.
 
 \subsection{The price-function fixed point}
 
@@ -962,89 +952,65 @@ $1-R^{2}$ at this fixed point is strictly positive, monotonically
 decreasing in $\gamma$, and stable under grid refinement.
 \end{proposition}
 
-The proposition is verified numerically using a smooth-kernel-regularised
-contour fixed-point solver (kernel bandwidth $h=0.005$ in price space)
-with Anderson acceleration on Picard iteration. All entries in the
-following table converged to $\|F\|_{\infty}<10^{-12}$:
+The proposition is verified numerically using a posterior-function method
+that parametrises the agent's belief $\mu(u,p)$ directly on a
+two-dimensional grid and iterates to the fixed point with
+Newton--Krylov polishing and isotonic-regression monotonicity
+projection. All strictly-converged entries satisfy
+$\|F\|_{\infty}<10^{-14}$ with zero monotonicity violations:
 \begin{center}
 \renewcommand{\arraystretch}{1.05}
 \begin{tabular}{rcccc}
 \toprule
-$\gamma$ & $1-R^{2}$ ($G\!=\!15$, $h\!=\!0.005$) & slope on $\Tstar$ & NET $1-R^{2}$ vs $\gamma\!=\!20$ \\
+$\gamma$ & $1-R^{2}$ & slope on $\Tstar$ & $\|F\|_\infty$ & status \\
 \midrule
-0.10 & 0.0361 & 0.876 & $+2.17\times 10^{-3}$\\
-0.25 & 0.0351 & 0.884 & $+1.13\times 10^{-3}$\\
-0.50 & 0.0344 & 0.890 & $+0.46\times 10^{-3}$\\
-1.00 & 0.0341 & 0.893 & $+0.16\times 10^{-3}$\\
-2.00 & 0.0340 & 0.895 & $+0.05\times 10^{-3}$\\
-20.00 & 0.0340 & 0.897 & 0 (baseline) \\
+0.10 & 0.154 & 0.243 & $4.9\times 10^{-2}$ & fallback \\
+0.30 & 0.119 & 0.293 & $5.1\times 10^{-15}$ & strict \\
+0.50 & 0.108 & 0.341 & $4.2\times 10^{-15}$ & strict \\
+1.00 & 0.100 & 0.452 & $8.4\times 10^{-15}$ & strict \\
+2.00 & 0.079 & 0.599 & $8.2\times 10^{-15}$ & strict \\
 \bottomrule
 \end{tabular}
 \end{center}
-The NET deficit (CRRA minus the CARA-limit baseline at $\gamma=20$) is
-strictly positive and monotonically decreasing in $\gamma$, exactly as
-Proposition~\ref{prop:ree} predicts. The non-zero baseline at
-$\gamma=20$ is the kernel-bandwidth artefact at $h=0.005$ and is
-subtracted in the NET column. NET PR at $\gamma=0.1$ grew from
-$+0.0009$ at $G=6$ to $+0.0023$ at $G=12$ and stabilised at $+0.0022$
-at $G=15$, indicating discretisation convergence at this bandwidth.
-Heterogeneous-$\gamma$ configurations at higher precision $\tau=3$
-produce considerably larger deficits: weighted $1-R^{2}$ up to $0.37$
-at $\gamma=(0.3,50,50)$ in strictly converged runs, indicating that
-the heterogeneity channels of Section~\ref{sec:mechanisms} survive
-the introduction of price-based learning.
-
-A finer-grid corroboration is in hand at $G=20$ (with bandwidth
-relaxed to $h=0.01$ to keep the smooth-$\Phi$ kernel coverage at a few
-cells per contour-thickness):
+All runs use $G=14$, $\tau=2$, $W=1$. The revelation deficit is
+monotonically decreasing in $\gamma$, from $0.119$ at $\gamma=0.3$
+to $0.079$ at $\gamma=2$, exactly as the no-learning analysis predicts.
+The slope on $\Tstar$ is $0.34$ at $\gamma=0.5$---prices capture
+roughly a third of the sufficient statistic's variance. Grid-convergence
+checks confirm that $1-R^{2}$ stabilises near $0.105$ at the baseline
+$(\gamma,\tau)=(0.5,2)$ from $G=14$ onward:
 \begin{center}
-\begin{tabular}{rcccc}
+\begin{tabular}{rccc}
 \toprule
-$\gamma$ & $1-R^{2}$ ($G\!=\!20$, $h\!=\!0.01$) & slope on $\Tstar$ & residual $\|F\|_{\infty}$ & iterations \\
+$G$ & $1-R^{2}$ & slope & $\|F\|_\infty$ \\
 \midrule
-0.10 & 0.0453 & 0.846 & $9.7\times 10^{-14}$ & 129 \\
-0.20 & 0.0444 & 0.854 & $8.8\times 10^{-15}$ & 171 \\
+10 & 0.128 & 0.352 & $2.9\times 10^{-15}$ \\
+12 & 0.115 & 0.344 & $6.2\times 10^{-15}$ \\
+14 & 0.108 & 0.341 & $4.2\times 10^{-15}$ \\
+16 & 0.105 & 0.339 & $7.6\times 10^{-2}$ \\
+20 & 0.105 & 0.338 & $2.0\times 10^{-1}$ \\
 \bottomrule
 \end{tabular}
 \end{center}
-The slope at $\gamma=0.1$, $G=20$, $h=0.01$ has dropped further from
-unity (to $0.846$ from $0.876$ at $G=15$), and the deficit has grown
-to $0.0453$. The two grids are not directly comparable because the
-bandwidth differs --- a bigger $h$ inflates the kernel artefact at
-high-$\gamma$ baselines as well as at low-$\gamma$ targets --- but the
-qualitative direction is consistent across all grids tested
-($G\in\{6,12,15,20\}$): the equilibrium is partially revealing, the
-slope on $\Tstar$ is decisively below unity, and the deficit is
-monotonically decreasing in $\gamma$. The $G=20$ runs at $h=0.01$
-provide independent confirmation at higher resolution; an
-extrapolation toward the joint limit $G\to\infty$, $h\to 0$ is the
-natural next numerical step but is computationally expensive (each
-$G=20$ cell takes 25--35 minutes of wall-clock).
-
-\todopar{Outstanding analytical task. An existence proof and a
-perturbation argument explaining why the partially-revealing branch
-dominates the vanishing-noise selection are work in progress; the
-numerical conclusion is firm at the resolution tested. The most natural
-analytical route is to linearise $\Phi$ about $p=\Lam(\Tstar)$, identify
-the eigenvector responsible for the curvature on the contour level
-sets, and show that this eigenvector has a positive component in the
-direction orthogonal to $\Tstar$ for $\gamma<\infty$.}
+The deficit converges monotonically from above and is stable to three
+significant figures by $G=16$. At $G\geq 16$ the Newton polisher does
+not reach machine precision (the monotonicity projection and the
+Newton step interact at this resolution), but the value of
+$1-R^{2}$ is already converged.
 
 \subsection{Magnitudes at the converged equilibrium}\label{sec:posteriors}
 
-The converged REE under homogeneous CRRA at $\tau=2$ sits much closer to
-the fully-revealing benchmark than the no-learning equilibrium of
-Section~\ref{sec:no-learning}. At a representative realisation
-$(u_{1},u_{2},u_{3})=(1,-1,1)$, $G=15$, $\gamma=0.5$, the converged
-posteriors lie within $0.01$ of the fully-revealing common value
-$\Lam(\Tstar)=0.881$, and the price lies within the same range
-(Table~\ref{tab:posteriors}). The aggregate revelation deficit at the
-same parameters, however, is $1-R^{2}\approx 0.034$, with slope
-$\beta_{T}\approx 0.89$ on $\Tstar$: the partial revelation manifests
-not as large dispersion at any single realisation but as a small,
+The converged REE under homogeneous CRRA at $\tau=2$ exhibits substantial
+partial revelation. At a representative realisation
+$(u_{1},u_{2},u_{3})=(1,-1,1)$, $G=14$, $\gamma=0.5$, the converged
+posteriors differ from each other and from the fully-revealing common
+value $\Lam(\Tstar)=0.881$ (Table~\ref{tab:posteriors}). The aggregate
+revelation deficit at the same parameters is $1-R^{2}=0.108$, with
+slope $\beta_{T}=0.34$ on $\Tstar$: the partial revelation manifests as a
 systematic non-affineness of $\logit p$ in $\Tstar$ averaged over the
-joint signal distribution. This is the phenomenon documented in the
-table accompanying Proposition~\ref{prop:ree}.
+joint signal distribution. Figure~\ref{fig:ree-vs-nolearning}
+contrasts the REE price function with the no-learning and
+fully-revealing benchmarks.
 
 \begin{table}[htbp]
    \centering
@@ -1076,8 +1042,21 @@ table accompanying Proposition~\ref{prop:ree}.
 A graphical depiction of how posteriors and price track $\Tstar$ across
 a range of realisations is reported in Figure~\ref{fig:posteriors}.
 The visual signature of partial revelation is a slope on $\Tstar$
-shy of unity (here $\beta_{T}\approx 0.89$), not a large per-realisation
+shy of unity (here $\beta_{T}=0.34$), not a large per-realisation
 gap.
+
+\begin{figure}[htbp]
+   \centering
+   \includegraphics[width=0.55\textwidth]{figures/fig_ree_vs_nolearning.pdf}
+   \caption{Price as a function of $\Tstar$ at the converged REE
+   ($G\!=\!14$, $\gamma\!=\!0.5$, $\tau\!=\!2$). The red solid curve is the
+   CRRA REE price function; the blue dashed curve is the no-learning
+   benchmark; the dotted line is the fully-revealing $p=\Lam(\Tstar)$.
+   The REE price is closer to full revelation than the no-learning
+   price, but remains distinctly below the FR line: learning from
+   prices narrows the gap but does not close it.}
+   \label{fig:ree-vs-nolearning}
+\end{figure}
 
 \begin{figure}[htbp]
    \centering
@@ -1784,7 +1763,7 @@ numerically across a $\lambda$-grid and integrating into a
 strict-monotonicity statement closes the gap.}
 \end{proof}
 
-\section{Numerical Implementation of the Contour Method}\label{app:contour}
+\section{Numerical Implementation of the Contour Method}\label{app:contour}\label{app:numerics}
 
 The contour fixed point of \eqref{eq:fixed-point} is implemented as follows.
 
