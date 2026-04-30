@@ -509,3 +509,34 @@ The analytical part (a) removes "conjecture" label. This is the key upgrade.
 - V monotonicity in Appendix → open
 
 Paper: 35 pages, compiles clean.
+
+## LITERATURE REVIEW — NOVELTY CONFIRMED (2026-04-30)
+
+Systematic search confirms no paper does what this paper does:
+standard expected utility (CRRA) + Gaussian signals + common values + no noise → PR.
+
+### Papers that get PR without noise (different mechanism):
+- Heifetz & Polemarchakis (1998 JET): dimensionality (more states than prices). Works for ANY utility. Not about preferences.
+- Vives (2011 Ecta): strategic/private values. Not common values.
+- Condie & Ganguli (2011 RES): ambiguity aversion (Maxmin EU). Non-standard expected utility.
+- Ausubel (1990 JET): higher-dimensional signals. Dimensionality trick.
+
+### Papers that study CRRA in REE (all keep noise):
+- Biais, Bossaerts & Spatt (2010 RFS): CRRA + dynamic REE + supply noise
+- Kasa, Walker & Whiteman (2014): computational CRRA + noise
+- Breugem & Buss (2019): projection method, CRRA + noise
+
+### Papers that study the CARA boundary (all keep noise):
+- DeMarzo & Skiadas (1998 JET): CARA log-odds aggregation
+- Breon-Drish (2015 RFS): CARA + exponential family → FR with noise
+- AHT (2024 JF): break FR via non-Gaussian signals, KEEP noise
+
+### Key positioning line for the paper:
+"Several papers have obtained partial revelation without noise traders
+through alternative channels: dimensionality (Heifetz and Polemarchakis,
+1998), strategic incentives with private values (Vives, 2011), and
+ambiguity aversion (Condie and Ganguli, 2011). The present paper is, to
+our knowledge, the first to show that standard expected utility
+preferences — specifically, any member of the CRRA family — produce
+partial revelation with common values, Gaussian signals, and no noise
+of any kind."
