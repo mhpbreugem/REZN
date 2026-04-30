@@ -306,3 +306,97 @@ where slope_lo, slope_hi are the logit-space slopes at the boundary.
 3. Re-run G=16, 18, 20, 24 at γ=0.5, τ=2
 4. Verify 1-R² matches the untrimmed values
 5. If strict at G≥16: run the full knife-edge sweep at G=16
+
+---
+
+## P0.7: CUTOFF LADDER — HOMOTOPY IN COVERAGE PERCENTAGE
+
+### The idea
+Use the coverage percentage as a continuation parameter. Start with
+a heavy cutoff (easy convergence), widen gradually, warm-start each
+step from the previous converged solution.
+
+### The ladder
+
+```
+coverage = [90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100]
+```
+
+At coverage c%: the p-grid for row i covers the central c% of
+[p_lo(u_i), p_hi(u_i)]:
+
+```python
+margin = (100 - c) / 200  # e.g. c=90 → margin=0.05 on each side
+p_lo_c[i] = p_lo[i] + margin * (p_hi[i] - p_lo[i])
+p_hi_c[i] = p_hi[i] - margin * (p_hi[i] - p_lo[i])
+```
+
+### The algorithm
+
+```
+Step 0: Solve at coverage=90%, G=target (e.g. G=20).
+        Initialize from no-learning μ = Λ(τu).
+        Should converge easily — no boundary cells.
+        
+Step 1: Expand to coverage=91%.
+        New cells on the boundary ring.
+        Initialize new cells by extrapolation from interior.
+        Warm-start interior from Step 0 solution.
+        Run Picard + NK to strict convergence.
+        
+Step 2: Expand to 92%. Same procedure.
+        ...
+        
+Step N: coverage=100% (full domain).
+        If converges: done, full strict solution.
+        If stalls at some c*: report "converged on central c%*
+        of the price distribution (weight > 1 - 2·(1-c*/100)²)."
+```
+
+### Why it works
+- At 90%: the outermost 10% of prices are removed. These are
+  configurations where both other agents have extreme signals
+  (top/bottom 5%). The domain is clean, contours have many
+  crossings, convergence is easy.
+  
+- At each step: only ~2% of cells are new (the thin ring).
+  They're initialized from the converged interior. The
+  perturbation is small → NK converges in 1-2 steps.
+  
+- At 100%: if reachable, you have the full solution. If not,
+  the stalling point c* is diagnostic — tells you exactly
+  which price quantile is problematic.
+
+### Reporting
+At whatever coverage the ladder achieves strict convergence, report:
+
+    "Strict convergence at G=20 on the central c% of the equilibrium
+     price distribution (covering > X% of the density-weighted
+     probability mass). The revelation deficit 1-R² = Y is invariant
+     to the coverage level from 90% onward."
+
+The density weight of the excluded region at coverage c:
+    excluded_weight ≈ 2 · Φ(-(100-c)/200 · range_in_sigmas)²
+    At c=95: ~6e-4. At c=99: ~2e-5. Negligible.
+
+### Also use for the G-ladder
+Combine with the G-ladder:
+
+```
+For G in [14, 15, 16, 18, 20, 24]:
+    For c in [90, 91, ..., 100]:
+        Solve (G, c). Warm-start from (G, c-1) or (G-1, 100).
+        If strict: record and continue.
+        If stalls: record c* for this G and move to next G.
+```
+
+This gives a 2D convergence map (G × coverage). The answer is
+in the interior where it's constant across both dimensions.
+
+### Quick test
+Before the full ladder, just try:
+1. G=20, coverage=90% → expect strict
+2. G=20, coverage=95% → expect strict  
+3. G=20, coverage=100% → does it reach strict?
+
+If step 2 works strict, skip the fine ladder.
