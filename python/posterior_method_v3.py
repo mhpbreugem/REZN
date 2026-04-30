@@ -112,6 +112,75 @@ def extract_mu_col(mu, p_grid, p0, u_grid, tau, p_lo, p_hi):
     return np.clip(mu_col, EPS, 1 - EPS)
 
 
+def pava_increasing(y, w=None):
+    """Pool-Adjacent-Violators Algorithm: project y onto the cone of
+    weakly-increasing sequences in L²(w). Standard implementation.
+
+    Args:
+        y: array-like, shape (n,) — values to project
+        w: array-like, shape (n,) — weights (default uniform)
+
+    Returns:
+        array of same shape as y, with y_i ≤ y_{i+1} ∀i, minimizing
+        Σ w_i (y_i - x_i)².
+    """
+    y = np.asarray(y, dtype=float).copy()
+    n = len(y)
+    if n <= 1:
+        return y
+    if w is None:
+        w = np.ones(n, dtype=float)
+    else:
+        w = np.asarray(w, dtype=float).copy()
+
+    val = y.copy()
+    weight = w.copy()
+    blocks = list(range(n + 1))   # block boundaries
+
+    # Iterate: scan and merge violators
+    i = 0
+    while i < len(blocks) - 2:
+        a, b = blocks[i], blocks[i + 1]
+        c = blocks[i + 2]
+        if val[a] > val[b]:
+            # Pool blocks [a:b) and [b:c)
+            new_w = weight[a] + weight[b]
+            new_v = (weight[a] * val[a] + weight[b] * val[b]) / new_w
+            val[a] = new_v
+            weight[a] = new_w
+            blocks.pop(i + 1)
+            if i > 0:
+                i -= 1
+        else:
+            i += 1
+
+    out = np.empty(n, dtype=float)
+    for k in range(len(blocks) - 1):
+        a, b = blocks[k], blocks[k + 1]
+        out[a:b] = val[a]
+    return out
+
+
+def project_monotone(mu, u_grid, p_grid_logit, active_mask=None, EPS_=EPS):
+    """Project μ[i,j] onto the bivariate-monotone cone:
+        ∂μ/∂u > 0 (rows: increasing in i)
+        ∂μ/∂p > 0 (cols: increasing in j)
+
+    Done by alternating row-wise and column-wise PAVA. Two passes
+    (axis u, then axis p) — exact for separable monotone constraints
+    when both directions are increasing.
+    """
+    Gu, Gp = mu.shape
+    out = np.clip(mu, EPS_, 1 - EPS_)
+    # Pass 1: enforce monotonicity in u at each price column j
+    for j in range(Gp):
+        out[:, j] = pava_increasing(out[:, j])
+    # Pass 2: enforce monotonicity in p at each signal row i
+    for i in range(Gu):
+        out[i, :] = pava_increasing(out[i, :])
+    return np.clip(out, EPS_, 1 - EPS_)
+
+
 def phi_step(mu, u_grid, p_grid, p_lo, p_hi, tau, gamma):
     """One Φ_μ evaluation per v3 §5/§6.
 
@@ -187,11 +256,20 @@ def phi_step(mu, u_grid, p_grid, p_lo, p_hi, tau, gamma):
 
 def picard_anderson(mu0, u_grid, p_grid, p_lo, p_hi, tau, gamma,
                     damping=0.2, anderson=0, anderson_beta=0.7,
-                    max_iter=200, tol=1e-8, progress=False):
+                    max_iter=200, tol=1e-8, progress=False, pava=False):
+    """Picard / Anderson with optional PAVA monotonicity projection.
+
+    If pava=True, project candidate μ onto the bivariate-monotone cone
+    after each Φ application (per POSTERIOR_METHOD_V2 §B). The projection
+    is the identity at the true monotone fixed point so it doesn't bias
+    the answer; it eliminates oscillating non-monotone transients.
+    """
     mu = mu0.copy(); history = []
     x_hist = []; f_hist = []
     for it in range(1, max_iter + 1):
         cand, active, ncross = phi_step(mu, u_grid, p_grid, p_lo, p_hi, tau, gamma)
+        if pava:
+            cand = project_monotone(cand, u_grid, p_grid)
         F = cand - mu
         # Residual over active cells only
         if np.any(active):
@@ -276,6 +354,8 @@ def main():
     ap.add_argument("--max-iter", type=int, default=200)
     ap.add_argument("--tol", type=float, default=1e-8)
     ap.add_argument("--progress", action="store_true")
+    ap.add_argument("--pava", action="store_true",
+                    help="apply PAVA monotonicity projection after each Φ")
     ap.add_argument("--label", type=str, default="v3")
     ap.add_argument("--outdir", type=str, default="results/full_ree")
     args = ap.parse_args()
@@ -305,7 +385,7 @@ def main():
         mu0, u_grid, p_grid, p_lo, p_hi, args.tau, args.gamma,
         damping=args.damping, anderson=args.anderson,
         anderson_beta=args.anderson_beta, max_iter=args.max_iter,
-        tol=args.tol, progress=args.progress,
+        tol=args.tol, progress=args.progress, pava=args.pava,
     )
     elapsed = time.time() - t0
     print(f"\nFinished: iters={len(hist)}, residual={hist[-1][0]:.4e}, "
