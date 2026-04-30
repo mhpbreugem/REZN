@@ -1,0 +1,36 @@
+\documentclass[border=2mm]{standalone}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\definecolor{red}{rgb}{0.7, 0.11, 0.11}
+\definecolor{blue}{rgb}{0.0, 0.20, 0.42}
+\begin{document}
+\begin{tikzpicture}
+\begin{axis}[
+  legend style={draw=none,legend pos=north west,font=\footnotesize},
+  xmin=-10, xmax=10, ymin=-0.02, ymax=1.02,
+  xlabel={$T^{\star} = \tau(u_1+u_2+u_3)$},
+  ylabel={price $p$},
+  width=8cm, height=8cm,
+  axis background/.style={fill=black!5},
+  title={$G\!=\!14$, $\gamma\!=\!0.5$, $\tau\!=\!2$, $1\!-\!R^2\!=\!0.097$}]
+
+% FR: p = Lambda(T*/3)
+\addplot[thin,color=black,dotted,smooth,domain=-10:10,samples=50]
+  {1/(1+exp(-x/3))};
+
+% No-learning (binned from 5000 samples)
+\addplot[very thick,color=blue,dashed,smooth] coordinates {
+  (-9.8,0.057) (-8.6,0.093) (-7.4,0.146) (-6.2,0.183) (-4.9,0.237)
+  (-3.7,0.299) (-2.5,0.357) (-1.2,0.432) (0.0,0.500) (1.2,0.572)
+  (2.5,0.639) (3.7,0.703) (4.9,0.760) (6.2,0.821) (7.4,0.864)
+  (8.6,0.906) (9.8,0.944)};
+
+% REE (approximate: slope 0.34 in logit space)
+\addplot[very thick,color=red,smooth,domain=-10:10,samples=50]
+  {1/(1+exp(-0.34*x))};
+
+\legend{$p=\Lambda(T^{\star}\!/3)$ (FR), No-learning, REE (CRRA)}
+
+\end{axis}
+\end{tikzpicture}
+\end{document}
