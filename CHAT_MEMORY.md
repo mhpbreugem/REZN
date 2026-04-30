@@ -318,3 +318,28 @@ and prevent convergence. v2 fixes this with:
 
 Full spec: POSTERIOR_METHOD_V2.md (382 lines).
 Tell Claude Code to implement this.
+
+## POSTERIOR METHOD v3 OPTIMIZATIONS (2026-04-27)
+
+Two major additions pushed to POSTERIOR_METHOD_V2.md:
+
+### A. Vectorized contour tracing (no root-finding)
+Precompute d(u) = demand at fixed price. Invert via np.interp instead
+of brentq. Entire sweep is vectorized: targets = -d[i] - d[:],
+u3* = np.interp(targets, d, u_grid), A_v = dot product.
+12,000x faster than price-grid at G=100.
+
+### B. Monotonicity projection (PAVA)
+After each Bayes update, project μ onto the monotone cone:
+- ∂μ/∂u > 0 (higher signal → more bullish)
+- ∂μ/∂p > 0 (higher price → more bullish)
+These are economic necessities, not assumptions. PAVA is O(n), exact,
+doesn't bias the answer (proj(μ*) = μ* if μ* is monotone).
+Expected to eliminate the quirky edge behavior in the two-branches plot.
+
+### Key result from REZN branch plots:
+- Two equilibrium branches at homogeneous γ=(3,3,3): near-CARA (1-R²~10⁻⁷)
+  and strong-PR (1-R²~0.04-0.18)
+- Het γ=(5,3,1): 1-R²≈0.32, flat in τ — strongest clean result
+- PR branch has quirky edges (red points in plot_two_branches.png)
+  which PAVA should fix
