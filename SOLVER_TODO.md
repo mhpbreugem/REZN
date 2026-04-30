@@ -400,3 +400,129 @@ Before the full ladder, just try:
 3. G=20, coverage=100% → does it reach strict?
 
 If step 2 works strict, skip the fine ladder.
+
+---
+
+## P1.5: FIGURE QUALITY — ALL FIGURES MUST BE FIXED BEFORE SUBMISSION
+
+### Style requirements
+- ALL figures must be pgfplots (standalone .tex → .pdf)
+- BC20 color scheme: green(0.7,0.11,0.11), red(0,0.20,0.42), blue(0.11,0.35,0.02)
+  Wait — CORRECTION: red=(0.7,0.11,0.11), blue=(0,0.20,0.42), green=(0.11,0.35,0.02)
+- Line order: green solid, red dashed, blue dotted, black dashdotted
+- very thick curves, ultra thick CARA, smooth
+- 8cm × 8cm, legend draw=none footnotesize
+- ymin=-0.001 for 1-R² plots
+- Paper gammas: γ = 0.25, 1.0, 4.0
+- No matplotlib figures in the final paper
+
+### Figure-by-figure status and fix needed
+
+**1. fig_knife_edge.tex/pdf — WRONG GAMMAS**
+Current: γ = 0.2, 1.0, 5.0 (old values)
+Fix: Recompute no-learning 1-R² at γ = 0.25, 1.0, 4.0
+Data: 30 log-spaced τ from 0.1 to 10, G=20
+Output: pgfplots coordinates for three curves + CARA at zero
+
+**2. fig3_contour.tex/pdf — DONE ✓**
+Updated with G=14 REE contour data from solver. Pgfplots, real data.
+
+**3. fig_ree_vs_nolearning.pdf — MATPLOTLIB, NEEDS PGFPLOTS CONVERSION**
+Current: solver's matplotlib PNG/PDF. Correct data but wrong style.
+Fix: Extract the raw (T*, p) data from the converged μ* at G=14.
+     For each triple (u_i, u_j, u_l) on the G=14 grid:
+       - Compute T* = τ(u_i + u_j + u_l)
+       - Solve market clearing F(p) = Σ d(u_k; p) = 0 for p using converged μ*
+       - Also compute no-learning price (using μ = Λ(τu))
+       - Also compute FR price p = Λ(T*/3)
+     Bin by T* (40 bins from -12 to 12), compute mean p in each bin.
+     Output as three pgfplots \addplot coordinate lists.
+     Clip to T* ∈ [-10, 10] to avoid edge wobbles.
+
+**4. fig4_posteriors.pdf — WRONG DATA, REMOVE OR REPLACE**
+Current: yellow-bg table showing G=5 numbers where μ₂ = 0.8808 (= CARA!).
+The posteriors TABLE in the main text has the correct numbers (μ₂ = 0.667).
+Options:
+  a) REMOVE this figure entirely (the table is sufficient)
+  b) Replace with a plot of μ_k vs T* showing CARA (identity) vs CRRA (spread)
+If (b): use converged μ* at G=14. For a range of T*, plot the three
+posteriors μ₁, μ₂, μ₃ and the price p. Show how they fan out under CRRA
+vs collapse to a single line under CARA.
+
+**5. fig5_convergence.pdf — WRONG DATA**
+Current: old G=20 price-grid convergence (Picard vs Anderson).
+Fix: Generate from the posterior method iteration history at G=14, γ=0.5, τ=2.
+     Plot ||F||∞ vs iteration number. Show Picard phase and NK polish phase.
+     If iteration history not saved, re-run and save it.
+Output: pgfplots with log-y axis.
+
+**6. fig_knife_edge_K.pdf — CHECK GAMMAS**
+May use old gamma values. Verify and regenerate if needed.
+Should show 1-R² vs K for γ = 0.25, 1, 4 at fixed τ=2.
+
+**7. fig_knife_edge_lognormal.pdf — CHECK GAMMAS**
+Same issue. Verify gamma values match 0.25, 1, 4.
+
+**8. fig7_volume.pdf — PLACEHOLDER OK ✓**
+Gray background, invented data, correct style. Will be replaced
+when trade volume computation is done (P2 task 10).
+
+**9. fig8_value_info.pdf — PLACEHOLDER OK ✓**
+Gray background, correct gammas (0.25, 1, 4). Will be replaced
+when V(τ) computation is done (P2 task 11).
+
+**10. fig9_GS.pdf — PLACEHOLDER OK ✓**
+Gray background, correct style. Will be replaced when V(τ)-c
+computation is done.
+
+**11. fig6_mechanisms.pdf — YELLOW-BG TABLE**
+This is a table rendered as a figure. The data is in the paper's
+Table (mechanisms). Consider:
+  a) Remove the figure, keep only the table
+  b) Replace with a bar chart of 1-R² by mechanism
+If (b): simple grouped bar chart, one bar per configuration,
+colored by mechanism type. pgfplots ybar.
+
+### Priority order for fixes
+1. fig_knife_edge (wrong gammas — this is Fig 1, most important)
+2. fig_ree_vs_nolearning (matplotlib → pgfplots)
+3. fig5_convergence (wrong data)
+4. fig4_posteriors (wrong data — remove or replace)
+5. fig_knife_edge_K, fig_knife_edge_lognormal (check gammas)
+6. fig6_mechanisms (cosmetic)
+
+### Data extraction recipe for fig_ree_vs_nolearning
+
+```python
+# After loading converged mu_star[G_u, G_p] at G=14:
+import numpy as np
+from scipy.optimize import brentq
+
+# For each grid triple (i, j, l):
+Tstar_list, p_ree_list, p_nl_list, p_fr_list = [], [], [], []
+for i in range(G):
+    for j in range(G):
+        for l in range(G):
+            u1, u2, u3 = u_grid[i], u_grid[j], u_grid[l]
+            Tstar = tau * (u1 + u2 + u3)
+            
+            # FR price
+            p_fr = expit(Tstar / K)
+            
+            # No-learning price
+            def nl_excess(p):
+                return sum(crra_demand(expit(tau*u), p) for u in [u1,u2,u3])
+            p_nl = brentq(nl_excess, 0.001, 0.999)
+            
+            # REE price (using converged mu*)
+            def ree_excess(p):
+                return sum(crra_demand(interp_mu(u, p), p) for u in [u1,u2,u3])
+            p_ree = brentq(ree_excess, 0.001, 0.999)
+            
+            Tstar_list.append(Tstar)
+            p_fr_list.append(p_fr)
+            p_nl_list.append(p_nl)
+            p_ree_list.append(p_ree)
+
+# Bin by T* and output pgfplots coordinates
+```
