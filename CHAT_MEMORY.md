@@ -402,3 +402,21 @@ learning on curved contours. See SOLVER_TODO.md §Technical Notes.
 ### SOLVER_TODO.md pushed
 16 tasks, priority P0-P3. Critical: paper gammas (0.25,1,4), CARA
 baseline, survival ratios, posteriors table.
+
+## PAPER UPDATE (2026-04-27)
+
+Replaced old smooth-kernel REE numbers with machine-precision posterior-method results.
+Key changes to main.tex:
+- Old: 1-R² ≈ 0.034 (with kernel artifact subtraction, NET ~0.002)
+- New: 1-R² = 0.108 at (γ=0.5, τ=2). No artifacts. Machine precision.
+- Removed todopar block. The numerical state is definitive.
+- New tables: γ-ladder and G-convergence
+- New figure: REE vs no-learning price function
+
+New figures pushed:
+- fig_ree_gamma.tex/pdf — 1-R² vs γ at REE, with no-learning comparison
+- fig_ree_tau.tex/pdf — 1-R² vs τ at REE, with no-learning comparison
+- fig_ree_convergence_G.tex/pdf — 1-R² convergence in G
+- fig_ree_vs_nolearning.pdf — price vs T* (from solver branch)
+
+Paper compiles clean, 34 pages.
