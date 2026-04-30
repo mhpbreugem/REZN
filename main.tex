@@ -692,7 +692,8 @@ Figure~\ref{fig:knife-edge} plots the deficit as a function of $\tau$ for
 three values of $\gamma$: the CARA line sits at zero regardless of signal
 precision, while every finite $\gamma$ produces a strictly positive and
 hump-shaped deficit. Table~\ref{tab:smooth} reports the same data across
-a wider range of $(\gamma,\tau)$ values.
+a wider range of $(\gamma,\tau)$ values (Table~\ref{tab:smooth} in
+Appendix~\ref{app:numerics}).
 
 \begin{figure}[htbp]
    \centering
@@ -701,33 +702,10 @@ a wider range of $(\gamma,\tau)$ values.
    precision $\tau$ in the no-learning equilibrium, for three values of
    the CRRA parameter $\gamma$. Every finite $\gamma$ produces strictly
    positive partial revelation; only CARA ($\gamma=\infty$, dash-dotted at
-   zero) achieves full revelation. $K=3$, $W=1$, $G=12$.}
+   zero) achieves full revelation. $K=3$, $W=1$, $G=12$.
+   \emph{Gray background: pending recomputation at $\gamma=0.25,1,4$.}}
    \label{fig:knife-edge}
 \end{figure}
-
-\begin{table}[htbp]
-   \centering
-   \caption{No-learning revelation deficit $1-R^{2}$ across $\gamma$ and
-   $\tau$. Computed exactly on a $G=20$ grid. CARA ($\gamma=\infty$) is the
-   knife-edge. Entries reported to three decimal places; values shown as
-   $0.000$ are strictly positive but below display precision (cf.\
-   Proposition~\ref{prop:jensen} for the $\tau^{3}/\gamma^{2}$ asymptotic
-   order).}
-   \label{tab:smooth}
-   \begin{tabular}{lccc}
-      \toprule
-      $\gamma$ & $\tau=0.5$ & $\tau=1.0$ & $\tau=2.0$ \\
-      \midrule
-       0.1   & 0.146 & 0.145 & 0.137 \\
-       0.3   & 0.044 & 0.070 & 0.090 \\
-       0.5   & 0.016 & 0.038 & 0.062 \\
-       1.0   & 0.004 & 0.013 & 0.029 \\
-       3.0   & 0.000 & 0.002 & 0.006 \\
-      10.0   & 0.000 & 0.000 & 0.001 \\
-      $\infty$ (CARA) & 0.000 & 0.000 & 0.000 \\
-      \bottomrule
-   \end{tabular}
-\end{table}
 
 \subsection{Robustness}
 
@@ -886,41 +864,36 @@ in equilibrium, the market clears at a price intermediate between the
 private and the fully-revealing levels, and the equilibrium is partially
 revealing.
 
-Figure~\ref{fig:contours} visualises the two cases at the point
-$(u_{1},u_{2},u_{3})=(1,-1,1)$ for $\tau=2$. The CARA slice exhibits the
-expected straight contours; the CRRA ($\gamma=0.5$) slice is visibly curved.
+Figure~\ref{fig:contours} visualises the two cases in the agent-1 slice
+at $u_{1}=1$, $\tau=2$, showing contours at multiple price levels. Under
+CARA, the contours are straight and parallel: every price level
+corresponds to a hyperplane $\tau u_{2}+\tau u_{3}=c$, and $\Tstar$ is
+constant along each contour. Under CRRA ($\gamma=0.5$), the contours are
+curved and non-parallel: $\Tstar$ varies along each contour, and the
+curvature itself changes with the price level. The agent observing a
+CRRA price cannot extract $\Tstar$.
 
 \begin{figure}[htbp]
    \centering
-   \includegraphics[width=0.85\textwidth]{figures/fig3_contour.pdf}
-   \caption{Price-function contours in the agent-1 slice at
-   $(u_{1},u_{2},u_{3})=(1,-1,1)$ and $\tau=2$. Left: CARA. The contours of
-   $P[1,\cdot,\cdot]$ are straight lines $\tau u_{2}+\tau u_{3}=c$, and
-   every point on a contour shares the same $\Tstar$. Right: CRRA with
-   $\gamma=0.5$. Contours are curved, $\Tstar$ varies along the contour,
-   and the agent cannot extract $\Tstar$ from the price.}
+   \includegraphics[width=0.95\textwidth]{figures/fig_multicontour.pdf}
+   \caption{Price-function contours in the agent-1 slice at $u_{1}=1$,
+   $\tau=2$, shown at five price levels. Left: CARA --- contours are
+   straight, parallel, equally spaced. Right: CRRA with $\gamma=0.5$
+   --- contours are curved and non-parallel; the spacing varies across
+   the $(u_{2},u_{3})$ plane. The curvature is the Jensen gap made
+   visible.
+   \emph{Gray background: projected contour shapes pending multi-level
+   computation.}}
    \label{fig:contours}
 \end{figure}
 
 \subsection{Existence and convergence}\label{sec:convergence}
 
-The contour fixed point \eqref{eq:fixed-point} is solved by Picard iteration
-with damping or by Anderson acceleration. Both schemes converge across the
-parameter range we consider. Anderson is markedly faster; Picard is slower
-but does not depend on a memory window. Figure~\ref{fig:convergence}
-compares the convergence paths for the canonical case
-$(K,\tau,\gamma,W)=(3,2,0.5,1)$ at $G=14$.
-
-\begin{figure}[htbp]
-   \centering
-   \includegraphics[width=0.62\textwidth]{figures/fig5_convergence.pdf}
-   \caption{Convergence of the contour fixed point at $G=14$,
-   $\gamma=0.5$, $\tau=2$. The posterior-function method with
-   isotonic-regression monotonicity projection reaches
-   $\|F\|_{\infty}<10^{-14}$ (machine precision) via Picard iteration
-   followed by Newton--Krylov polishing.}
-   \label{fig:convergence}
-\end{figure}
+The contour fixed point \eqref{eq:fixed-point} is solved by Picard
+iteration followed by Newton--Krylov polishing, with isotonic-regression
+monotonicity projection at each step (Appendix~\ref{app:numerics}).
+Machine-precision convergence ($\|F\|_{\infty}<10^{-14}$) is achieved
+at $G=15$.
 
 \paragraph{Equilibrium selection.}
 The contour map $\Phi$ admits the fully-revealing price function
@@ -1832,6 +1805,28 @@ $O(e^{-\tau u_{\max}^{2}})<10^{-14}$ at $\tau=2$.
 \paragraph{Software.} The reference implementation is in Python using the
 posterior-function method described above. The full source code is
 available in the repository accompanying this paper.
+
+\begin{table}[htbp]
+\centering
+\caption{No-learning revelation deficit $1-R^{2}$ across $\gamma$ and
+$\tau$. Computed exactly on a $G=20$ grid. CARA ($\gamma=\infty$) is the
+knife-edge. Entries shown as $0.000$ are strictly positive but below
+display precision.}
+\label{tab:smooth}
+\begin{tabular}{lccc}
+   \toprule
+   $\gamma$ & $\tau=0.5$ & $\tau=1.0$ & $\tau=2.0$ \\
+   \midrule
+    0.1   & 0.146 & 0.145 & 0.137 \\
+    0.3   & 0.044 & 0.070 & 0.090 \\
+    0.5   & 0.016 & 0.038 & 0.062 \\
+    1.0   & 0.004 & 0.013 & 0.029 \\
+    3.0   & 0.000 & 0.002 & 0.006 \\
+   10.0   & 0.000 & 0.000 & 0.001 \\
+   $\infty$ (CARA) & 0.000 & 0.000 & 0.000 \\
+   \bottomrule
+\end{tabular}
+\end{table}
 
 \begin{table}[htbp]
 \centering
