@@ -15,10 +15,11 @@ import numpy as np
 from posterior_method_v3 import (
     Lam, init_p_grid, phi_step, measure_R2, EPS,
 )
+from scipy.optimize import newton_krylov, NoConvergence
 from gap_reparam import pava_p_only, pava_u_only
 
 UMAX = 4.0
-TOL_MED = 1e-13   # strict
+TOL_MAX = 1e-14   # strict: every cell at machine precision
 
 
 def pava_2d(mu):
@@ -73,8 +74,47 @@ def measure(mu, u_grid, p_grid, p_lo, p_hi, tau, gamma):
     }
 
 
+def F_phi_residual(x_flat, shape, u_grid, p_grid, p_lo, p_hi, tau, gamma):
+    """F = Φ(μ) - μ; raw NK target on active cells."""
+    mu = np.clip(x_flat.reshape(shape), EPS, 1 - EPS)
+    cand, active, _ = phi_step(mu, u_grid, p_grid, p_lo, p_hi, tau, gamma)
+    F = (cand - mu)
+    F[~active] = 0.0
+    return F.ravel()
+
+
+def nk_polish(mu_warm, u_grid, p_grid, p_lo, p_hi, tau, gamma,
+              f_tol=1e-14, maxiter=300):
+    """NK polish on Φ-residual from a near-FP warm. Falls back to warm if
+    NK drifts (monotonicity violations or 1-R² shifts dramatically)."""
+    shape = mu_warm.shape
+    try:
+        sol = newton_krylov(
+            lambda x: F_phi_residual(x, shape, u_grid, p_grid, p_lo, p_hi,
+                                       tau, gamma),
+            mu_warm.ravel(),
+            f_tol=f_tol, maxiter=maxiter,
+            method="lgmres", verbose=False,
+        )
+        mu_nk = np.clip(sol.reshape(shape), EPS, 1 - EPS)
+        return mu_nk, "ok"
+    except NoConvergence as e:
+        mu_nk = (np.clip(e.args[0].reshape(shape), EPS, 1 - EPS)
+                  if e.args else mu_warm)
+        return mu_nk, "noconv_kept"
+    except (ValueError, RuntimeError) as exc:
+        return mu_warm, f"err:{type(exc).__name__}"
+
+
 def strict_solve(G, tau, gamma, mu_warm, u_warm, p_warm, label=""):
-    """Solve at (G, tau, gamma) strictly: med < 1e-13. Returns (mu, diag)."""
+    """Solve at (G, tau, gamma) strictly: max < 1e-14, monotone.
+
+    Pipeline:
+    1. Slow-Picard-PAVA rounds (warm-up the basin, drive bulk residual down)
+    2. NK polish on Φ (machine-precision FP)
+    3. Verify monotone & max < 1e-14
+    If NK drifts (monotonicity broken), fall back to last clean Picard state.
+    """
     u_grid = np.linspace(-UMAX, UMAX, G)
     p_lo, p_hi, p_grid = init_p_grid(u_grid, tau, gamma, G)
     if mu_warm is None:
@@ -87,36 +127,57 @@ def strict_solve(G, tau, gamma, mu_warm, u_warm, p_warm, label=""):
 
     rounds = [
         # (n_iter, n_avg, alpha)
-        (5000, 2500, 0.05),    # warm-up
+        (5000, 2500, 0.05),
         (5000, 2500, 0.01),
-        (10000, 5000, 0.003),  # very fine
-        (10000, 5000, 0.001),  # ultra fine
+        (10000, 5000, 0.003),
     ]
 
     t0 = time.time()
     last_med = float("inf")
+    mu_picard_best = mu
     for r_idx, (n, na, a) in enumerate(rounds):
         mu = picard_pava_round(mu, u_grid, p_grid, p_lo, p_hi, tau, gamma,
                                  n, na, a)
         d = measure(mu, u_grid, p_grid, p_lo, p_hi, tau, gamma)
         elapsed = time.time() - t0
-        print(f"  [{label}] round {r_idx+1} (n={n}, α={a}): "
+        print(f"  [{label}] picard r{r_idx+1} (n={n}, α={a}): "
               f"max={d['max']:.3e}, med={d['med']:.3e}, "
               f"u={d['u_viol']}, p={d['p_viol']}, t={elapsed:.0f}s",
               flush=True)
-        if d["med"] < TOL_MED and d["u_viol"] == 0 and d["p_viol"] == 0:
+        mu_picard_best = mu
+        # If max already at machine precision, skip NK
+        if d["max"] < TOL_MAX and d["u_viol"] == 0 and d["p_viol"] == 0:
             return mu, d, u_grid, p_grid, p_lo, p_hi, "strict_conv", elapsed
-        # If round didn't reduce med, perturb slightly
-        if d["med"] > last_med * 0.5:
-            print(f"  [{label}] no improvement; adding perturbation 1e-4",
-                  flush=True)
-            mu = mu + np.random.RandomState(42 + r_idx).normal(0, 1e-4,
-                                                                  mu.shape)
+        # If round didn't reduce med significantly, perturb
+        if d["med"] > last_med * 0.5 and r_idx > 0:
+            print(f"  [{label}] stalled; perturbing 1e-5", flush=True)
+            mu = mu + np.random.RandomState(42 + r_idx).normal(0, 1e-5, mu.shape)
             mu = np.clip(mu, EPS, 1 - EPS)
             mu = pava_2d(mu)
         last_med = d["med"]
 
-    return mu, d, u_grid, p_grid, p_lo, p_hi, "no_strict_conv", elapsed
+    # NK polish to push max < 1e-14
+    print(f"  [{label}] NK polish on Φ-residual (target {TOL_MAX:.0e})",
+          flush=True)
+    mu_nk, nk_status = nk_polish(mu, u_grid, p_grid, p_lo, p_hi, tau, gamma,
+                                   f_tol=TOL_MAX, maxiter=300)
+    d_nk = measure(mu_nk, u_grid, p_grid, p_lo, p_hi, tau, gamma)
+    elapsed = time.time() - t0
+    print(f"  [{label}] post-NK: max={d_nk['max']:.3e}, med={d_nk['med']:.3e}, "
+          f"u={d_nk['u_viol']}, p={d_nk['p_viol']}, NK={nk_status}, "
+          f"t={elapsed:.0f}s", flush=True)
+
+    if (d_nk["max"] < TOL_MAX and d_nk["u_viol"] == 0
+        and d_nk["p_viol"] == 0):
+        return mu_nk, d_nk, u_grid, p_grid, p_lo, p_hi, "strict_conv", elapsed
+    if d_nk["u_viol"] > 0 or d_nk["p_viol"] > 0:
+        print(f"  [{label}] NK drifted ({d_nk['u_viol']}u, {d_nk['p_viol']}p "
+              f"violations); falling back to picard state", flush=True)
+        return (mu_picard_best, measure(mu_picard_best, u_grid, p_grid,
+                                          p_lo, p_hi, tau, gamma),
+                u_grid, p_grid, p_lo, p_hi, "no_strict_conv_fallback",
+                elapsed)
+    return mu_nk, d_nk, u_grid, p_grid, p_lo, p_hi, "no_strict_conv", elapsed
 
 
 warnings.filterwarnings("ignore", category=RuntimeWarning)
