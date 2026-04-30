@@ -60,20 +60,25 @@ def market_clear_no_learning(u_triple, tau, gamma):
     return brentq(Z, 1e-6, 1 - 1e-6, xtol=1e-12)
 
 
-def init_p_grid(u_grid, tau, gamma, Gp, margin=0.05):
+def init_p_grid(u_grid, tau, gamma, Gp, margin=0.05, u_extreme_cap=4.0):
     """For each u_i, compute p_lo and p_hi via no-learning market clearing
     with extreme-other-signal config, plus a small margin. Build the
     per-row p-grid in logit space.
+
+    To support wider u-grids without breaking brentq (extreme μ = 0/1
+    leaves no interior root), clamp the extreme partner-signals to
+    ±u_extreme_cap when estimating the price-range.
 
     Returns:
         p_lo[Gu], p_hi[Gu], logit_p_grid[Gu, Gp], p_grid[Gu, Gp]
     """
     Gu = len(u_grid)
-    u_min = u_grid[0]; u_max = u_grid[-1]
+    u_min_eff = max(u_grid[0], -u_extreme_cap)
+    u_max_eff = min(u_grid[-1], +u_extreme_cap)
     p_lo = np.empty(Gu); p_hi = np.empty(Gu)
     for i, u_i in enumerate(u_grid):
-        p_lo[i] = market_clear_no_learning((u_i, u_min, u_min), tau, gamma)
-        p_hi[i] = market_clear_no_learning((u_i, u_max, u_max), tau, gamma)
+        p_lo[i] = market_clear_no_learning((u_i, u_min_eff, u_min_eff), tau, gamma)
+        p_hi[i] = market_clear_no_learning((u_i, u_max_eff, u_max_eff), tau, gamma)
         # Add margin in logit space
         l_lo = logit(p_lo[i]); l_hi = logit(p_hi[i])
         spread = l_hi - l_lo

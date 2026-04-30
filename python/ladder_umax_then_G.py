@@ -24,8 +24,8 @@ TAU = 2.0
 GAMMA = 0.5
 F_TOL = 1e-14
 
-# (G, UMAX) ladder
-PHASE_A = [(14, 4.0), (14, 5.0), (14, 6.0), (14, 7.0)]
+# (G, UMAX) ladder — finer UMAX steps so warm-start is closer
+PHASE_A = [(14, 4.0), (14, 4.5), (14, 5.0), (14, 5.5), (14, 6.0), (14, 7.0)]
 PHASE_B = [(18, 7.0), (22, 7.0), (26, 7.0), (30, 7.0)]
 LADDER = PHASE_A + PHASE_B
 
