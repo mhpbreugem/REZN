@@ -242,3 +242,67 @@ with the observed 0.037. The high-γ CRRA demand is nearly linear but
 not exactly linear, and the REE loop amplifies the residual nonlinearity.
 
 Test 2 (explicit CARA) is the definitive discriminator.
+
+---
+
+## P0.6: TRIM p-GRID TO 95% FEASIBLE RANGE
+
+### The problem
+At G≥16, 1-2 cells at the extreme edges of the lens domain prevent
+strict convergence. These cells have:
+- 1-2 contour crossings (noisy A_v)
+- Signal density weight ~1e-8 (invisible in 1-R²)
+- Max residual ~0.1 while median is ~1e-13
+They dominate ||F||∞ but contribute nothing to the answer.
+
+### The fix
+Trim each row's p-grid to the central 95% of the achievable range:
+
+```python
+# Current:
+p_lo[i] = P(u_i, u_min, u_min)
+p_hi[i] = P(u_i, u_max, u_max)
+
+# New:
+margin = 0.025
+p_range = p_hi[i] - p_lo[i]
+p_lo_trim[i] = p_lo[i] + margin * p_range
+p_hi_trim[i] = p_hi[i] - margin * p_range
+```
+
+Or equivalently in the signal quantile: instead of using u_min and
+u_max (the 0th and 100th percentile of the grid), use the 2.5th
+and 97.5th percentile.
+
+### Why it's safe
+The trimmed 5% corresponds to other-agent signal pairs that are
+jointly extreme: both agents at their 2.5th or 97.5th percentile.
+Joint probability: (0.025)² ≈ 6e-4. The density weight on these
+configurations is negligible. They don't affect 1-R², slope, or
+any weighted metric.
+
+### For off-grid prices
+If a self-consistency check or contour tracing needs μ(u, p) at a
+price outside the trimmed range, extrapolate:
+
+```python
+# Linear extrapolation in logit space from the two nearest interior points
+if p < p_lo_trim[i]:
+    logit_mu = logit(mu[i, 0]) + (logit(p) - logit(p_lo_trim[i])) * slope_lo[i]
+elif p > p_hi_trim[i]:
+    logit_mu = logit(mu[i, -1]) + (logit(p) - logit(p_hi_trim[i])) * slope_hi[i]
+```
+
+where slope_lo, slope_hi are the logit-space slopes at the boundary.
+
+### Expected result
+- G=16-24 should reach strict convergence (max<1e-14)
+- 1-R² should be unchanged (same answer, different domain)
+- Confirms that the G=14-15 strict results are the true answer
+
+### Implementation
+1. Change p_lo, p_hi computation to use 2.5/97.5% margins
+2. Add linear-logit extrapolation for off-grid prices
+3. Re-run G=16, 18, 20, 24 at γ=0.5, τ=2
+4. Verify 1-R² matches the untrimmed values
+5. If strict at G≥16: run the full knife-edge sweep at G=16
