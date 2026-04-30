@@ -380,3 +380,248 @@ much faster.
 12. [ ] Compare with price-grid result at same parameters
 13. [ ] Anderson acceleration
 14. [ ] Scale to G_u = G_p = 100
+
+---
+
+# ADDENDUM: v3 OPTIMIZATIONS
+
+## A. VECTORIZED CONTOUR TRACING (eliminates all root-finding)
+
+### The key insight
+
+At fixed price p₀, all agents use the same demand function:
+
+    d(u) = x(μ_col(u, p₀), p₀)
+
+This is monotone in u. Precompute it once on the u-grid — just G_u
+evaluations. Store the array.
+
+### The contour becomes interpolation search
+
+For agent 1 at signal u_i:
+    D₁ = -d[i]
+    targets[:] = D₁ - d[:]      # vector of targets for agent 3
+    u₃*[:] = np.interp(targets, d, u_grid)   # vectorized inversion
+
+No brentq. No iterative μ evaluation. Just np.interp on a monotone
+array. O(G_u log G_u) for the binary search, fully vectorized.
+
+### The integral becomes a dot product
+
+    valid = (u₃* >= u_min) & (u₃* <= u_max)
+    A_v = np.dot(f_v_sweep[valid], f_v(u₃*[valid]))
+
+### The loop structure
+
+```python
+for j in range(G_p):                        # outer: price levels
+    # Step A: extract column (shared across all u_i at this price)
+    mu_col = np.array([interp_p(mu[i,:], p_grids[i], p_j) for i in range(G_u)])
+    
+    # Step B: precompute demand array (shared)
+    R = np.exp((logit(mu_col) - logit(p_j)) / gamma)
+    d = W * (R - 1) / ((1 - p_j) + R * p_j)
+    
+    for i in active_rows_at_pj:              # inner: own-signal
+        # Step C: vectorized contour tracing
+        targets = -d[i] - d
+        u3_star = np.interp(targets, d, u_grid)  # if d increasing
+        # OR: np.interp(targets, d[::-1], u_grid[::-1]) if d decreasing
+        
+        valid = (u3_star >= u_grid[0]) & (u3_star <= u_grid[-1])
+        
+        # Step D+E: density integrals
+        A1 = np.sum(f1[valid] * f1_at(u3_star[valid]))
+        A0 = np.sum(f0[valid] * f0_at(u3_star[valid]))
+        
+        # Step F: Bayes
+        mu_new[i, j] = f1_own[i] * A1 / (f0_own[i] * A0 + f1_own[i] * A1)
+```
+
+### Cost comparison per iteration
+
+| Method                | Root-finds        | Cost at G=100     |
+|-----------------------|-------------------|-------------------|
+| Price-grid (original) | 6G⁴ brentq        | 600,000,000       |
+| Posterior v2           | G_u·G_p·N brentq  | 1,000,000         |
+| Posterior v3 (this)    | 0 (vectorized)    | ~50,000 effective |
+
+Speedup: 12,000× over price-grid, 20× over v2.
+
+---
+
+## B. MONOTONICITY PROJECTION (eliminates edge oscillation)
+
+### Economic monotonicity constraints
+
+At any REE, the posterior μ(u, p) must satisfy:
+
+    ∂μ/∂u > 0    (higher own signal → more bullish)
+    ∂μ/∂p > 0    (higher price → market more bullish → agent more bullish)
+
+These are not assumptions — they are consequences of Bayesian updating
+with positively-correlated signals. If the numerical μ violates either
+monotonicity, it has left the equilibrium set.
+
+### What causes violations
+
+At the edges of the (u, p) domain:
+- The contour barely enters the signal grid → few crossings → noisy A_v
+- The Bayes update produces a μ that's slightly non-monotone
+- Next iteration: the non-monotone μ creates a kinked demand function
+- The kinked demand traces through wrong signal space → wrong posterior
+- The kink amplifies → oscillation
+
+This is exactly what causes the quirky red points at the edges of the
+two-branches plot: the solver produces transient non-monotone iterates
+that bounce between the PR and FR basins.
+
+### The fix: project onto the monotone cone
+
+After each Bayes update, project μ_new onto the set of bivariate
+monotone functions using the Pool-Adjacent-Violators Algorithm (PAVA):
+
+```python
+from sklearn.isotonic import IsotonicRegression
+iso = IsotonicRegression()
+
+# After computing mu_new for all active cells:
+
+# Pass 1: enforce monotonicity in u at each price level
+for j in range(G_p):
+    active = active_mask[:, j]
+    if np.sum(active) >= 2:
+        mu_new[active, j] = iso.fit_transform(
+            u_grid[active], mu_new[active, j])
+
+# Pass 2: enforce monotonicity in p at each signal level
+for i in range(G_u):
+    active = active_mask[i, :]
+    if np.sum(active) >= 2:
+        mu_new[i, active] = iso.fit_transform(
+            p_grid_logit[i, active], mu_new[i, active])
+```
+
+PAVA is O(n), exact, and projects onto the nearest monotone function
+in L². Standard tool in shape-constrained estimation.
+
+### Why it doesn't bias the answer
+
+If the true fixed point μ* is monotone (which it must be on economic
+grounds), then proj(μ*) = μ*. The projection is the identity at the
+solution. It only constrains the PATH of iteration — killing
+oscillations without moving the destination.
+
+Formally: if μ* = Φ(μ*) and μ* is monotone, then
+μ* = proj(Φ(μ*)) = proj(μ*) = μ*. The projected map
+Ψ(μ) = proj(Φ(μ)) has the same fixed point as Φ, but a smaller
+basin of bad iterates.
+
+### For the price-grid method too
+
+P(u₁, u₂, u₃) must be monotonically increasing in each u_k.
+After each Picard step, enforce via separable PAVA along each axis:
+
+```python
+# For each fiber along axis 0:
+for j in range(G):
+    for l in range(G):
+        P[:, j, l] = pava(P[:, j, l])
+
+# Same for axes 1 and 2
+```
+
+Three passes, each O(G) per fiber, G² fibers. Total O(G³) — negligible
+compared to the O(G⁴) Φ evaluation.
+
+### Expected effect on the two-branches plot
+
+The scattered red points at τ > 3.5 where the PR gap drops to zero
+then jumps back — those are non-monotone transients. PAVA would:
+
+1. Suppress the oscillation: the solver stays on the PR branch or
+   transitions smoothly to FR, no bouncing.
+2. Clean the edges: the fold bifurcation at τ ≈ 2.87 becomes a
+   clean endpoint, not a noisy fade.
+3. Allow tighter convergence criteria: without transients, Anderson
+   can converge to tighter tolerance.
+
+### When to apply
+
+Apply AFTER the Bayes update, BEFORE damping/Anderson:
+
+```
+μ_raw = Φ(μⁿ)           # Bayes update
+μ_mono = proj(μ_raw)     # PAVA projection
+μⁿ⁺¹ = α·μ_mono + (1-α)·μⁿ   # damped update
+```
+
+Or with Anderson: flatten μ_mono (not μ_raw) into the Anderson
+history. Anderson sees only monotone iterates.
+
+---
+
+## C. COMPLETE v3 ALGORITHM
+
+```
+Initialize:
+    For each u_i: compute p_lo[i], p_hi[i] from no-learning
+    μ[i, j] = Λ(τ·u_i) for all active (i, j)
+
+Iterate until convergence:
+
+    For each price level p_j:                           [G_p iterations]
+        
+        1. COLUMN EXTRACTION
+           mu_col[i] = interp(μ[i, :], p_grids[i], p_j)
+                                                        [G_u 1D interps]
+        
+        2. DEMAND ARRAY
+           R[:] = exp((logit(mu_col) - logit(p_j)) / γ)
+           d[:] = W·(R - 1) / ((1 - p_j) + R·p_j)
+                                                        [G_u vectorized]
+        
+        3. For each own-signal u_i in active range:     [≤ G_u per p_j]
+           
+           a. CONTOUR (vectorized)
+              targets = -d[i] - d
+              u3_star = np.interp(targets, d, u_grid)
+              valid = (u3_star ≥ u_min) & (u3_star ≤ u_max)
+           
+           b. DENSITIES (vectorized)
+              A₁ = Σ f₁(u_sweep[valid]) · f₁(u3_star[valid])
+              A₀ = Σ f₀(u_sweep[valid]) · f₀(u3_star[valid])
+           
+           c. BAYES
+              μ_raw[i, j] = f₁(u_i)·A₁ / (f₀(u_i)·A₀ + f₁(u_i)·A₁)
+    
+    4. MONOTONICITY PROJECTION
+       For each j: PAVA on μ_raw[:, j] in u-direction
+       For each i: PAVA on μ_raw[i, :] in p-direction
+    
+    5. DAMPING / ANDERSON
+       μⁿ⁺¹ = α · μ_mono + (1-α) · μⁿ
+       or Anderson on flattened μ_mono vector
+    
+    6. CONVERGENCE CHECK
+       ||μⁿ⁺¹ - μⁿ||∞ < tol over active cells
+```
+
+---
+
+## D. IMPLEMENTATION CHECKLIST (updated)
+
+1. [ ] Column extraction with per-row p-grid
+2. [ ] Vectorized demand array d(u; p)
+3. [ ] Vectorized contour via np.interp (no brentq)
+4. [ ] Vectorized density integrals (dot products)
+5. [ ] Bayes update
+6. [ ] PAVA projection (u-direction and p-direction)
+7. [ ] Active-cell detection (skip degenerate cells)
+8. [ ] Damped Picard iteration
+9. [ ] Anderson acceleration
+10. [ ] CARA benchmark: verify μ* = p
+11. [ ] CRRA at G_u = G_p = 50: measure 1-R²
+12. [ ] Compare with price-grid at same parameters
+13. [ ] Test at G_u = G_p = 100
+14. [ ] Edge stability test: does PAVA eliminate quirky points?
