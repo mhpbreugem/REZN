@@ -295,3 +295,26 @@ The conclusion (lines 1310-1331) is solid but could end with a more provocative 
 11. [NUMERICAL - Claude Code] Mechanism 4 het-α numerical confirmation
 12. [EDITORIAL] Check references.bib completeness
 13. [EDITORIAL] Strengthen conclusion
+
+## POSTERIOR METHOD v2 (2026-04-27)
+
+v1 failed: rectangular (u, p) grid has unrealizable cells that saturate
+and prevent convergence. v2 fixes this with:
+
+1. **Adaptive p-range per signal row:** For each u_i, compute
+   p_lo(u_i) = P(u_i, u_min, u_min) and p_hi(u_i) = P(u_i, u_max, u_max).
+   Only store/update μ within [p_lo, p_hi]. The domain is a lens, not
+   a rectangle.
+
+2. **Active-cell detection:** If the sweep produces < 2 crossings,
+   mark the cell degenerate and skip it. Don't update degenerate cells.
+
+3. **Column extraction for interpolation:** To evaluate μ(u₂, p₀) at
+   fixed price p₀, first interpolate each row's μ[i, ·] to p₀ (1D
+   p-interpolation per row), then interpolate the resulting column in
+   u (1D u-interpolation). Avoids 2D interpolation of a rough surface.
+
+4. **p-grid in logit space:** More natural, smoother posterior function.
+
+Full spec: POSTERIOR_METHOD_V2.md (382 lines).
+Tell Claude Code to implement this.
