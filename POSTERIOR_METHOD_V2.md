@@ -625,3 +625,144 @@ Iterate until convergence:
 12. [ ] Compare with price-grid at same parameters
 13. [ ] Test at G_u = G_p = 100
 14. [ ] Edge stability test: does PAVA eliminate quirky points?
+
+---
+
+## E. ALTERNATIVE TO PAVA: GAP REPARAMETRIZATION
+
+### The idea
+
+Instead of projecting onto the monotone cone after each update (PAVA),
+reparametrize so monotonicity is automatic. Store the GAPS between
+adjacent values instead of the values themselves.
+
+### Along the u-direction at fixed price p_j
+
+Order the signal grid: u_1 < u_2 < ... < u_{G_u}.
+Monotonicity requires μ(u_1, p_j) ≤ μ(u_2, p_j) ≤ ... ≤ μ(u_{G_u}, p_j).
+
+Reparametrize:
+
+    base_j     = logit(μ(u_1, p_j))           [unconstrained real]
+    c_k^j      = unconstrained real,  k = 2, ..., G_u
+    
+    logit(μ(u_1, p_j)) = base_j
+    logit(μ(u_k, p_j)) = logit(μ(u_{k-1}, p_j)) + exp(c_k^j)
+
+Since exp(c_k) > 0 always, the logit-posteriors are strictly increasing
+in u, hence the posteriors are strictly increasing in u. Monotonicity
+is guaranteed for ANY values of (base_j, c_2^j, ..., c_{G_u}^j).
+
+### Why exp(c) instead of a²
+
+The original suggestion was μ_{k+1} = μ_k + a_k². This works but has
+a vanishing Jacobian problem: ∂μ_{k+1}/∂a_k = 2a_k → 0 when
+a_k → 0 (nearly equal posteriors). Newton steps blow up.
+
+With exp(c_k): ∂μ_{k+1}/∂c_k = exp(c_k) > 0 everywhere. The
+Jacobian is always full rank. Near-equal values correspond to
+c_k → -∞, which is numerically stable (exp(-20) ≈ 2e-9, not zero).
+
+### Working in logit space
+
+The reparametrization works best in logit space because:
+1. The sufficient statistic T* lives in logit space
+2. CARA posteriors are linear in logit space
+3. The gaps in logit space are more uniform than in probability space
+
+Store: base_j and c_k^j for k = 2,...,G_u at each price level j.
+Total unknowns: G_p × G_u (same as before — one base + (G_u-1) gaps
+= G_u values per price level).
+
+### Reconstruction
+
+To get μ from the stored (base, c) representation:
+
+```python
+def reconstruct_mu(base, c_array, G_u):
+    """base: scalar, c_array: length G_u - 1"""
+    logit_mu = np.zeros(G_u)
+    logit_mu[0] = base
+    for k in range(1, G_u):
+        logit_mu[k] = logit_mu[k-1] + np.exp(c_array[k-1])
+    return expit(logit_mu)  # logistic transform back to (0,1)
+```
+
+Vectorized:
+
+```python
+logit_mu = base + np.cumsum(np.concatenate([[0], np.exp(c_array)]))
+mu = expit(logit_mu)
+```
+
+### The iteration
+
+Option A — Reparametrize the fixed point:
+
+    1. Given current (base^n, c^n), reconstruct μ^n
+    2. Run one step of Φ_μ to get μ_raw (the Bayes update)
+    3. Convert μ_raw back to (base_new, c_new):
+           base_new = logit(μ_raw[0])
+           c_new[k] = log(logit(μ_raw[k+1]) - logit(μ_raw[k]))
+       But: if logit(μ_raw[k+1]) < logit(μ_raw[k]) (non-monotone),
+       the log of a negative number is undefined.
+    4. Fix: c_new[k] = log(max(logit(μ_raw[k+1]) - logit(μ_raw[k]), ε))
+       with ε = 1e-12.
+    5. Damped update in (base, c) space:
+           base^{n+1} = α·base_new + (1-α)·base^n
+           c^{n+1}    = α·c_new    + (1-α)·c^n
+
+The damped update in (base, c) space automatically produces a
+monotone μ^{n+1}. Even if μ_raw is non-monotone, the clamped c_new
+with damping toward the previous (monotone) c^n recovers monotonicity.
+
+Option B — Newton in (base, c) space:
+
+    Define F(base, c) = (base, c) - T(Φ_μ(reconstruct(base, c)))
+    where T is the transform to (base, c) coordinates.
+    
+    Solve F = 0 with Newton. The Jacobian ∂F/∂(base, c) exists and
+    is nonsingular (since ∂reconstruct/∂c_k = exp(c_k) > 0).
+
+### The 2D coupling problem
+
+For full bivariate monotonicity (increasing in both u and p), we
+cannot independently reparametrize along u and along p — the two
+directions couple.
+
+Recommended approach: enforce u-monotonicity via the gap
+reparametrization (strong constraint, this is what breaks at edges),
+and leave p-monotonicity to either:
+  a) Soft penalty: add λ·Σ max(0, μ(u,p_j) - μ(u,p_{j+1}))² to
+     the fixed-point residual.
+  b) Post-hoc PAVA in the p-direction only (mild, rarely needed).
+  c) Ignore — p-monotonicity violations are typically small and
+     don't cause oscillation.
+
+The u-direction monotonicity is the critical one. The contour sweep
+is along u, and non-monotone d(u) = demand(μ(u,p), p) makes the
+np.interp inversion fail (need strictly monotone array). The
+p-direction only enters through interpolation when extracting
+μ_col at off-grid prices, which is more forgiving.
+
+### Advantages over PAVA
+
+1. Smooth — C^∞ map from (base, c) to μ. Newton needs this.
+2. No projection step — iterate never leaves the monotone cone.
+3. Damping in gap space is more natural — mixing two monotone
+   functions in (base, c) space always gives a monotone result.
+4. Newton in (base, c) space has a well-defined nonsingular Jacobian.
+
+### Disadvantages vs PAVA
+
+1. More complex implementation (cumsum + exp + log transforms).
+2. The log(max(..., ε)) clamping in step 4 is a mild hack.
+3. 2D monotonicity requires a hybrid approach.
+
+### Summary: when to use which
+
+- **PAVA**: simpler, works for both directions, good for Picard.
+- **Gap reparametrization**: better for Newton/Anderson, guarantees
+  smoothness, stronger convergence properties.
+- **Hybrid**: gap reparam in u-direction + soft penalty or PAVA
+  in p-direction. Best of both worlds.
