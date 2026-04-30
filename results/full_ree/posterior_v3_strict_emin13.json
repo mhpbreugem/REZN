@@ -69,6 +69,20 @@
       "slope": 0.338176449522537,
       "elapsed_s": 522.5156183242798,
       "status": "no_strict_conv_fallback"
+    },
+    {
+      "phase": "G",
+      "G": 20,
+      "tau": 2.0,
+      "gamma": 0.5,
+      "max": 0.20426031140414788,
+      "med": 6.934730567564884e-14,
+      "u_viol": 0,
+      "p_viol": 0,
+      "1-R^2": 0.10463343235930145,
+      "slope": 0.3375388150445343,
+      "elapsed_s": 685.374146938324,
+      "status": "no_strict_conv_fallback"
     }
   ],
   "gamma": [],
