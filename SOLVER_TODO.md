@@ -183,3 +183,346 @@ Save converged μ arrays as:
 Save summary JSON as:
   posterior_v3_strict_results.json (append to existing)
 Push to results/full_ree/ on main branch.
+
+---
+
+## P0.5: URGENT DIAGNOSTIC — CARA FLOOR
+
+The CARA baseline at γ=50 gives 1-R²=0.037 (status: no_strict).
+This could be:
+  (a) γ=50 is not large enough — the CRRA demand at γ=50 still has
+      a tiny Jensen gap that gets amplified by the REE loop
+  (b) Convergence artifact — the solver didn't reach the true fixed point
+  (c) Method artifact — the posterior-function discretization introduces
+      nonlinearity that even true CARA can't escape
+
+### Tests to discriminate:
+
+**Test 1: Higher γ sweep.**
+Run γ = 50, 100, 200, 500 at G=14, τ=2. All with same solver settings.
+- If 1-R² keeps falling toward zero: (a) confirmed. Report the decay rate.
+- If 1-R² plateaus at ~0.037: (b) or (c).
+
+**Test 2: Explicit CARA demands.**
+Replace the CRRA demand formula x = W(R-1)/((1-p)+Rp) with the exact
+CARA formula x = (logit(μ)-logit(p))/γ_CARA (with some fixed γ_CARA
+for scaling). Everything else identical: same posterior method, same
+PAVA, same grid. Run at G=14, τ=2.
+- If 1-R² = 0 (machine precision): the method works perfectly for true
+  CARA, and the 0.037 at γ=50 is genuine CRRA residual → finding (a).
+  This would mean: the REE amplifies even the tiniest Jensen gap by
+  1000×, making CARA an even sharper knife-edge than no-learning suggests.
+- If 1-R² > 0: the posterior-function discretization introduces artifacts
+  even for true CARA → finding (c). Must fix the method.
+
+**Test 3: Convergence check at γ=50.**
+Run γ=50 with more iterations (double), tighter damping, Anderson with
+larger window. Check if 1-R² is still falling when stopped, or truly flat.
+Report: 1-R² at iteration 100, 200, 500. Is it still decreasing?
+
+### Why this matters
+
+If finding (a): the paper's story is even stronger. The no-learning
+knife-edge table shows γ=50 as "effectively CARA" (1-R²=0.0000). But
+the REE amplifies that invisible gap to 0.037 — detectable and
+economically significant. The knife-edge is SHARPER at REE than at
+no-learning. Add a paragraph to the paper about this.
+
+If finding (b) or (c): need to subtract the floor from all CRRA numbers.
+The NET deficits from CHAT_MEMORY are still valid but the raw numbers
+in the paper's tables need a baseline correction column.
+
+### Expected result
+
+Most likely (a). Reason: the no-learning 1-R² at γ=50 is 0.00003.
+The survival ratio at γ=2 is 3.8×. If the ratio continues growing
+(which the data suggests — it's monotone in γ), then at γ=50 the
+ratio could be 100-1000×, giving 0.003-0.03 for the REE — consistent
+with the observed 0.037. The high-γ CRRA demand is nearly linear but
+not exactly linear, and the REE loop amplifies the residual nonlinearity.
+
+Test 2 (explicit CARA) is the definitive discriminator.
+
+---
+
+## P0.6: TRIM p-GRID TO 95% FEASIBLE RANGE
+
+### The problem
+At G≥16, 1-2 cells at the extreme edges of the lens domain prevent
+strict convergence. These cells have:
+- 1-2 contour crossings (noisy A_v)
+- Signal density weight ~1e-8 (invisible in 1-R²)
+- Max residual ~0.1 while median is ~1e-13
+They dominate ||F||∞ but contribute nothing to the answer.
+
+### The fix
+Trim each row's p-grid to the central 95% of the achievable range:
+
+```python
+# Current:
+p_lo[i] = P(u_i, u_min, u_min)
+p_hi[i] = P(u_i, u_max, u_max)
+
+# New:
+margin = 0.025
+p_range = p_hi[i] - p_lo[i]
+p_lo_trim[i] = p_lo[i] + margin * p_range
+p_hi_trim[i] = p_hi[i] - margin * p_range
+```
+
+Or equivalently in the signal quantile: instead of using u_min and
+u_max (the 0th and 100th percentile of the grid), use the 2.5th
+and 97.5th percentile.
+
+### Why it's safe
+The trimmed 5% corresponds to other-agent signal pairs that are
+jointly extreme: both agents at their 2.5th or 97.5th percentile.
+Joint probability: (0.025)² ≈ 6e-4. The density weight on these
+configurations is negligible. They don't affect 1-R², slope, or
+any weighted metric.
+
+### For off-grid prices
+If a self-consistency check or contour tracing needs μ(u, p) at a
+price outside the trimmed range, extrapolate:
+
+```python
+# Linear extrapolation in logit space from the two nearest interior points
+if p < p_lo_trim[i]:
+    logit_mu = logit(mu[i, 0]) + (logit(p) - logit(p_lo_trim[i])) * slope_lo[i]
+elif p > p_hi_trim[i]:
+    logit_mu = logit(mu[i, -1]) + (logit(p) - logit(p_hi_trim[i])) * slope_hi[i]
+```
+
+where slope_lo, slope_hi are the logit-space slopes at the boundary.
+
+### Expected result
+- G=16-24 should reach strict convergence (max<1e-14)
+- 1-R² should be unchanged (same answer, different domain)
+- Confirms that the G=14-15 strict results are the true answer
+
+### Implementation
+1. Change p_lo, p_hi computation to use 2.5/97.5% margins
+2. Add linear-logit extrapolation for off-grid prices
+3. Re-run G=16, 18, 20, 24 at γ=0.5, τ=2
+4. Verify 1-R² matches the untrimmed values
+5. If strict at G≥16: run the full knife-edge sweep at G=16
+
+---
+
+## P0.7: CUTOFF LADDER — HOMOTOPY IN COVERAGE PERCENTAGE
+
+### The idea
+Use the coverage percentage as a continuation parameter. Start with
+a heavy cutoff (easy convergence), widen gradually, warm-start each
+step from the previous converged solution.
+
+### The ladder
+
+```
+coverage = [90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100]
+```
+
+At coverage c%: the p-grid for row i covers the central c% of
+[p_lo(u_i), p_hi(u_i)]:
+
+```python
+margin = (100 - c) / 200  # e.g. c=90 → margin=0.05 on each side
+p_lo_c[i] = p_lo[i] + margin * (p_hi[i] - p_lo[i])
+p_hi_c[i] = p_hi[i] - margin * (p_hi[i] - p_lo[i])
+```
+
+### The algorithm
+
+```
+Step 0: Solve at coverage=90%, G=target (e.g. G=20).
+        Initialize from no-learning μ = Λ(τu).
+        Should converge easily — no boundary cells.
+        
+Step 1: Expand to coverage=91%.
+        New cells on the boundary ring.
+        Initialize new cells by extrapolation from interior.
+        Warm-start interior from Step 0 solution.
+        Run Picard + NK to strict convergence.
+        
+Step 2: Expand to 92%. Same procedure.
+        ...
+        
+Step N: coverage=100% (full domain).
+        If converges: done, full strict solution.
+        If stalls at some c*: report "converged on central c%*
+        of the price distribution (weight > 1 - 2·(1-c*/100)²)."
+```
+
+### Why it works
+- At 90%: the outermost 10% of prices are removed. These are
+  configurations where both other agents have extreme signals
+  (top/bottom 5%). The domain is clean, contours have many
+  crossings, convergence is easy.
+  
+- At each step: only ~2% of cells are new (the thin ring).
+  They're initialized from the converged interior. The
+  perturbation is small → NK converges in 1-2 steps.
+  
+- At 100%: if reachable, you have the full solution. If not,
+  the stalling point c* is diagnostic — tells you exactly
+  which price quantile is problematic.
+
+### Reporting
+At whatever coverage the ladder achieves strict convergence, report:
+
+    "Strict convergence at G=20 on the central c% of the equilibrium
+     price distribution (covering > X% of the density-weighted
+     probability mass). The revelation deficit 1-R² = Y is invariant
+     to the coverage level from 90% onward."
+
+The density weight of the excluded region at coverage c:
+    excluded_weight ≈ 2 · Φ(-(100-c)/200 · range_in_sigmas)²
+    At c=95: ~6e-4. At c=99: ~2e-5. Negligible.
+
+### Also use for the G-ladder
+Combine with the G-ladder:
+
+```
+For G in [14, 15, 16, 18, 20, 24]:
+    For c in [90, 91, ..., 100]:
+        Solve (G, c). Warm-start from (G, c-1) or (G-1, 100).
+        If strict: record and continue.
+        If stalls: record c* for this G and move to next G.
+```
+
+This gives a 2D convergence map (G × coverage). The answer is
+in the interior where it's constant across both dimensions.
+
+### Quick test
+Before the full ladder, just try:
+1. G=20, coverage=90% → expect strict
+2. G=20, coverage=95% → expect strict  
+3. G=20, coverage=100% → does it reach strict?
+
+If step 2 works strict, skip the fine ladder.
+
+---
+
+## P1.5: FIGURE QUALITY — ALL FIGURES MUST BE FIXED BEFORE SUBMISSION
+
+### Style requirements
+- ALL figures must be pgfplots (standalone .tex → .pdf)
+- BC20 color scheme: green(0.7,0.11,0.11), red(0,0.20,0.42), blue(0.11,0.35,0.02)
+  Wait — CORRECTION: red=(0.7,0.11,0.11), blue=(0,0.20,0.42), green=(0.11,0.35,0.02)
+- Line order: green solid, red dashed, blue dotted, black dashdotted
+- very thick curves, ultra thick CARA, smooth
+- 8cm × 8cm, legend draw=none footnotesize
+- ymin=-0.001 for 1-R² plots
+- Paper gammas: γ = 0.25, 1.0, 4.0
+- No matplotlib figures in the final paper
+
+### Figure-by-figure status and fix needed
+
+**1. fig_knife_edge.tex/pdf — WRONG GAMMAS**
+Current: γ = 0.2, 1.0, 5.0 (old values)
+Fix: Recompute no-learning 1-R² at γ = 0.25, 1.0, 4.0
+Data: 30 log-spaced τ from 0.1 to 10, G=20
+Output: pgfplots coordinates for three curves + CARA at zero
+
+**2. fig3_contour.tex/pdf — DONE ✓**
+Updated with G=14 REE contour data from solver. Pgfplots, real data.
+
+**3. fig_ree_vs_nolearning.pdf — MATPLOTLIB, NEEDS PGFPLOTS CONVERSION**
+Current: solver's matplotlib PNG/PDF. Correct data but wrong style.
+Fix: Extract the raw (T*, p) data from the converged μ* at G=14.
+     For each triple (u_i, u_j, u_l) on the G=14 grid:
+       - Compute T* = τ(u_i + u_j + u_l)
+       - Solve market clearing F(p) = Σ d(u_k; p) = 0 for p using converged μ*
+       - Also compute no-learning price (using μ = Λ(τu))
+       - Also compute FR price p = Λ(T*/3)
+     Bin by T* (40 bins from -12 to 12), compute mean p in each bin.
+     Output as three pgfplots \addplot coordinate lists.
+     Clip to T* ∈ [-10, 10] to avoid edge wobbles.
+
+**4. fig4_posteriors.pdf — WRONG DATA, REMOVE OR REPLACE**
+Current: yellow-bg table showing G=5 numbers where μ₂ = 0.8808 (= CARA!).
+The posteriors TABLE in the main text has the correct numbers (μ₂ = 0.667).
+Options:
+  a) REMOVE this figure entirely (the table is sufficient)
+  b) Replace with a plot of μ_k vs T* showing CARA (identity) vs CRRA (spread)
+If (b): use converged μ* at G=14. For a range of T*, plot the three
+posteriors μ₁, μ₂, μ₃ and the price p. Show how they fan out under CRRA
+vs collapse to a single line under CARA.
+
+**5. fig5_convergence.pdf — WRONG DATA**
+Current: old G=20 price-grid convergence (Picard vs Anderson).
+Fix: Generate from the posterior method iteration history at G=14, γ=0.5, τ=2.
+     Plot ||F||∞ vs iteration number. Show Picard phase and NK polish phase.
+     If iteration history not saved, re-run and save it.
+Output: pgfplots with log-y axis.
+
+**6. fig_knife_edge_K.pdf — CHECK GAMMAS**
+May use old gamma values. Verify and regenerate if needed.
+Should show 1-R² vs K for γ = 0.25, 1, 4 at fixed τ=2.
+
+**7. fig_knife_edge_lognormal.pdf — CHECK GAMMAS**
+Same issue. Verify gamma values match 0.25, 1, 4.
+
+**8. fig7_volume.pdf — PLACEHOLDER OK ✓**
+Gray background, invented data, correct style. Will be replaced
+when trade volume computation is done (P2 task 10).
+
+**9. fig8_value_info.pdf — PLACEHOLDER OK ✓**
+Gray background, correct gammas (0.25, 1, 4). Will be replaced
+when V(τ) computation is done (P2 task 11).
+
+**10. fig9_GS.pdf — PLACEHOLDER OK ✓**
+Gray background, correct style. Will be replaced when V(τ)-c
+computation is done.
+
+**11. fig6_mechanisms.pdf — YELLOW-BG TABLE**
+This is a table rendered as a figure. The data is in the paper's
+Table (mechanisms). Consider:
+  a) Remove the figure, keep only the table
+  b) Replace with a bar chart of 1-R² by mechanism
+If (b): simple grouped bar chart, one bar per configuration,
+colored by mechanism type. pgfplots ybar.
+
+### Priority order for fixes
+1. fig_knife_edge (wrong gammas — this is Fig 1, most important)
+2. fig_ree_vs_nolearning (matplotlib → pgfplots)
+3. fig5_convergence (wrong data)
+4. fig4_posteriors (wrong data — remove or replace)
+5. fig_knife_edge_K, fig_knife_edge_lognormal (check gammas)
+6. fig6_mechanisms (cosmetic)
+
+### Data extraction recipe for fig_ree_vs_nolearning
+
+```python
+# After loading converged mu_star[G_u, G_p] at G=14:
+import numpy as np
+from scipy.optimize import brentq
+
+# For each grid triple (i, j, l):
+Tstar_list, p_ree_list, p_nl_list, p_fr_list = [], [], [], []
+for i in range(G):
+    for j in range(G):
+        for l in range(G):
+            u1, u2, u3 = u_grid[i], u_grid[j], u_grid[l]
+            Tstar = tau * (u1 + u2 + u3)
+            
+            # FR price
+            p_fr = expit(Tstar / K)
+            
+            # No-learning price
+            def nl_excess(p):
+                return sum(crra_demand(expit(tau*u), p) for u in [u1,u2,u3])
+            p_nl = brentq(nl_excess, 0.001, 0.999)
+            
+            # REE price (using converged mu*)
+            def ree_excess(p):
+                return sum(crra_demand(interp_mu(u, p), p) for u in [u1,u2,u3])
+            p_ree = brentq(ree_excess, 0.001, 0.999)
+            
+            Tstar_list.append(Tstar)
+            p_fr_list.append(p_fr)
+            p_nl_list.append(p_nl)
+            p_ree_list.append(p_ree)
+
+# Bin by T* and output pgfplots coordinates
+```

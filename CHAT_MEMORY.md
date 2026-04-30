@@ -402,3 +402,160 @@ learning on curved contours. See SOLVER_TODO.md §Technical Notes.
 ### SOLVER_TODO.md pushed
 16 tasks, priority P0-P3. Critical: paper gammas (0.25,1,4), CARA
 baseline, survival ratios, posteriors table.
+
+## PAPER UPDATE (2026-04-27)
+
+Replaced old smooth-kernel REE numbers with machine-precision posterior-method results.
+Key changes to main.tex:
+- Old: 1-R² ≈ 0.034 (with kernel artifact subtraction, NET ~0.002)
+- New: 1-R² = 0.108 at (γ=0.5, τ=2). No artifacts. Machine precision.
+- Removed todopar block. The numerical state is definitive.
+- New tables: γ-ladder and G-convergence
+- New figure: REE vs no-learning price function
+
+New figures pushed:
+- fig_ree_gamma.tex/pdf — 1-R² vs γ at REE, with no-learning comparison
+- fig_ree_tau.tex/pdf — 1-R² vs τ at REE, with no-learning comparison
+- fig_ree_convergence_G.tex/pdf — 1-R² convergence in G
+- fig_ree_vs_nolearning.pdf — price vs T* (from solver branch)
+
+Paper compiles clean, 34 pages.
+
+## LATEST FINDINGS (2026-04-30)
+
+### P0 tasks complete on solver branch:
+- γ=0.25: 1-R²=0.123 (fallback), γ=4.0: 1-R²=0.058 (no_strict)
+- CARA γ=50: 1-R²=0.037 (NOT zero — urgent diagnostic needed)
+- Posteriors at (1,-1,1): μ2 goes from 0.119→0.667 (massive learning, stops short of FR 0.881)
+- No-learning baselines recomputed at G=14: match G=20 values
+
+### Survival ratio puzzle RESOLVED:
+REE 1-R² > no-learning 1-R² at every γ. Not a G mismatch.
+Learning from curved contours AMPLIFIES the Jensen gap.
+Ratios: γ=0.3→1.34, γ=0.5→1.74, γ=1→3.39, γ=2→7.18
+Monotone increasing in γ — the amplification is strongest where
+the no-learning gap is smallest. New result for the paper.
+
+### CARA floor diagnostic pushed (SOLVER_TODO P0.5):
+Three tests to discriminate:
+1. Higher γ sweep (50→500)
+2. Explicit CARA demands (definitive test)
+3. Convergence check at γ=50
+Most likely: genuine amplification, not artifact. Test 2 decides.
+
+### Contour figure data (P1 task 7): DONE
+CRRA contour is clearly curved vs CARA straight line.
+Data in fig3_contour_data.json, plot in fig3_contour_plot.png.
+
+### Knife-edge sweep γ=0.25: 14/16 τ points done
+Hump-shaped, peaks at τ≈0.87 (1-R²=0.137). γ=1 and γ=4 not started.
+
+### Convergence data (P1 task 8): DONE
+Data in fig5_convergence_data.json.
+
+## PROOF REVIEW (2026-04-30) — FULL ANALYSIS
+
+Reviewed all 9 propositions + 3 lemmas + 1 theorem. See PROOF_ANALYSIS.md.
+
+### Verdict by proposition:
+- Props 1-3: clean, rigorous ✓
+- Prop 4 (smooth transition): continuity ✓, monotonicity has \todo (small-τ only)
+- Prop 5 (REE PR): needs rewrite — split into analytical (a) + numerical (b)
+- Props 6-8: correct given Prop 5 ✓
+- Prop 9 (vanishing noise): hypothesis-conditional, fine as stated ✓
+- Theorem 1 (CARA uniqueness): excellent ✓✓
+
+### The induction argument for Prop 5(a):
+Structure: d nonlinear → curved contour → A₁/A₀ depends on u → μ_new ≠ p → d_new nonlinear
+Gap: Step 3 requires "x ∘ μ is not affine" (genericity condition).
+Closeable via inflection-point argument: CRRA demand has inflection at
+z = -γ·logit(p). For d = x∘μ to be affine, Bayes-update curvature
+must cancel demand curvature at exactly this point. Codimension-1.
+
+### Recommended Prop 5 structure:
+(a) If Picard converges, limit is PR [analytical, with genericity remark]
+(b) Picard converges [numerical, machine precision at G=15]
+
+### Paper restructure:
+- Move Lemma 3 proof to appendix
+- Rewrite Prop 5 proof in appendix (induction + genericity remark)
+- Add discretization convergence to Appendix B
+- Fix Lemma 1 proof (FOC, not certainty equivalent)
+- Add HARA remark to Discussion
+
+### Proof dependencies:
+Prop 5 is the linchpin. Props 6-8 (welfare, value of info, GS) all depend on it.
+The analytical part (a) removes "conjecture" label. This is the key upgrade.
+
+## PAPER FIXES APPLIED (2026-04-30)
+
+### Done in this session:
+1. ✅ Prop 4: weakened (removed monotonicity claim + todo)
+2. ✅ Prop 5: new induction proof (analytical part a + numerical part b)
+3. ✅ Lemma 1: fixed proof (FOC not certainty equivalent)
+4. ✅ Lemma 3: moved proof to appendix
+5. ✅ Posteriors table: new numbers (μ2: 0.875→0.667, dramatic change)
+6. ✅ Convergence caption: G=14, posterior method
+7. ✅ Equilibrium selection: removed smooth-kernel language
+8. ✅ Appendix B: updated diagnostics + quadrature convergence
+9. ✅ All G=5 references → G=14
+10. ✅ Removed 3 todos (Prop 4 mono, Prop 5 analytical, posteriors approx)
+
+### Remaining todos in paper (10):
+- 5 placeholder figures (figs 4,7,8,9,6 mechanisms) → SOLVER
+- 2 mechanism table entries → SOLVER
+- Vanishing-noise continuity hypothesis → acknowledged, keep
+- V(τ) monotonicity → open analytical question
+- V monotonicity in Appendix → open
+
+Paper: 35 pages, compiles clean.
+
+## LITERATURE REVIEW — NOVELTY CONFIRMED (2026-04-30)
+
+Systematic search confirms no paper does what this paper does:
+standard expected utility (CRRA) + Gaussian signals + common values + no noise → PR.
+
+### Papers that get PR without noise (different mechanism):
+- Heifetz & Polemarchakis (1998 JET): dimensionality (more states than prices). Works for ANY utility. Not about preferences.
+- Vives (2011 Ecta): strategic/private values. Not common values.
+- Condie & Ganguli (2011 RES): ambiguity aversion (Maxmin EU). Non-standard expected utility.
+- Ausubel (1990 JET): higher-dimensional signals. Dimensionality trick.
+
+### Papers that study CRRA in REE (all keep noise):
+- Biais, Bossaerts & Spatt (2010 RFS): CRRA + dynamic REE + supply noise
+- Kasa, Walker & Whiteman (2014): computational CRRA + noise
+- Breugem & Buss (2019): projection method, CRRA + noise
+
+### Papers that study the CARA boundary (all keep noise):
+- DeMarzo & Skiadas (1998 JET): CARA log-odds aggregation
+- Breon-Drish (2015 RFS): CARA + exponential family → FR with noise
+- AHT (2024 JF): break FR via non-Gaussian signals, KEEP noise
+
+### Key positioning line for the paper:
+"Several papers have obtained partial revelation without noise traders
+through alternative channels: dimensionality (Heifetz and Polemarchakis,
+1998), strategic incentives with private values (Vives, 2011), and
+ambiguity aversion (Condie and Ganguli, 2011). The present paper is, to
+our knowledge, the first to show that standard expected utility
+preferences — specifically, any member of the CRRA family — produce
+partial revelation with common values, Gaussian signals, and no noise
+of any kind."
+
+## FIGURE AUDIT (2026-04-30)
+
+All 11 figures reviewed. Status:
+
+DONE (correct data, correct style):
+- fig3_contour: G=14 REE data, pgfplots ✓
+- fig7_volume, fig8_value_info, fig9_GS: gray-bg placeholders ✓
+
+NEEDS FIX:
+- fig_knife_edge: WRONG gammas (0.2,1,5 → 0.25,1,4) — P1 priority
+- fig_ree_vs_nolearning: matplotlib PNG, needs pgfplots conversion
+- fig4_posteriors: yellow-bg G=5, WRONG data (μ₂=0.88=FR!) — remove or replace
+- fig5_convergence: old G=20 price-grid data, caption says G=14
+- fig_knife_edge_K, fig_knife_edge_lognormal: check gammas
+
+Econometrica style: adequate. Color OK (online-only since 2024).
+Main issue is consistency (mixed matplotlib/pgfplots) and wrong data.
+Detailed fix specs in SOLVER_TODO.md P1.5.
