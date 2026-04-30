@@ -452,3 +452,37 @@ Hump-shaped, peaks at τ≈0.87 (1-R²=0.137). γ=1 and γ=4 not started.
 
 ### Convergence data (P1 task 8): DONE
 Data in fig5_convergence_data.json.
+
+## PROOF REVIEW (2026-04-30) — FULL ANALYSIS
+
+Reviewed all 9 propositions + 3 lemmas + 1 theorem. See PROOF_ANALYSIS.md.
+
+### Verdict by proposition:
+- Props 1-3: clean, rigorous ✓
+- Prop 4 (smooth transition): continuity ✓, monotonicity has \todo (small-τ only)
+- Prop 5 (REE PR): needs rewrite — split into analytical (a) + numerical (b)
+- Props 6-8: correct given Prop 5 ✓
+- Prop 9 (vanishing noise): hypothesis-conditional, fine as stated ✓
+- Theorem 1 (CARA uniqueness): excellent ✓✓
+
+### The induction argument for Prop 5(a):
+Structure: d nonlinear → curved contour → A₁/A₀ depends on u → μ_new ≠ p → d_new nonlinear
+Gap: Step 3 requires "x ∘ μ is not affine" (genericity condition).
+Closeable via inflection-point argument: CRRA demand has inflection at
+z = -γ·logit(p). For d = x∘μ to be affine, Bayes-update curvature
+must cancel demand curvature at exactly this point. Codimension-1.
+
+### Recommended Prop 5 structure:
+(a) If Picard converges, limit is PR [analytical, with genericity remark]
+(b) Picard converges [numerical, machine precision at G=15]
+
+### Paper restructure:
+- Move Lemma 3 proof to appendix
+- Rewrite Prop 5 proof in appendix (induction + genericity remark)
+- Add discretization convergence to Appendix B
+- Fix Lemma 1 proof (FOC, not certainty equivalent)
+- Add HARA remark to Discussion
+
+### Proof dependencies:
+Prop 5 is the linchpin. Props 6-8 (welfare, value of info, GS) all depend on it.
+The analytical part (a) removes "conjecture" label. This is the key upgrade.
