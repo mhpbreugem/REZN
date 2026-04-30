@@ -182,7 +182,7 @@ if __name__ == "__main__":
 
     print("\n--- Test 1: cold start, p_pen=0 (u-monotone only) ---", flush=True)
     r = solve_with_gap_reparam(mu_seed, u_grid, p_grid, p_lo, p_hi, TAU, GAMMA,
-                                f_tol=1e-12, maxiter=400, p_pen=0.0,
+                                f_tol=1e-9, maxiter=200, p_pen=0.0,
                                 log_interval=10.0)
     r2, slope, _ = measure_R2(r["mu_final"], u_grid, p_grid, p_lo, p_hi,
                                TAU, GAMMA)
@@ -203,7 +203,7 @@ if __name__ == "__main__":
     print(f"  PAVA-Cesaro seed: 1-R²={r2_seed:.4e}, slope={slope_seed:.4f}",
           flush=True)
     r = solve_with_gap_reparam(ck["mu"], u_grid, p_grid, p_lo, p_hi, TAU, GAMMA,
-                                f_tol=1e-12, maxiter=400, p_pen=0.0,
+                                f_tol=1e-9, maxiter=200, p_pen=0.0,
                                 log_interval=10.0)
     r2, slope, _ = measure_R2(r["mu_final"], u_grid, p_grid, p_lo, p_hi,
                                TAU, GAMMA)
@@ -215,7 +215,7 @@ if __name__ == "__main__":
 
     print("\n--- Test 3: warm + p_pen=0.1 ---", flush=True)
     r = solve_with_gap_reparam(ck["mu"], u_grid, p_grid, p_lo, p_hi, TAU, GAMMA,
-                                f_tol=1e-12, maxiter=400, p_pen=0.1,
+                                f_tol=1e-7, maxiter=200, p_pen=0.1,
                                 log_interval=10.0)
     r2, slope, _ = measure_R2(r["mu_final"], u_grid, p_grid, p_lo, p_hi,
                                TAU, GAMMA)
