@@ -63,6 +63,22 @@
       "slope": 0.34292027415016463,
       "n_samples": 1331,
       "elapsed_s": 3.183013439178467
+    },
+    {
+      "G": 12,
+      "label": "warm",
+      "picard_iters": 300,
+      "picard_resid": 0.39804621989158484,
+      "nk_iters": 800,
+      "nk_status": "ok",
+      "residual_max": 3.608224830031759e-15,
+      "residual_median": 1.1102230246251565e-16,
+      "active_cells": 124,
+      "converged": true,
+      "1-R^2": 0.11493067740615082,
+      "slope": 0.34380986721404944,
+      "n_samples": 1728,
+      "elapsed_s": 4.300109148025513
     }
   ],
   "params": {
