@@ -343,3 +343,13 @@ Expected to eliminate the quirky edge behavior in the two-branches plot.
 - Het γ=(5,3,1): 1-R²≈0.32, flat in τ — strongest clean result
 - PR branch has quirky edges (red points in plot_two_branches.png)
   which PAVA should fix
+
+## GAP REPARAMETRIZATION (2026-04-27)
+
+Alternative to PAVA for enforcing u-monotonicity. Instead of projecting,
+reparametrize: logit(μ_k) = logit(μ_{k-1}) + exp(c_k). Since exp > 0,
+monotonicity is automatic for any c_k. Advantages: C-infinity (Newton
+needs this), nonsingular Jacobian (exp(c_k) > 0), no projection step.
+Use exp(c) not a² (a² has vanishing Jacobian at a=0).
+Recommendation: gap reparam in u-direction, soft penalty or PAVA in p.
+See POSTERIOR_METHOD_V2.md Section E.
