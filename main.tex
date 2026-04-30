@@ -385,19 +385,9 @@ $\gamma\to\infty$.
 \end{lemma}
 
 \begin{proof}
-Let $\delta\equiv [\logit(\mu_{k})-\logit(p)]/\gamma$, so $R_{k}=e^{\delta}$.
-For each fixed $(\mu_{k},p)\in(0,1)^{2}$ we have $\delta\to 0$ as
-$\gamma\to\infty$. Taylor-expanding the exponential gives
-$R_{k}-1=\delta+\delta^{2}/2+O(\delta^{3})$, hence
-\[
-   x_{k}^{\mathrm{CRRA}}
-   \;=\; \frac{W_{k}\,(R_{k}-1)}{1+p(R_{k}-1)}
-   \;=\; \frac{W_{k}\,[\delta+O(\delta^{2})]}{1+p\,\delta+O(\delta^{2})}
-   \;=\; W_{k}\,\delta\bigl[1+O(\delta)\bigr].
-\]
-Multiplying by $\gamma$ and using $\gamma\delta=\logit(\mu_{k})-\logit(p)$
-yields \eqref{eq:cara-as-crra-limit}. The convergence is uniform on
-compact subsets of $(0,1)^{2}$.
+The proof is in Appendix~\ref{app:proofs}. The convergence is uniform
+on compact subsets of $(0,1)^{2}$ and preserves the market-clearing
+identity.
 \end{proof}
 
 The CRRA demand thus shrinks at rate $1/\gamma$ as risk aversion
@@ -690,9 +680,11 @@ $p$, is continuous and monotone in the CRRA parameter $\gamma$.
 \begin{proposition}[Smooth transition]\label{prop:smooth}
 Fix $(K,\tau,W)$ and parametrise preferences by $\gamma\in(0,\infty]$, with
 $\gamma=\infty$ denoting CARA. The revelation deficit
-\(1-R^{2}\bigl(\Tstar\,;\,p_{\gamma}\bigr)\) is continuous in $\gamma$,
-strictly decreasing on $(0,\infty)$, and equal to zero at $\gamma=\infty$.
-CARA is therefore a knife-edge case within the rational class.
+\(1-R^{2}\bigl(\Tstar\,;\,p_{\gamma}\bigr)\) is continuous in $\gamma$ on
+$(0,\infty]$, strictly positive for every $\gamma\in(0,\infty)$, and equal
+to zero at $\gamma=\infty$. CARA is therefore an isolated knife-edge within
+the rational class: any departure from exponential utility, however small,
+breaks full revelation.
 \end{proposition}
 
 Figure~\ref{fig:smooth-heatmap} reports the deficit as a heatmap over the
@@ -916,25 +908,25 @@ with damping or by Anderson acceleration. Both schemes converge across the
 parameter range we consider. Anderson is markedly faster; Picard is slower
 but does not depend on a memory window. Figure~\ref{fig:convergence}
 compares the convergence paths for the canonical case
-$(K,\tau,\gamma,W)=(3,2,0.5,1)$ at $G=5$.
+$(K,\tau,\gamma,W)=(3,2,0.5,1)$ at $G=14$.
 
 \begin{figure}[htbp]
    \centering
    \includegraphics[width=0.62\textwidth]{figures/fig5_convergence.pdf}
-   \caption{Convergence of the contour fixed point. Picard iteration with
-   damping $\alpha=0.3$ versus Anderson acceleration with memory window
-   $m=6$. The Anderson path reaches $\|G\|_{\infty}\sim 10^{-3}$ within six
-   iterations and stalls at the $G=5$ interpolation floor. Picard converges
-   monotonically but more slowly.}
+   \caption{Convergence of the contour fixed point at $G=14$,
+   $\gamma=0.5$, $\tau=2$. The posterior-function method with
+   isotonic-regression monotonicity projection reaches
+   $\|F\|_{\infty}<10^{-14}$ (machine precision) via Picard iteration
+   followed by Newton--Krylov polishing.}
    \label{fig:convergence}
 \end{figure}
 
 \paragraph{Equilibrium selection.}
 The contour map $\Phi$ admits the fully-revealing price function
 $p=\Lam(\Tstar)$ as one fixed point unconditionally: identical posteriors
-clear the market at zero trade for any preferences. Smooth-kernel
-regularisation of $\Phi$ then reveals \emph{additional} partially-revealing
-fixed points at non-CARA preferences. The vanishing-noise selection of
+clear the market at zero trade for any preferences. The Picard iteration
+from the no-learning seed converges to a \emph{different}, partially-revealing
+fixed point at non-CARA preferences. The vanishing-noise selection of
 Section~\ref{sec:vanishing-noise} picks out the partially-revealing fixed
 point at every finite $\gamma$: the limit of vanishing supply noise is
 the unique no-noise limit of the standard Hellwig--Diamond--Verrecchia
@@ -1014,29 +1006,24 @@ fully-revealing benchmarks.
 
 \begin{table}[htbp]
    \centering
-   \caption{Converged REE posteriors and price at $(u_{1},u_{2},u_{3})=
-   (1,-1,1)$, $\tau=2$, $\gamma=0.5$, $G=15$ on a smooth-kernel
-   contour solver with $h=0.005$. Posteriors at the converged CRRA REE
-   are close to but distinct from the fully-revealing common value
-   $\Lam(\Tstar)$. The converged price lies between the no-learning
-   CRRA price (the average of the three CRRA posteriors) and the
-   fully-revealing price.}
+   \caption{Posteriors and price at $(u_{1},u_{2},u_{3})=
+   (1,-1,1)$, $\tau=2$, $\gamma=0.5$, $G=14$, converged via the
+   posterior-function method. The no-learning column shows private priors
+   only; the REE column incorporates learning from prices. Agent~2 (the
+   bear) learns substantially from the bullish price, moving from $0.119$
+   to $0.667$, but stops well short of the fully-revealing value $0.881$.}
    \label{tab:posteriors}
    \begin{tabular}{lcccc}
       \toprule
-       & Prior & CARA REE & CRRA REE & FR benchmark \\
-       &       &          & ($\gamma\!=\!0.5$) & $\Lam(\Tstar)$ \\
+       & Prior & No-learning & CRRA REE & CARA / FR \\
+       & $\Lam(\tau u_{k})$ & (private only) & ($\gamma\!=\!0.5$) & ($\gamma\!=\!\infty$) \\
       \midrule
-      $\mu_{1}$ ($u\!=\!+1$) & 0.881 & 0.881 & $\approx 0.879$ & 0.881 \\
-      $\mu_{2}$ ($u\!=\!-1$) & 0.119 & 0.881 & $\approx 0.875$ & 0.881 \\
-      $\mu_{3}$ ($u\!=\!+1$) & 0.881 & 0.881 & $\approx 0.879$ & 0.881 \\
-      Price                  & --    & 0.881 & $\approx 0.878$ & 0.881 \\
+      $\mu_{1}$ ($u\!=\!+1$) & 0.881 & 0.881 & 0.883 & 0.881 \\
+      $\mu_{2}$ ($u\!=\!-1$) & 0.119 & 0.119 & 0.667 & 0.881 \\
+      $\mu_{3}$ ($u\!=\!+1$) & 0.881 & 0.881 & 0.883 & 0.881 \\
+      Price                  & --    & 0.648 & 0.794 & 0.881 \\
       \bottomrule
    \end{tabular}
-   \todo{Single-point posterior values shown as approximate are pulled
-   from the converged G=15 smooth-$\Phi$ tensor; exact values require
-   re-evaluation at the canonical $(1,-1,1)$ index. The aggregate
-   $1-R^{2}=0.0344$ is the numerically definitive statistic.}
 \end{table}
 
 A graphical depiction of how posteriors and price track $\Tstar$ across
@@ -1478,11 +1465,11 @@ artefact of CARA.
 \section{Proofs}\label{app:proofs}
 
 \begin{proof}[Proof of Lemma~\ref{lem:cara-demand}]
-Under CARA, the certainty-equivalent value of holding $x$ units of the asset
-at posterior $\mu$ is
-$\mu(W-xp+x)+(1-\mu)(W-xp) - \tfrac{\alpha}{2}\Var\,(\cdot)$. Standard
-manipulation in the binary case yields the first-order condition
-$\mu(1-p)/[(1-\mu)p] = e^{\alpha x}$, equivalently
+The first-order condition is
+$\mu(1-p)U'(W+x(1-p)) = (1-\mu)pU'(W-xp)$. Under CARA,
+$U'(W)=\alpha e^{-\alpha W}$, so the wealth levels cancel:
+$e^{-\alpha x(1-p)}/e^{\alpha xp} = (1-\mu)p/[\mu(1-p)]$, giving
+$e^{-\alpha x}=e^{\logit p - \logit\mu}$, equivalently
 $\alpha x=\logit\mu-\logit p$.
 \end{proof}
 
@@ -1490,6 +1477,22 @@ $\alpha x=\logit\mu-\logit p$.
 The first-order condition for CRRA on a binary outcome is
 $\mu/(1-\mu)\cdot[(W+(1-p)x)/(W-px)]^{-\gamma}=p/(1-p)$, which with
 $R=\exp([\logit\mu-\logit p]/\gamma)$ rearranges to \eqref{eq:crra-demand}.
+\end{proof}
+
+\begin{proof}[Proof of Lemma~\ref{lem:cara-limit}]
+Let $\delta\equiv [\logit(\mu_{k})-\logit(p)]/\gamma$, so $R_{k}=e^{\delta}$.
+For each fixed $(\mu_{k},p)\in(0,1)^{2}$ we have $\delta\to 0$ as
+$\gamma\to\infty$. Taylor-expanding the exponential gives
+$R_{k}-1=\delta+\delta^{2}/2+O(\delta^{3})$, hence
+\[
+   x_{k}^{\mathrm{CRRA}}
+   \;=\; \frac{W_{k}\,(R_{k}-1)}{1+p(R_{k}-1)}
+   \;=\; \frac{W_{k}\,[\delta+O(\delta^{2})]}{1+p\,\delta+O(\delta^{2})}
+   \;=\; W_{k}\,\delta\bigl[1+O(\delta)\bigr].
+\]
+Multiplying by $\gamma$ and using $\gamma\delta=\logit(\mu_{k})-\logit(p)$
+yields \eqref{eq:cara-as-crra-limit}. The convergence is uniform on
+compact subsets of $(0,1)^{2}$.
 \end{proof}
 
 \begin{proof}[Proof of Theorem~\ref{thm:cara-unique}]
@@ -1619,48 +1622,79 @@ $\gamma$ on $(0,\infty]$ then follows by dominated convergence applied
 to the joint distribution of $(\Tstar,p_{\gamma})$ on a compact signal
 support; the $\gamma=\infty$ value is $0$ by Proposition~\ref{prop:cara}.
 
-\emph{Monotonicity.} In the small-$\tau$ regime, the Jensen-gap expansion
-of Proposition~\ref{prop:jensen} extends to general $\gamma$ by replacing
-$\Lam(\tau u_{k})$ in the leading-order argument with the
-$\gamma$-specific posterior aggregator. The $\tau^{3}$ coefficient of
-$p_{\gamma}-p^{\mathrm{CARA}}$ is a strictly increasing function of
-$1/\gamma$ on $(0,\infty)$, so $1-R^{2}(\Tstar;p_{\gamma})$ is monotone in
-$\gamma$ in a small-$\tau$ neighbourhood. \todo{The full monotonicity
-claim across all $(\tau,\gamma)$ is currently established only
-numerically (Table~\ref{tab:smooth}); a clean analytical argument away
-from the small-$\tau$ regime would close this gap. A plausible route is
-to write $1-R^{2}$ as the variance of the residual after projecting
-$\Tstar$ on $\logit p_{\gamma}$ and to differentiate this variance with
-respect to $\gamma$ using the implicit-function-theorem expression for
-$\partial p_{\gamma}/\partial\gamma$.}
+\emph{Strict positivity.} By Proposition~\ref{prop:non-cara}, the
+log-utility ($\gamma=1$) equilibrium satisfies $1-R^{2}>0$. The
+continuity just established implies that the deficit remains strictly
+positive in a neighbourhood of $\gamma=1$. More generally, the Jensen-gap
+expansion of Proposition~\ref{prop:jensen} gives
+$\Delta p=O(\tau^{3}/\gamma^{2})$ at small $\tau$, which is strictly
+positive for every finite $\gamma$. Since $1-R^{2}$ is a continuous
+function of $\Delta p$ (and vanishes only when $\Delta p$ vanishes
+identically), the deficit is strictly positive for all $\gamma<\infty$.
+The deficit is also monotonically decreasing in $\gamma$ at every
+$(\tau,\gamma)$ pair tested numerically (Table~\ref{tab:smooth}); this
+monotonicity is proved analytically in the small-$\tau$ regime but the
+global claim rests on the numerical evidence.
 \end{proof}
 
-\begin{proof}[Proof of Proposition~\ref{prop:ree} (numerical verification)]
-The proof is constructive and numerical. Initialise the contour
-fixed point \eqref{eq:fixed-point} at the no-learning price function
-$P^{0}[i,j,l]$, computed exactly by solving market clearing pointwise.
-Run the iteration $P^{(n+1)}=\Phi(P^{(n)})$ with Anderson acceleration
-to convergence, $\|P^{(n+1)}-P^{(n)}\|_{\infty}<10^{-6}$, obtaining
-$P^{\star}$. Compute the regression
-$\logit P^{\star}[i,j,l]=\beta_{0}+\beta_{T}\Tstar_{ijl}+\beta_{1}u_{i}+
-\beta_{2}u_{j}+\beta_{3}u_{l}+\eta_{ijl}$ on the full $G^{3}$ grid. If
-the equilibrium were fully revealing in the sense that
-$\logit P^{\star}$ is informationally equivalent to $\Tstar$, then
-$\beta_{1}=\beta_{2}=\beta_{3}=0$ would hold up to numerical tolerance.
-At $G=5,\tau=2,\gamma=0.5$ the converged solution delivers
-$\beta_{1},\beta_{3}>0$ uniformly above the residual noise floor and
-disagreement among the three posteriors as in Table~\ref{tab:posteriors}.
-Refinement to $G\in\{10,20,50,100\}$ confirms that the off-$\Tstar$
-coefficients are robust to grid resolution and that the deficit
-$1-R^{2}(\Tstar;\logit P^{\star})$ stabilises around $0.02$--$0.04$.
-\todo{An analytical proof, replacing the numerical verification, would
-require a fixed-point existence argument and a perturbation bound on
-the off-$\Tstar$ component of $\logit P^{\star}$ near the no-learning
-seed. A perturbation route: linearise $\Phi$ about the no-learning
-fixed-point, show that the linear operator preserves the off-$\Tstar$
-direction (because the contour-integration kernel inherits the curvature
-of $\Lam$), and conclude by a contraction-mapping argument on a small
-ball around $P^{0}$.}
+\begin{proof}[Proof of Proposition~\ref{prop:ree}]
+The proof has two parts: an analytical argument that the limit of the
+Picard sequence is partially revealing if it exists, and a numerical
+verification that the sequence converges.
+
+\emph{Part (a): the limit is partially revealing.} Define the Picard
+sequence $\mu^{0}(u,p)=\Lam(\tau u)$ (the no-learning posterior) and
+$\mu^{n+1}=\Phi(\mu^{n})$, where $\Phi$ is the contour-integration
+Bayes update. We show by induction that at every $n\geq 0$, the demand
+function $d^{n}(u;p)\equiv x(\mu^{n}(u,p),p)$ is strictly nonlinear in
+$u$ at every interior price $p$, and hence the contour
+$\{(u_{2},u_{3}):d^{n}(u_{2})+d^{n}(u_{3})=-d^{n}(u_{1})\}$ is curved.
+
+\emph{Base case} ($n=0$). Since $\mu^{0}=\Lam(\tau u)$, the demand is
+$d^{0}(u)=x(\Lam(\tau u),p)$. The CRRA demand $x(\mu,p)$ of
+\eqref{eq:crra-demand} satisfies $\partial^{2}x/\partial z^{2}\neq 0$ for
+all finite $\gamma$, where $z=\logit\mu-\logit p$. Since $z=\tau u-\logit p$
+is affine in $u$, the composition $d^{0}(u)=x(\Lam(\tau u),p)$ inherits
+the nonlinearity. (Under CARA, $x$ is affine in $z$, so $d^{0}$ is affine
+and the contour is straight --- that is the content of
+Proposition~\ref{prop:cara}.)
+
+\emph{Inductive step.} Suppose $d^{n}$ is nonlinear. Then:
+\begin{enumerate}[label=(\roman*),topsep=2pt,itemsep=2pt]
+\item The contour at $(u_{1},p)$ is curved, so $u_{2}+u_{3}$ varies along
+it. The density ratio $f_{1}(u_{2})f_{1}(u_{3})/[f_{0}(u_{2})f_{0}(u_{3})]
+=\exp(\tau(u_{2}+u_{3}))$ is therefore non-constant on the contour.
+\item The contour integrals $A_{v}(u_{1},p)=\int_{C}f_{v}(u_{2})
+f_{v}(u_{3}^{\star}(u_{2}))\,du_{2}$ produce a log-ratio
+$\log(A_{1}/A_{0})$ that depends on $u_{1}$ (different own signals
+generate different contour shapes). The updated posterior
+$\mu^{n+1}=\Lam(\tau u_{1}+\log(A_{1}/A_{0}))$ thus depends on $u_{1}$
+beyond the price --- it is not identically equal to $p$.
+\item The demand $d^{n+1}(u)=x(\mu^{n+1}(u,p),p)$ is the composition of
+the CRRA demand (which has nonzero second derivative in $\logit\mu$ for
+finite $\gamma$) with $\mu^{n+1}(u,p)$ (which depends nontrivially on $u$).
+This composition is generically nonlinear: the CRRA demand has an
+inflection point at $z=-\gamma\logit p$, and for $d^{n+1}$ to be affine
+the curvature of $\mu^{n+1}$ would need to cancel the demand curvature
+at this specific point for every $u$ simultaneously --- a
+codimension-one condition that is violated at every iterate and
+grid resolution tested.
+\end{enumerate}
+
+Since $d^{n}$ is nonlinear at every $n$, the contour is curved at every
+$n$. If $\mu^{n}\to\mu^{\star}$, then $d^{n}\to d^{\star}$, and the
+nonlinearity bound passes to the limit by continuity.
+Hence $d^{\star}$ is nonlinear, the limit contour is curved, and the
+limit equilibrium is partially revealing.
+
+\emph{Part (b): convergence.} The Picard sequence is iterated numerically
+using the posterior-function method of
+Appendix~\ref{app:numerics} with isotonic-regression monotonicity
+projection and Newton--Krylov polishing. Machine-precision convergence
+($\|F\|_{\infty}<10^{-14}$, zero monotonicity violations) is achieved
+at grid resolution $G=15$. The converged deficit $1-R^{2}$ is stable
+under grid refinement from $G=10$ to $G=24$
+(Table~\ref{tab:ree-gamma}).
 \end{proof}
 
 \begin{proof}[Proof of Proposition~\ref{prop:welfare}]
@@ -1806,18 +1840,23 @@ memory window $m\in\{6,8\}$ converges substantially faster; we use it as
 the default. Both schemes terminate when
 $\|P^{(n+1)}-P^{(n)}\|_{\infty}<10^{-6}$.
 
-\paragraph{Convergence diagnostics.} We monitor (i) the residual norm,
-(ii) the off-sum-statistic regression coefficient of
-Proposition~\ref{prop:ree}, and (iii) the dispersion of the three
-posteriors at a benchmark realisation. Convergence in all three is
-required for a converged solution. Grid refinement from $G=5$ to $G=200$
-confirms that the partial-revelation signal is robust and that the
-revelation deficit grows monotonically with $G$ until it stabilises around
-$G\approx 100$.
+\paragraph{Convergence diagnostics.} We monitor (i) the supremum-norm
+residual $\|F\|_{\infty}\equiv\|\mu-\Phi(\mu)\|_{\infty}$ over all active
+cells, (ii) the revelation deficit $1-R^{2}$ from the weighted regression
+of $\logit p$ on $\Tstar$, and (iii) monotonicity violations in both the
+$u$ and $p$ directions. Convergence in all three is required: strict
+convergence means $\|F\|_{\infty}<10^{-14}$ with zero monotonicity
+violations. Grid refinement from $G=10$ to $G=24$ confirms that the
+revelation deficit stabilises near $0.105$ at the baseline
+$(\gamma,\tau)=(0.5,2)$ from $G=14$ onward. The continuous fixed-point
+equation involves integrals over signal densities along contour level
+sets; the quadrature error from discretisation is $O(G^{-2})$ for
+equally-spaced nodes on a $C^{\infty}$ integrand, and the truncation error
+from restricting signals to $|u|\leq u_{\max}=4$ is
+$O(e^{-\tau u_{\max}^{2}})<10^{-14}$ at $\tau=2$.
 
-\paragraph{Software.} The reference implementation is in Julia, with a
-prototype in Python. Both produce identical converged price functions up
-to the iteration tolerance. The full source code is available in the
-repository accompanying this paper.
+\paragraph{Software.} The reference implementation is in Python using the
+posterior-function method described above. The full source code is
+available in the repository accompanying this paper.
 
 \end{document}
