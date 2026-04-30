@@ -183,3 +183,62 @@ Save converged μ arrays as:
 Save summary JSON as:
   posterior_v3_strict_results.json (append to existing)
 Push to results/full_ree/ on main branch.
+
+---
+
+## P0.5: URGENT DIAGNOSTIC — CARA FLOOR
+
+The CARA baseline at γ=50 gives 1-R²=0.037 (status: no_strict).
+This could be:
+  (a) γ=50 is not large enough — the CRRA demand at γ=50 still has
+      a tiny Jensen gap that gets amplified by the REE loop
+  (b) Convergence artifact — the solver didn't reach the true fixed point
+  (c) Method artifact — the posterior-function discretization introduces
+      nonlinearity that even true CARA can't escape
+
+### Tests to discriminate:
+
+**Test 1: Higher γ sweep.**
+Run γ = 50, 100, 200, 500 at G=14, τ=2. All with same solver settings.
+- If 1-R² keeps falling toward zero: (a) confirmed. Report the decay rate.
+- If 1-R² plateaus at ~0.037: (b) or (c).
+
+**Test 2: Explicit CARA demands.**
+Replace the CRRA demand formula x = W(R-1)/((1-p)+Rp) with the exact
+CARA formula x = (logit(μ)-logit(p))/γ_CARA (with some fixed γ_CARA
+for scaling). Everything else identical: same posterior method, same
+PAVA, same grid. Run at G=14, τ=2.
+- If 1-R² = 0 (machine precision): the method works perfectly for true
+  CARA, and the 0.037 at γ=50 is genuine CRRA residual → finding (a).
+  This would mean: the REE amplifies even the tiniest Jensen gap by
+  1000×, making CARA an even sharper knife-edge than no-learning suggests.
+- If 1-R² > 0: the posterior-function discretization introduces artifacts
+  even for true CARA → finding (c). Must fix the method.
+
+**Test 3: Convergence check at γ=50.**
+Run γ=50 with more iterations (double), tighter damping, Anderson with
+larger window. Check if 1-R² is still falling when stopped, or truly flat.
+Report: 1-R² at iteration 100, 200, 500. Is it still decreasing?
+
+### Why this matters
+
+If finding (a): the paper's story is even stronger. The no-learning
+knife-edge table shows γ=50 as "effectively CARA" (1-R²=0.0000). But
+the REE amplifies that invisible gap to 0.037 — detectable and
+economically significant. The knife-edge is SHARPER at REE than at
+no-learning. Add a paragraph to the paper about this.
+
+If finding (b) or (c): need to subtract the floor from all CRRA numbers.
+The NET deficits from CHAT_MEMORY are still valid but the raw numbers
+in the paper's tables need a baseline correction column.
+
+### Expected result
+
+Most likely (a). Reason: the no-learning 1-R² at γ=50 is 0.00003.
+The survival ratio at γ=2 is 3.8×. If the ratio continues growing
+(which the data suggests — it's monotone in γ), then at γ=50 the
+ratio could be 100-1000×, giving 0.003-0.03 for the REE — consistent
+with the observed 0.037. The high-γ CRRA demand is nearly linear but
+not exactly linear, and the REE loop amplifies the residual nonlinearity.
+
+Test 2 (explicit CARA) is the definitive discriminator.
