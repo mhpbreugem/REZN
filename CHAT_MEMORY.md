@@ -540,3 +540,22 @@ our knowledge, the first to show that standard expected utility
 preferences — specifically, any member of the CRRA family — produce
 partial revelation with common values, Gaussian signals, and no noise
 of any kind."
+
+## FIGURE AUDIT (2026-04-30)
+
+All 11 figures reviewed. Status:
+
+DONE (correct data, correct style):
+- fig3_contour: G=14 REE data, pgfplots ✓
+- fig7_volume, fig8_value_info, fig9_GS: gray-bg placeholders ✓
+
+NEEDS FIX:
+- fig_knife_edge: WRONG gammas (0.2,1,5 → 0.25,1,4) — P1 priority
+- fig_ree_vs_nolearning: matplotlib PNG, needs pgfplots conversion
+- fig4_posteriors: yellow-bg G=5, WRONG data (μ₂=0.88=FR!) — remove or replace
+- fig5_convergence: old G=20 price-grid data, caption says G=14
+- fig_knife_edge_K, fig_knife_edge_lognormal: check gammas
+
+Econometrica style: adequate. Color OK (online-only since 2024).
+Main issue is consistency (mixed matplotlib/pgfplots) and wrong data.
+Detailed fix specs in SOLVER_TODO.md P1.5.
