@@ -353,3 +353,52 @@ needs this), nonsingular Jacobian (exp(c_k) > 0), no projection step.
 Use exp(c) not a² (a² has vanishing Jacobian at a=0).
 Recommendation: gap reparam in u-direction, soft penalty or PAVA in p.
 See POSTERIOR_METHOD_V2.md Section E.
+
+## LATEST REE RESULTS (2026-04-27) — MACHINE PRECISION
+
+Posterior method v3 (PAVA-Cesaro) at G=14, strict (max≤1e-14):
+
+### G-ladder (γ=0.5, τ=2)
+| G  | 1-R²  | slope | status |
+|----|-------|-------|--------|
+| 10 | 0.127 | 0.352 | strict |
+| 12 | 0.115 | 0.344 | strict |
+| 14 | 0.108 | 0.341 | strict |
+| 16 | 0.105 | 0.339 | fallback (max=0.08) |
+| 18 | 0.105 | 0.338 | fallback (max=0.19) |
+| 20 | 0.105 | 0.338 | fallback (max=0.20) |
+Converged value: ~0.105. G≥16 needs gap reparam to reach strict.
+
+### γ-ladder (G=14, τ=2)
+| γ   | 1-R²  | slope | status |
+|-----|-------|-------|--------|
+| 0.1 | 0.154 | 0.243 | fallback |
+| 0.3 | 0.119 | 0.293 | strict |
+| 0.5 | 0.108 | 0.341 | strict |
+| 1.0 | 0.100 | 0.452 | strict |
+| 2.0 | 0.079 | 0.599 | strict |
+Monotone: lower γ → more PR. Exactly as predicted.
+
+### τ-ladder (G=14, γ=0.5)
+| τ   | 1-R²  | slope | status |
+|-----|-------|-------|--------|
+| 0.5 | 0.092 | 0.595 | strict |
+| 1.0 | 0.110 | 0.466 | strict |
+| 2.0 | 0.108 | 0.341 | strict |
+| 4.0 | 0.113 | 0.274 | strict |
+| 8.0 | 0.094 | 0.245 | strict |
+Hump-shaped: PR peaks around τ=1-4.
+
+### Key implication for paper
+Prop 4 (PR at REE) is now confirmed with machine precision at G=14.
+Can upgrade from "conjectured" to "verified numerically."
+1-R² ≈ 0.10 at baseline — ten percent of price variance unexplained by T*.
+
+### Puzzle: REE > no-learning?
+REE 1-R² (0.108) appears larger than no-learning (0.062 at G=20).
+Needs investigation — may be G mismatch or real amplification from
+learning on curved contours. See SOLVER_TODO.md §Technical Notes.
+
+### SOLVER_TODO.md pushed
+16 tasks, priority P0-P3. Critical: paper gammas (0.25,1,4), CARA
+baseline, survival ratios, posteriors table.
