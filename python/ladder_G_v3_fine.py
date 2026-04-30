@@ -21,7 +21,7 @@ from posterior_method_v3 import (
     Lam, init_p_grid, picard_anderson, phi_step, measure_R2, EPS,
 )
 
-GS = list(range(8, 21))   # 8, 9, 10, ..., 20
+GS = list(range(8, 31))   # 8, 9, 10, ..., 30
 TAU = 2.0
 GAMMA = 0.5
 UMAX = 4.0
@@ -147,6 +147,10 @@ for G in GS:
     results.append(r)
     if r["converged"]:
         mu_prev, u_prev, p_prev = mu, ug, pg
+        # Save converged μ tensor checkpoint for resuming
+        np.savez(f"results/full_ree/posterior_v3_fine_G{G}_mu.npz",
+                 mu=mu, u_grid=ug, p_grid=pg, p_lo=p_lo, p_hi=p_hi,
+                 tau=TAU, gamma=GAMMA)
     else:
         # Try cold-start NK as fallback (sometimes a different attractor
         # is reachable without warm-start bias)
@@ -158,6 +162,14 @@ for G in GS:
         results.append(r2)
         if r2["converged"]:
             mu_prev, u_prev, p_prev = mu2, ug2, pg2
+            np.savez(f"results/full_ree/posterior_v3_fine_G{G}_mu.npz",
+                     mu=mu2, u_grid=ug2, p_grid=pg2, p_lo=p_lo2, p_hi=p_hi2,
+                     tau=TAU, gamma=GAMMA)
+    # Incremental save (so progress isn't lost if interrupted)
+    with open("results/full_ree/posterior_v3_G_fine_ladder.json", "w") as f:
+        json.dump({"results": results, "params": {
+            "tau": TAU, "gamma": GAMMA, "umax": UMAX, "f_tol": F_TOL,
+        }}, f, indent=2)
 
 print("\n=== ALL RESULTS ===")
 print(f"{'G':>3} {'label':>12} {'NK':>8} {'max':>10} {'med':>10} "
