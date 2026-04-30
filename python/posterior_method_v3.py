@@ -60,21 +60,25 @@ def market_clear_no_learning(u_triple, tau, gamma):
     return brentq(Z, 1e-6, 1 - 1e-6, xtol=1e-12)
 
 
-def init_p_grid(u_grid, tau, gamma, Gp, margin=0.05, u_extreme_cap=4.0):
+def init_p_grid(u_grid, tau, gamma, Gp, margin=0.05, u_extreme_cap=4.0,
+                tau_u_cap=6.0):
     """For each u_i, compute p_lo and p_hi via no-learning market clearing
     with extreme-other-signal config, plus a small margin. Build the
     per-row p-grid in logit space.
 
     To support wider u-grids without breaking brentq (extreme μ = 0/1
     leaves no interior root), clamp the extreme partner-signals to
-    ±u_extreme_cap when estimating the price-range.
+    ±u_extreme_cap when estimating the price-range. Additionally, cap
+    so that |τ·u_eff| ≤ tau_u_cap (default 6) to avoid μ-saturation
+    at large τ.
 
     Returns:
         p_lo[Gu], p_hi[Gu], logit_p_grid[Gu, Gp], p_grid[Gu, Gp]
     """
     Gu = len(u_grid)
-    u_min_eff = max(u_grid[0], -u_extreme_cap)
-    u_max_eff = min(u_grid[-1], +u_extreme_cap)
+    eff_cap = min(u_extreme_cap, tau_u_cap / max(tau, 1e-6))
+    u_min_eff = max(u_grid[0], -eff_cap)
+    u_max_eff = min(u_grid[-1], +eff_cap)
     p_lo = np.empty(Gu); p_hi = np.empty(Gu)
     for i, u_i in enumerate(u_grid):
         p_lo[i] = market_clear_no_learning((u_i, u_min_eff, u_min_eff), tau, gamma)
