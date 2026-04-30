@@ -20,12 +20,18 @@ EPS = 1e-10
 
 def Lam(z):
     z = np.asarray(z, dtype=float)
+    if z.ndim == 0:
+        v = float(z)
+        if v >= 0:
+            return 1.0 / (1.0 + math.exp(-v))
+        e = math.exp(v)
+        return e / (1.0 + e)
     out = np.empty_like(z)
     pos = z >= 0
     out[pos] = 1.0 / (1.0 + np.exp(-z[pos]))
     e = np.exp(z[~pos])
     out[~pos] = e / (1.0 + e)
-    return float(out) if out.shape == () else out
+    return out
 
 
 def logit(p):
@@ -48,7 +54,7 @@ def crra_demand_vec(mu, p, gamma, W=1.0):
 
 def market_clear_no_learning(u_triple, tau, gamma):
     """Solve sum_k x(Λ(τu_k), p) = 0 for p (no-learning case)."""
-    mus = [float(Lam(np.array([tau * u]))) for u in u_triple]
+    mus = [Lam(tau * u) for u in u_triple]
     def Z(p):
         return sum(crra_demand_vec(np.array([m]), np.array([p]), gamma)[0] for m in mus)
     return brentq(Z, 1e-6, 1 - 1e-6, xtol=1e-12)
@@ -72,8 +78,8 @@ def init_p_grid(u_grid, tau, gamma, Gp, margin=0.05):
         l_lo = logit(p_lo[i]); l_hi = logit(p_hi[i])
         spread = l_hi - l_lo
         l_lo -= margin * spread; l_hi += margin * spread
-        p_lo[i] = float(Lam(np.array([l_lo])))
-        p_hi[i] = float(Lam(np.array([l_hi])))
+        p_lo[i] = Lam(l_lo)
+        p_hi[i] = Lam(l_hi)
 
     # Per-row p-grid in logit space
     logit_p_grid = np.empty((Gu, Gp))
@@ -93,7 +99,7 @@ def extract_mu_col(mu, p_grid, p0, u_grid, tau, p_lo, p_hi):
     mu_col = np.empty(Gu)
     for i in range(Gu):
         if p0 < p_lo[i] or p0 > p_hi[i]:
-            mu_col[i] = float(Lam(np.array([tau * u_grid[i]])))
+            mu_col[i] = Lam(tau * u_grid[i])
         else:
             # 1D interp along this row's p-grid
             mu_col[i] = float(np.interp(p0, p_grid[i, :], mu[i, :]))
@@ -222,9 +228,9 @@ def measure_R2(mu, u_grid, p_grid, p_lo, p_hi, tau, gamma):
                 u1, u2, u3 = u_grid[i], u_grid[j], u_grid[k]
 
                 def F(p):
-                    mu1 = float(np.interp(p, p_grid[i], mu[i]) if p_lo[i] <= p <= p_hi[i] else Lam(np.array([tau*u1])))
-                    mu2 = float(np.interp(p, p_grid[j], mu[j]) if p_lo[j] <= p <= p_hi[j] else Lam(np.array([tau*u2])))
-                    mu3 = float(np.interp(p, p_grid[k], mu[k]) if p_lo[k] <= p <= p_hi[k] else Lam(np.array([tau*u3])))
+                    mu1 = float(np.interp(p, p_grid[i], mu[i]) if p_lo[i] <= p <= p_hi[i] else Lam(tau*u1))
+                    mu2 = float(np.interp(p, p_grid[j], mu[j]) if p_lo[j] <= p <= p_hi[j] else Lam(tau*u2))
+                    mu3 = float(np.interp(p, p_grid[k], mu[k]) if p_lo[k] <= p <= p_hi[k] else Lam(tau*u3))
                     return sum(crra_demand_vec(np.array([m]), np.array([p]), gamma)[0]
                                for m in (mu1, mu2, mu3))
 
@@ -285,7 +291,7 @@ def main():
     # Initialize μ⁰(u, p) = Λ(τu)
     mu0 = np.zeros((args.Gu, args.Gp))
     for i, u in enumerate(u_grid):
-        mu0[i, :] = float(Lam(np.array([args.tau * u])))
+        mu0[i, :] = Lam(args.tau * u)
 
     print(f"\nIterating...", flush=True)
     t0 = time.time()
