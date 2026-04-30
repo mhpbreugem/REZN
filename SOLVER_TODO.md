@@ -183,3 +183,126 @@ Save converged μ arrays as:
 Save summary JSON as:
   posterior_v3_strict_results.json (append to existing)
 Push to results/full_ree/ on main branch.
+
+---
+
+## P0.5: URGENT DIAGNOSTIC — CARA FLOOR
+
+The CARA baseline at γ=50 gives 1-R²=0.037 (status: no_strict).
+This could be:
+  (a) γ=50 is not large enough — the CRRA demand at γ=50 still has
+      a tiny Jensen gap that gets amplified by the REE loop
+  (b) Convergence artifact — the solver didn't reach the true fixed point
+  (c) Method artifact — the posterior-function discretization introduces
+      nonlinearity that even true CARA can't escape
+
+### Tests to discriminate:
+
+**Test 1: Higher γ sweep.**
+Run γ = 50, 100, 200, 500 at G=14, τ=2. All with same solver settings.
+- If 1-R² keeps falling toward zero: (a) confirmed. Report the decay rate.
+- If 1-R² plateaus at ~0.037: (b) or (c).
+
+**Test 2: Explicit CARA demands.**
+Replace the CRRA demand formula x = W(R-1)/((1-p)+Rp) with the exact
+CARA formula x = (logit(μ)-logit(p))/γ_CARA (with some fixed γ_CARA
+for scaling). Everything else identical: same posterior method, same
+PAVA, same grid. Run at G=14, τ=2.
+- If 1-R² = 0 (machine precision): the method works perfectly for true
+  CARA, and the 0.037 at γ=50 is genuine CRRA residual → finding (a).
+  This would mean: the REE amplifies even the tiniest Jensen gap by
+  1000×, making CARA an even sharper knife-edge than no-learning suggests.
+- If 1-R² > 0: the posterior-function discretization introduces artifacts
+  even for true CARA → finding (c). Must fix the method.
+
+**Test 3: Convergence check at γ=50.**
+Run γ=50 with more iterations (double), tighter damping, Anderson with
+larger window. Check if 1-R² is still falling when stopped, or truly flat.
+Report: 1-R² at iteration 100, 200, 500. Is it still decreasing?
+
+### Why this matters
+
+If finding (a): the paper's story is even stronger. The no-learning
+knife-edge table shows γ=50 as "effectively CARA" (1-R²=0.0000). But
+the REE amplifies that invisible gap to 0.037 — detectable and
+economically significant. The knife-edge is SHARPER at REE than at
+no-learning. Add a paragraph to the paper about this.
+
+If finding (b) or (c): need to subtract the floor from all CRRA numbers.
+The NET deficits from CHAT_MEMORY are still valid but the raw numbers
+in the paper's tables need a baseline correction column.
+
+### Expected result
+
+Most likely (a). Reason: the no-learning 1-R² at γ=50 is 0.00003.
+The survival ratio at γ=2 is 3.8×. If the ratio continues growing
+(which the data suggests — it's monotone in γ), then at γ=50 the
+ratio could be 100-1000×, giving 0.003-0.03 for the REE — consistent
+with the observed 0.037. The high-γ CRRA demand is nearly linear but
+not exactly linear, and the REE loop amplifies the residual nonlinearity.
+
+Test 2 (explicit CARA) is the definitive discriminator.
+
+---
+
+## P0.6: TRIM p-GRID TO 95% FEASIBLE RANGE
+
+### The problem
+At G≥16, 1-2 cells at the extreme edges of the lens domain prevent
+strict convergence. These cells have:
+- 1-2 contour crossings (noisy A_v)
+- Signal density weight ~1e-8 (invisible in 1-R²)
+- Max residual ~0.1 while median is ~1e-13
+They dominate ||F||∞ but contribute nothing to the answer.
+
+### The fix
+Trim each row's p-grid to the central 95% of the achievable range:
+
+```python
+# Current:
+p_lo[i] = P(u_i, u_min, u_min)
+p_hi[i] = P(u_i, u_max, u_max)
+
+# New:
+margin = 0.025
+p_range = p_hi[i] - p_lo[i]
+p_lo_trim[i] = p_lo[i] + margin * p_range
+p_hi_trim[i] = p_hi[i] - margin * p_range
+```
+
+Or equivalently in the signal quantile: instead of using u_min and
+u_max (the 0th and 100th percentile of the grid), use the 2.5th
+and 97.5th percentile.
+
+### Why it's safe
+The trimmed 5% corresponds to other-agent signal pairs that are
+jointly extreme: both agents at their 2.5th or 97.5th percentile.
+Joint probability: (0.025)² ≈ 6e-4. The density weight on these
+configurations is negligible. They don't affect 1-R², slope, or
+any weighted metric.
+
+### For off-grid prices
+If a self-consistency check or contour tracing needs μ(u, p) at a
+price outside the trimmed range, extrapolate:
+
+```python
+# Linear extrapolation in logit space from the two nearest interior points
+if p < p_lo_trim[i]:
+    logit_mu = logit(mu[i, 0]) + (logit(p) - logit(p_lo_trim[i])) * slope_lo[i]
+elif p > p_hi_trim[i]:
+    logit_mu = logit(mu[i, -1]) + (logit(p) - logit(p_hi_trim[i])) * slope_hi[i]
+```
+
+where slope_lo, slope_hi are the logit-space slopes at the boundary.
+
+### Expected result
+- G=16-24 should reach strict convergence (max<1e-14)
+- 1-R² should be unchanged (same answer, different domain)
+- Confirms that the G=14-15 strict results are the true answer
+
+### Implementation
+1. Change p_lo, p_hi computation to use 2.5/97.5% margins
+2. Add linear-logit extrapolation for off-grid prices
+3. Re-run G=16, 18, 20, 24 at γ=0.5, τ=2
+4. Verify 1-R² matches the untrimmed values
+5. If strict at G≥16: run the full knife-edge sweep at G=16

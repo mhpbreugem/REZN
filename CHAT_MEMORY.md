@@ -402,3 +402,53 @@ learning on curved contours. See SOLVER_TODO.md §Technical Notes.
 ### SOLVER_TODO.md pushed
 16 tasks, priority P0-P3. Critical: paper gammas (0.25,1,4), CARA
 baseline, survival ratios, posteriors table.
+
+## PAPER UPDATE (2026-04-27)
+
+Replaced old smooth-kernel REE numbers with machine-precision posterior-method results.
+Key changes to main.tex:
+- Old: 1-R² ≈ 0.034 (with kernel artifact subtraction, NET ~0.002)
+- New: 1-R² = 0.108 at (γ=0.5, τ=2). No artifacts. Machine precision.
+- Removed todopar block. The numerical state is definitive.
+- New tables: γ-ladder and G-convergence
+- New figure: REE vs no-learning price function
+
+New figures pushed:
+- fig_ree_gamma.tex/pdf — 1-R² vs γ at REE, with no-learning comparison
+- fig_ree_tau.tex/pdf — 1-R² vs τ at REE, with no-learning comparison
+- fig_ree_convergence_G.tex/pdf — 1-R² convergence in G
+- fig_ree_vs_nolearning.pdf — price vs T* (from solver branch)
+
+Paper compiles clean, 34 pages.
+
+## LATEST FINDINGS (2026-04-30)
+
+### P0 tasks complete on solver branch:
+- γ=0.25: 1-R²=0.123 (fallback), γ=4.0: 1-R²=0.058 (no_strict)
+- CARA γ=50: 1-R²=0.037 (NOT zero — urgent diagnostic needed)
+- Posteriors at (1,-1,1): μ2 goes from 0.119→0.667 (massive learning, stops short of FR 0.881)
+- No-learning baselines recomputed at G=14: match G=20 values
+
+### Survival ratio puzzle RESOLVED:
+REE 1-R² > no-learning 1-R² at every γ. Not a G mismatch.
+Learning from curved contours AMPLIFIES the Jensen gap.
+Ratios: γ=0.3→1.34, γ=0.5→1.74, γ=1→3.39, γ=2→7.18
+Monotone increasing in γ — the amplification is strongest where
+the no-learning gap is smallest. New result for the paper.
+
+### CARA floor diagnostic pushed (SOLVER_TODO P0.5):
+Three tests to discriminate:
+1. Higher γ sweep (50→500)
+2. Explicit CARA demands (definitive test)
+3. Convergence check at γ=50
+Most likely: genuine amplification, not artifact. Test 2 decides.
+
+### Contour figure data (P1 task 7): DONE
+CRRA contour is clearly curved vs CARA straight line.
+Data in fig3_contour_data.json, plot in fig3_contour_plot.png.
+
+### Knife-edge sweep γ=0.25: 14/16 τ points done
+Hump-shaped, peaks at τ≈0.87 (1-R²=0.137). γ=1 and γ=4 not started.
+
+### Convergence data (P1 task 8): DONE
+Data in fig5_convergence_data.json.

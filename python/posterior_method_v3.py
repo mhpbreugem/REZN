@@ -61,7 +61,7 @@ def market_clear_no_learning(u_triple, tau, gamma):
 
 
 def init_p_grid(u_grid, tau, gamma, Gp, margin=0.05, u_extreme_cap=4.0,
-                tau_u_cap=6.0):
+                tau_u_cap=6.0, trim=0.0):
     """For each u_i, compute p_lo and p_hi via no-learning market clearing
     with extreme-other-signal config, plus a small margin. Build the
     per-row p-grid in logit space.
@@ -71,6 +71,10 @@ def init_p_grid(u_grid, tau, gamma, Gp, margin=0.05, u_extreme_cap=4.0,
     ±u_extreme_cap when estimating the price-range. Additionally, cap
     so that |τ·u_eff| ≤ tau_u_cap (default 6) to avoid μ-saturation
     at large τ.
+
+    `trim`: fraction of the p-range to trim from each side AFTER margin
+    expansion. trim=0.025 → keeps central 95%. Useful at G≥16 where
+    corner cells (low joint signal density) dominate ||F||∞.
 
     Returns:
         p_lo[Gu], p_hi[Gu], logit_p_grid[Gu, Gp], p_grid[Gu, Gp]
@@ -83,10 +87,14 @@ def init_p_grid(u_grid, tau, gamma, Gp, margin=0.05, u_extreme_cap=4.0,
     for i, u_i in enumerate(u_grid):
         p_lo[i] = market_clear_no_learning((u_i, u_min_eff, u_min_eff), tau, gamma)
         p_hi[i] = market_clear_no_learning((u_i, u_max_eff, u_max_eff), tau, gamma)
-        # Add margin in logit space
+        # Margin expansion in logit space
         l_lo = logit(p_lo[i]); l_hi = logit(p_hi[i])
         spread = l_hi - l_lo
         l_lo -= margin * spread; l_hi += margin * spread
+        # Trim from each side (in logit space)
+        if trim > 0.0:
+            spread2 = l_hi - l_lo
+            l_lo += trim * spread2; l_hi -= trim * spread2
         p_lo[i] = Lam(l_lo)
         p_hi[i] = Lam(l_hi)
 
