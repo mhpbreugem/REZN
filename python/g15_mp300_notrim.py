@@ -135,16 +135,25 @@ u_grid_np = np.linspace(-UMAX, UMAX, G)
 p_lo_np, p_hi_np, p_grid_np = init_p_grid_f64(u_grid_np, 2.0, 0.5, G,
                                                    trim=0.0)
 
-# Float64 polish first to get warm
-print(f"Float64 picard polish (no-trim)...", flush=True)
-mu_f = np.zeros((G, G))
-for i, u in enumerate(u_grid_np):
-    mu_f[i, :] = Lam_f64(2.0 * u)
+# Float64 polish first; warm from G=15 strict-trim ckpt to skip cold start
+print(f"Float64 picard polish (no-trim, warm from G=15 strict)...", flush=True)
+ck = np.load(f"{RESULTS_DIR}/posterior_v3_strict_G15.npz")
+# G=15 strict was trim=0.05; we use that as warm even though grids slightly differ
+# (re-interp into no-trim p-grid)
+mu_warm_old = ck["mu"]; u_warm = ck["u_grid"]; p_warm = ck["p_grid"]
+mu_f = np.empty((G, G))
+for i in range(G):
+    for j in range(G):
+        p_target = p_grid_np[i, j]
+        # Find row in old grid (same u-grid since u_warm == u_grid_np)
+        p_clamped = np.clip(p_target, p_warm[i, 0], p_warm[i, -1])
+        mu_f[i, j] = np.interp(p_clamped, p_warm[i, :], mu_warm_old[i, :])
+mu_f = np.clip(mu_f, EPS_F64, 1 - EPS_F64)
 mu_f = pava_2d_f64(mu_f)
 
 t0 = time.time(); last_status = t0
 for round_idx, (n, na, alpha) in enumerate(
-        [(2000, 1000, 0.05), (3000, 1500, 0.01), (5000, 2500, 0.003)]):
+        [(3000, 1500, 0.005), (3000, 1500, 0.002), (5000, 2500, 0.001)]):
     mu_sum = np.zeros_like(mu_f); n_collected = 0
     for it in range(n):
         cand, active, _ = phi_step_f64(mu_f, u_grid_np, p_grid_np,
