@@ -22,7 +22,7 @@ from posterior_method_v3 import (
 )
 
 RESULTS_DIR = "results/full_ree"
-G = 50; UMAX = 4.0
+G = 30; UMAX = 4.0
 TAU = mpf("2"); GAMMA = mpf("0.5")
 H_FD = mpf("1e-100")
 TARGET = mpf("1e-100")
