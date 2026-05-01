@@ -16,8 +16,8 @@ UMAX = 4.0; G = 15; TOL_MAX = 1e-13; TRIM = 0.05
 RESULTS_DIR = "results/full_ree"
 
 GAMMAS = [0.25, 1.0, 4.0]
-TAU_GRID = list(np.exp(np.linspace(np.log(0.2), np.log(8.0), 30)))
-MIN_STEP_LOG = 0.02   # bisect until log-spacing < this
+TAU_GRID = list(np.exp(np.linspace(np.log(0.2), np.log(8.0), 60)))
+MIN_STEP_LOG = 0.005   # bisect until log-spacing < this
 
 
 def pava_2d(mu): return pava_u_only(pava_p_only(mu))
