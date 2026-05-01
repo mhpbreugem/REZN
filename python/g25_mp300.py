@@ -128,11 +128,11 @@ def F_med(F):
     return vals[len(vals) // 2]
 
 
-# Build no-trim grid
-print(f"Building G={G} no-trim grid...", flush=True)
+# Build trim99 grid
+print(f"Building G={G} trim99 grid...", flush=True)
 u_grid_np = np.linspace(-UMAX, UMAX, G)
 p_lo_np, p_hi_np, p_grid_np = init_p_grid_f64(u_grid_np, 2.0, 0.5, G,
-                                                   trim=0.0)
+                                                   trim=0.005)
 
 # Warm: G=15 mp300 iter 2 → G=25 interp (in mpmath)
 print(f"Loading G=15 mp300 iter 2 warm...", flush=True)
