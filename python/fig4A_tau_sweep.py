@@ -14,7 +14,7 @@ from posterior_method_v3 import (
 )
 from gap_reparam import pava_p_only, pava_u_only
 
-UMAX = 4.0; G = 15; TOL_MAX = 1e-14; TRIM = 0.05
+UMAX = 4.0; G = 15; TOL_MAX = 1e-13; TRIM = 0.05
 RESULTS_DIR = "results/full_ree"
 
 GAMMAS = [0.25, 1.0, 4.0]
