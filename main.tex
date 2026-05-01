@@ -1805,6 +1805,21 @@ Figure~\ref{fig:convergence} shows a representative convergence path.
    \label{fig:convergence}
 \end{figure}
 
+\paragraph{Contour curvature.}
+A numerical observation that may be of independent interest: at every
+price level $p$, the CRRA contour $\{(u_j,u_l):P(u_1,u_j,u_l)=p\}$
+has \emph{definite curvature sign}.  That is, the curve $u_l=g(u_j)$
+is either everywhere convex or everywhere concave---it never changes
+from convex to concave along a single contour.  The transition between
+convex and concave contours occurs at a critical price $p^{*}$ that
+depends on $u_1$, $\tau$, and $\gamma$; at $p=p^{*}$ the contour is
+approximately linear (i.e.\ close to the CARA straight line).  Under
+CARA, every contour is exactly linear: $g''=0$ identically.  This
+definite-curvature property, if it can be proved analytically, would
+imply that each contour can be represented with far fewer parameters
+than a general curve, potentially enabling more efficient numerical
+schemes for the fixed-point problem.
+
 \paragraph{Software.} The reference implementation is in Python using the
 posterior-function method described above. The full source code is
 available in the repository accompanying this paper.
