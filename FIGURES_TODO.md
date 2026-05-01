@@ -4,7 +4,7 @@
 
 ## PARAMETERS
 - G = 15 (strict convergence, ||F||∞ < 1e-14)
-- γ_paper = [0.25, 1.0, 4.0] for all multi-γ figures
+- γ_paper = [0.5, 1.0, 4.0] for all multi-γ figures
 - τ_default = 2.0
 - W = 1.0, K = 3
 
@@ -49,7 +49,7 @@
   - Record 1-R² at each (γ, τ)
 - Output: three lists of (τ, 1-R²) coordinates
 **Computation:** ~3-6 hours (each (γ,τ) takes ~10-30 min at G=15)
-**NOTE:** γ=0.25 sweep already has 14 points from solver branch.
+**NOTE:** γ=0.5 sweep already has 14 points from solver branch.
 Need γ=1 and γ=4 sweeps.
 
 ## FIG 4B: REE PANELS — 1-R² vs γ
@@ -150,7 +150,7 @@ Need γ=1 and γ=4 sweeps.
 **File:** fig_knife_edge_K.pdf
 **Status:** WHITE BG but CHECK gammas
 **Data needed:**
-- Verify uses γ=0.25, 1, 4 (not old values)
+- Verify uses γ=0.5, 1, 4 (not old values)
 - If wrong: recompute no-learning 1-R² vs K for K=3..20
 **Computation:** ~10 min if recompute needed
 
@@ -196,7 +196,7 @@ For each figure, the solver should output a JSON file:
 ```json
 {
   "figure": "fig_knife_edge",
-  "params": {"G": 15, "tau_range": [0.1, 20], "gammas": [0.25, 1, 4]},
+  "params": {"G": 15, "tau_range": [0.1, 20], "gammas": [0.5, 1, 4]},
   "curves": [
     {"gamma": 0.25, "points": [{"tau": 0.1, "1-R2": 0.025}, ...]},
     {"gamma": 1.0, "points": [{"tau": 0.1, "1-R2": 0.003}, ...]},
@@ -207,7 +207,7 @@ For each figure, the solver should output a JSON file:
 
 Plus a pgfplots coordinate string ready to paste:
 ```
-% gamma=0.25
+% gamma=0.5
 \addplot coordinates {(0.1,0.025)(0.2,0.040)...};
 ```
 
@@ -219,7 +219,7 @@ Save pgfplots to: results/full_ree/fig_NAME_pgfplots.tex
 ## FIGURE QUALITY REVIEW (2026-05-01)
 
 ### INCLUDED (white background, real data):
-- Fig 1 knife-edge: 30 pts/curve, G=15, γ=0.25/1/4. EXCELLENT. ✓
+- Fig 1 knife-edge: 30 pts/curve, G=15, γ=0.5/1/4. EXCELLENT. ✓
 
 ### REJECTED (kept as gray-bg placeholder):
 - Fig 5 REE vs NL: Only 20 bins. Severe outlier at T*=8.25 (price drops
