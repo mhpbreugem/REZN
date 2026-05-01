@@ -3,22 +3,36 @@
 \usepgfplotslibrary{groupplots}
 \pgfplotsset{compat=1.18}
 \definecolor{BCblue}{rgb}{0.0, 0.20, 0.42}
-\pgfplotsset{every axis/.append style={width=7.5cm, height=7.5cm, scale only axis,
-  ticklabel style={font=\scriptsize, /pgf/number format/fixed, /pgf/number format/precision=2}, yticklabel style={text width=10mm, align=right}, ylabel style={text width=10mm, align=center}, label style={font=\small},
-  title style={font=\small}, legend style={draw=none, font=\footnotesize}}}
+\pgfplotsset{every axis/.append style={
+  width=7.5cm, height=7.5cm, scale only axis,
+  ticklabel style={font=\scriptsize, /pgf/number format/fixed, /pgf/number format/precision=2},
+  yticklabel style={text width=10mm, align=right},
+  ylabel style={text width=10mm, align=center},
+  label style={font=\small},
+  title style={font=\small},
+  legend style={draw=none, font=\footnotesize}}}
 \begin{document}
 \begin{tikzpicture}
 \begin{groupplot}[group style={group size=1 by 1}]
-\nextgroupplot[xmin=-3, xmax=3, ymin=-3, ymax=3,
-  xlabel={$u_2$}, ylabel={$u_3$}, axis equal image,
-  title={CARA: parallel lines}]
-\addplot[thick,color=BCblue!25] coordinates {(-3,1.5)(3,-4.5)};
-\addplot[thick,color=BCblue!40] coordinates {(-3,2.0)(3,-4.0)};
-\addplot[thick,color=BCblue!55] coordinates {(-3,2.5)(3,-3.5)};
-\addplot[very thick,color=BCblue] coordinates {(-3,3.0)(3,-3.0)};
-\addplot[thick,color=BCblue!55] coordinates {(-2.5,3)(3,-2.5)};
-\addplot[thick,color=BCblue!40] coordinates {(-2.0,3)(3,-2.0)};
-\addplot[thick,color=BCblue!25] coordinates {(-1.5,3)(3,-1.5)};
+\nextgroupplot[
+  xmin=-3.5, xmax=3.5, ymin=-3.5, ymax=3.5,
+  xlabel={$u_2$}, ylabel={$u_3$},
+  axis equal image,
+  title={CARA: straight, parallel}]
+% p=0.2 (real solver data, slope=-1, intercept from CARA clearing)
+\addplot[thick,color=BCblue!30,smooth] coordinates {(-3.5,0.42)(3.5,-6.58)};
+% p=0.3
+\addplot[thick,color=BCblue!50,smooth] coordinates {(-3.5,1.23)(3.5,-5.77)};
+% p=0.5
+\addplot[very thick,color=BCblue,smooth] coordinates {(-3.5,2.50)(3.5,-4.50)};
+% p=0.7
+\addplot[thick,color=BCblue!50,smooth] coordinates {(-3.5,3.50)(1.72,-3.50)};
+% p=0.8
+\addplot[thick,color=BCblue!30,smooth] coordinates {(-2.73,3.50)(3.50,-2.73)};
+% Labels
+\node[font=\scriptsize,color=BCblue!50,rotate=-45] at (axis cs:-1.8,-1.5) {$p\!=\!0.2$};
+\node[font=\scriptsize,color=BCblue,rotate=-45] at (axis cs:-0.5,-0.5) {$p\!=\!0.5$};
+\node[font=\scriptsize,color=BCblue!50,rotate=-45] at (axis cs:1.2,0.8) {$p\!=\!0.8$};
 \end{groupplot}
 \end{tikzpicture}
 \end{document}
