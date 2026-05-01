@@ -25,11 +25,10 @@ src = f"{RESULTS_DIR}/posterior_v3_G17_mp200.json"
 print(f"Waiting for {src}...", flush=True)
 last_print = time.time()
 while not os.path.exists(src):
-    if time.time() - last_print > 10:
-        print(f"  Still waiting (t={time.time()-last_print:.0f}s)...",
-              flush=True)
+    if time.time() - last_print > 60:
+        print(f"  Still waiting...", flush=True)
         last_print = time.time()
-    time.sleep(2)
+    time.sleep(5)
 print(f"Found G=17 mp200, loading...", flush=True)
 
 
