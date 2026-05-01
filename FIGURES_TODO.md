@@ -47,6 +47,7 @@ ALL paper numbers need updating from the mp50+ converged solutions.
 
 ### D1. Fig 3B — CRRA contours (THE showpiece figure)
 **Precision:** mp300, **G=25** (currently running)
+**Tolerance:** ||F||∞ < 10⁻¹⁰⁰
 **γ=0.5, τ=2, u₁=1**
 **After G=25 converges:**
 1. Load converged μ* at G=25
@@ -57,7 +58,19 @@ ALL paper numbers need updating from the mp50+ converged solutions.
 
 ### D2. Fig 4A — 1-R² vs τ at 3 γ values (the τ sweep)
 **Precision:** mp50, **G=15**
+**Tolerance:** ||F||∞ < 10⁻²⁵ (NOT machine precision — see below)
 **36 runs:** γ ∈ {0.5, 1.0, 4.0} × τ ∈ {0.3, 0.5, 0.8, 1.0, 1.5, 2.0, 3.0, 4.0, 5.0, 7.0, 10.0, 15.0}
+
+**WHY 10⁻²⁵ NOT MACHINE PRECISION:**
+Machine precision at mp50 is ~10⁻⁵⁰. But converging to 10⁻⁵⁰ means
+fitting interpolation artifacts of the G=15 grid to 50 digits.
+The interpolation error is O(h²) ≈ 0.01 — fitting that to 50 digits
+is wasted work and can introduce spurious structure.
+Empirically: 1-R² stabilizes well above 10⁻²⁵. Going from 10⁻¹⁵ to
+10⁻⁵⁵ changed 1-R² by 29% (0.108→0.077). Going from 10⁻⁵⁵ to
+10⁻²⁰⁷ changed nothing. So 10⁻²⁵ captures the true answer with
+margin to spare, and each NK iteration is faster (fewer bisection
+steps, less Jacobian precision needed).
 
 **Warm-start strategy (critical for speed):**
 For each γ, warm-start from the τ=2 converged solution:
@@ -71,6 +84,7 @@ Each step: interpolate μ* onto new p-grid, 2-3 NK iterations → converged.
 
 ### D3. Fig 4B — 1-R² vs γ at τ=2 (two missing points)
 **Precision:** mp50, **G=15**
+**Tolerance:** ||F||∞ < 10⁻²⁵
 **2 new runs:** γ=0.1, γ=0.25 (γ=0.5,1,2,4 already have mp100+ results)
 
 **Extract:** 1-R² at each γ. Re-measure 1-R² for existing γ values
