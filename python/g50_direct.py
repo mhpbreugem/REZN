@@ -84,11 +84,11 @@ print(f"Warm interp G=17→G=50: max={float(np.max(np.abs(cand0-mu_warm)[act0]))
       flush=True)
 
 t_start = time.time()
-print(f"\nPicard polish chain (8000 + 5000 + 8000)...", flush=True)
-mu = picard(mu_warm, u_grid, p_grid, p_lo, p_hi, 8000, 4000, 0.05,
-              label="α=0.05")
-mu = picard(mu, u_grid, p_grid, p_lo, p_hi, 5000, 2500, 0.01, label="α=0.01")
-mu = picard(mu, u_grid, p_grid, p_lo, p_hi, 8000, 4000, 0.003, label="α=0.003")
+print(f"\nPicard polish chain (small damping for G=50)...", flush=True)
+mu = picard(mu_warm, u_grid, p_grid, p_lo, p_hi, 5000, 2500, 0.005,
+              label="α=0.005")
+mu = picard(mu, u_grid, p_grid, p_lo, p_hi, 5000, 2500, 0.002, label="α=0.002")
+mu = picard(mu, u_grid, p_grid, p_lo, p_hi, 5000, 2500, 0.001, label="α=0.001")
 
 cand, active, _ = phi_step_f64(mu, u_grid, p_grid, p_lo, p_hi, 2.0, 0.5)
 F = np.abs(cand - mu)
