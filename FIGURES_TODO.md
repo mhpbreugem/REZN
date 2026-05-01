@@ -1,215 +1,242 @@
-# FIGURE GENERATION LIST FOR SOLVER — G=15, SSRN VERSION
-# All figures use the v2 groupplot template (7cm x 7cm, scale only axis)
-# Output: pgfplots coordinate lists OR raw data JSON files
+# FIGURES TODO — UPDATED 2026-05-01
+# Standard gammas: γ = 0.5, 1.0, 4.0 (USE THESE EVERYWHERE)
+# G = 15 for all REE figures (strict convergence)
+# Output: JSON data + pgfplots coordinates (.tex)
+# Save to: results/full_ree/
 
-## PARAMETERS
-- G = 15 (strict convergence, ||F||∞ < 1e-14)
-- γ_paper = [0.25, 1.0, 4.0] for all multi-γ figures
-- τ_default = 2.0
-- W = 1.0, K = 3
+## CRITICAL: STANDARD PARAMETERS
+```
+γ_paper = [0.5, 1.0, 4.0]   ← USE THESE FOR ALL MULTI-γ FIGURES
+τ_default = 2.0
+W = 1.0
+K = 3
+G = 15 (strict convergence)
+```
 
 ---
 
-## FIG 1: KNIFE-EDGE (no-learning, 1-R² vs τ)
-**File:** fig_knife_edge.pdf
-**Status:** GRAY BG — wrong gammas (was 0.2, 1, 5)
-**Data needed:**
-- For each γ in [0.25, 1.0, 4.0]:
-  - Compute no-learning 1-R² at 30 log-spaced τ from 0.1 to 20
-  - G=15 (or G=20 — this is no-learning, no REE needed)
-- Output: three lists of (τ, 1-R²) coordinates
-**Computation:** ~5 min (no-learning is fast)
+## STATUS SUMMARY
 
-## FIG 3A: MULTICONTOUR CARA (contour lines at multiple prices)
-**File:** fig_multicontour_A.pdf
-**Status:** GRAY BG — invented contour shapes
-**Data needed:**
-- At u₁=1, τ=2, CARA demands:
-  - Compute no-learning price P(1, u₂, u₃) on G=15 grid
-  - Extract contour lines at 7 price levels spanning [0.2, 0.8]
-  - Output: 7 lists of (u₂, u₃) coordinates per contour
-**Computation:** ~2 min
+| Fig | Name | Status | Data source |
+|-----|------|--------|-------------|
+| 1 | Knife-edge (1-R² vs τ) | ✅ DONE | Real, G=15, γ=0.5/1/4 |
+| 3A | Contour CARA | ⬜ GRAY | Projected |
+| 3B | Contour CRRA | ⬜ GRAY | Projected |
+| 4A | REE panels (1-R² vs τ) | ⬜ GRAY | Projected, needs γ=0.5/1/4 sweeps |
+| 4B | REE panels (1-R² vs γ) | ✅ DONE | Real, G=15, 6 γ values |
+| 5 | REE vs no-learning (p vs T*) | ⬜ GRAY | Binning artifacts, needs redo |
+| 6A | Posteriors CARA | ⬜ GRAY | Solver gave no-learning, need REE |
+| 6B | Posteriors CRRA | ⬜ GRAY | Step-like, needs higher G or interp |
+| 7 | Trade volume vs γ | ⬜ GRAY | Invented |
+| 8 | Value of info V(τ) | ⬜ GRAY | Invented |
+| 9 | GS resolution V(τ)-c | ⬜ GRAY | Derived from Fig 8 |
+| 10 | Convergence (appendix) | ⬜ GRAY | Projected |
+| 11 | Mechanisms bar chart | ⬜ GRAY | No-learning data |
+| R1 | Robustness: K agents | ⚠️ CHECK | May have wrong γ values |
+| R2 | Robustness: lognormal | ⚠️ CHECK | May have wrong γ values |
 
-## FIG 3B: MULTICONTOUR CRRA (contour lines at multiple prices)
-**File:** fig_multicontour_B.pdf
-**Status:** GRAY BG — invented contour shapes
-**Data needed:**
-- At u₁=1, τ=2, γ=0.5, converged REE μ* at G=15:
-  - Compute REE price P(1, u₂, u₃) by solving market clearing with μ*
-  - Extract contour lines at the SAME 7 price levels as CARA
-  - Output: 7 lists of (u₂, u₃) coordinates per contour
-**Computation:** ~10 min (needs converged μ*)
+---
 
-## FIG 4A: REE PANELS — 1-R² vs τ
-**File:** fig_ree_panels_A.pdf
-**Status:** GRAY BG — γ=1,4 curves projected
+## PRIORITY 1: MUST-HAVE FOR SSRN
+
+### Fig 5: REE vs no-learning price function (p vs T*)
+**Status:** REJECTED — binning artifacts, outlier at T*=8.25
+**γ = 0.5, τ = 2, G = 15**
+**Fix:** Do NOT bin random triples. Instead:
+1. Choose 50 evenly-spaced T* values from -8 to 8
+2. For each T*, use symmetric triple u₁=u₂=u₃=T*/(3τ)
+3. Compute: p_FR = Λ(T*/3)
+4. Compute: p_NL = solve Σ x(Λ(τuₖ), p) = 0
+5. Compute: p_REE = solve Σ x(μ*(uₖ, p), p) = 0 using converged μ*
+6. Output three smooth curves, no binning
+**Time:** ~20 min
+
+### Fig 10: Convergence path (appendix)
+**Status:** GRAY — solver has real data but Picard phase 1 oscillates
+**γ = 0.5, τ = 2, G = 15**
+**Fix:** Plot the "best-so-far" envelope (monotone decreasing):
+```python
+best = residuals[0]
+for i, r in enumerate(residuals):
+    best = min(best, r)
+    best_so_far[i] = best
+```
+This removes the oscillation noise and shows clean convergence.
+Or: just plot phase 2 (Cesaro, α=0.01) which converges cleanly.
+**Time:** ~10 min (reformat existing data)
+
+### Fig R1 + R2: Robustness panels — CHECK GAMMAS
+**Status:** May use old γ values (0.2, 1, 5)
+**Fix:** Verify. If wrong, recompute at γ = 0.5, 1, 4
+- Fig R1: 1-R² vs K for K=3..20, at τ=2
+- Fig R2: 1-R² vs τ for lognormal payoff variant
+Both are no-learning — fast computation.
+**Time:** ~15 min if recompute needed
+
+---
+
+## PRIORITY 2: SHOULD-HAVE
+
+### Fig 4A: REE panels (1-R² vs τ) — τ sweep at three γ values
+**Status:** GRAY — γ=0.5 has partial data (from knife-edge sweep at REE)
+**γ = 0.5, 1.0, 4.0 at G=15**
 **Data needed:**
-- For each γ in [0.25, 1.0, 4.0]:
-  - Converge REE at 12-16 log-spaced τ from 0.2 to 8
+- For each γ in [0.5, 1.0, 4.0]:
+  - Converge REE at 12 log-spaced τ from 0.3 to 8
   - Record 1-R² at each (γ, τ)
-- Output: three lists of (τ, 1-R²) coordinates
-**Computation:** ~3-6 hours (each (γ,τ) takes ~10-30 min at G=15)
-**NOTE:** γ=0.25 sweep already has 14 points from solver branch.
-Need γ=1 and γ=4 sweeps.
+**Time:** ~6 hours (each point ~30 min)
 
-## FIG 4B: REE PANELS — 1-R² vs γ
-**File:** fig_ree_panels_B.pdf
-**Status:** PARTIALLY REAL — has γ=0.3,0.5,1,2 REE data
+### Fig 3A + 3B: Multi-contour (7 price levels, CARA vs CRRA)
+**Status:** GRAY — projected contour shapes
+**γ = 0.5, τ = 2, G = 15**
 **Data needed:**
-- Add γ = 0.1, 0.25, 4.0 REE at τ=2
-- Add no-learning 1-R² at same γ values (already computed)
-- Output: two lists of (γ, 1-R²) for REE and no-learning
-**Computation:** ~1 hour (3 new γ points)
+- At u₁=1:
+  - CARA: compute P_CARA(1, u₂, u₃) = solve Σ (logit(Λ(τuₖ))-logit(p))/γ = 0
+    Extract contours at 7 evenly-spaced prices from 0.15 to 0.85
+  - CRRA: use converged μ*, compute P_REE(1, u₂, u₃)
+    Extract contours at same 7 prices
+- Output: 7 coordinate lists per panel
+**Time:** ~20 min
 
-## FIG 5: REE vs NO-LEARNING PRICE FUNCTION
-**File:** fig_ree_vs_nolearning.pdf
-**Status:** GRAY BG — REE curve is interpolated
-**Data needed:**
-- Converged μ* at G=15, γ=0.5, τ=2
-- For each triple (u_i, u_j, u_l) on G=15 grid (3375 points):
-  - T* = τ(u_i + u_j + u_l)
-  - p_NL = solve market clearing with private priors
-  - p_REE = solve market clearing with converged μ*
-  - p_FR = Λ(T*/K)
-- Bin by T* (40 bins from -10 to 10), compute mean p in each bin
-- Output: three lists of (T*, p) for FR, NL, REE
-**Computation:** ~20 min
+### Fig 6A: Posteriors CARA (REE, not no-learning!)
+**Status:** REJECTED — solver gave no-learning version (flat μ lines)
+**Fix:** Under CARA REE, all posteriors equal the price:
+  μ₁ = μ₂ = μ₃ = p = Λ(T*/3)
+This is ANALYTICAL — just one sigmoid line. No solver needed.
+Plot: one thick black line = Λ(T*/3) from T*=-10 to 10.
+Label: "μ₁ = μ₂ = μ₃ = p"
+**Time:** 0 (analytical, I can build this in pgfplots)
 
-## FIG 6A: POSTERIORS CARA
-**File:** fig4_posteriors_A.pdf
-**Status:** WHITE BG but projected data
-**Data needed:**
-- Plot Λ(T*/3) as function of T* (analytical, no solver needed)
-**Computation:** 0 (analytical)
-
-## FIG 6B: POSTERIORS CRRA
-**File:** fig4_posteriors_B.pdf
-**Status:** GRAY BG — projected fan-out
-**Data needed:**
-- Converged μ* at G=15, γ=0.5, τ=2
-- For range of T*, at representative signal splits:
-  - Agent with u=+1: compute μ₁ from μ*(u=+1, p_REE)
-  - Agent with u=-1: compute μ₂ from μ*(u=-1, p_REE)
-  - Price p_REE from market clearing
-- Output: three lists of (T*, value) for μ₁, μ₂, p
-**Computation:** ~10 min
-
-## FIG 7: TRADE VOLUME vs γ
-**File:** fig7_volume.pdf
-**Status:** GRAY BG — invented values
-**Data needed:**
-- For each γ in [0.1, 0.25, 0.5, 1, 2, 5, 10, 50]:
-  - Converged REE μ* at G=15, τ=2
-  - Compute E[|x_k|] = (1/K) Σ_k E[|demand(μ_k, p)|]
-    averaged over signal distribution
-- Output: list of (γ, E[|x|]) coordinates
-**Computation:** ~4 hours (8 γ points × ~30 min each)
-
-## FIG 8: VALUE OF INFORMATION
-**File:** fig8_value_info.pdf
-**Status:** GRAY BG — invented values
-**Data needed:**
-- For each γ in [0.25, 1.0, 4.0]:
-  - For 10-15 τ values from 0 to 5:
-    - Converge REE at (γ, τ)
-    - Compute V(τ) = E[U(W + x*(v-p))] - E[U(W)] at the REE
-    - This is the ex-ante expected utility gain from having a signal
-- Output: three lists of (τ, V) coordinates
-**Computation:** ~8 hours (45 points × ~10 min each)
-**NOTE:** Most expensive figure. Consider subset first.
-
-## FIG 9: GS RESOLUTION (V(τ) - c)
-**File:** fig9_GS.pdf
-**Status:** GRAY BG — invented values
-**Data needed:**
-- Uses V(τ) from Fig 8 at τ=2
-- Plot V - c for c from 0 to max(V)
-- Output: derived from Fig 8 data, no new computation
-**Computation:** 0 (uses Fig 8 output)
-
-## FIG 10: CONVERGENCE (appendix)
-**File:** fig5_convergence.pdf
-**Status:** GRAY BG — projected Picard+NK path
-**Data needed:**
-- Re-run posterior method at G=15, γ=0.5, τ=2
-- Save ||F||∞ at each iteration (Picard and NK phases)
-- Output: list of (iteration, ||F||∞) coordinates
-**Computation:** ~30 min (one convergence run with logging)
-
-## FIG 11: MECHANISMS BAR CHART
-**File:** fig6_mechanisms.pdf
-**Status:** GRAY BG — uses no-learning numbers from Table
-**Data needed:**
-- Run no-learning at het-γ and het-τ configurations (Table in paper)
-- Already have most values from project_summary.txt
-- Need: het-α CARA entry (to show it goes to zero at REE)
-- Output: bar heights for 6 configurations
-**Computation:** ~30 min (no-learning runs)
-
-## FIG R1: ROBUSTNESS — K agents
-**File:** fig_knife_edge_K.pdf
-**Status:** WHITE BG but CHECK gammas
-**Data needed:**
-- Verify uses γ=0.25, 1, 4 (not old values)
-- If wrong: recompute no-learning 1-R² vs K for K=3..20
-**Computation:** ~10 min if recompute needed
-
-## FIG R2: ROBUSTNESS — lognormal
-**File:** fig_knife_edge_lognormal.pdf
-**Status:** WHITE BG but CHECK gammas
-**Data needed:**
-- Same check as K figure
-**Computation:** ~10 min if recompute needed
+### Fig 6B: Posteriors CRRA (REE)
+**Status:** REJECTED — step-like flat regions from G=15 grid
+**γ = 0.5, τ = 2, G = 15**
+**Fix:** The flat regions occur because μ(u,p) hits the p-grid boundary.
+Options:
+  (a) Clip T* range to [-2, 3] (transition zone only)
+  (b) Interpolate between grid points for smoother curves
+  (c) Use higher G (G=20+) for this figure only
+**Preferred:** Option (a) — clip to [-2, 4], show the fan-out clearly.
+The posteriors table in the text has the exact numbers.
+**Time:** ~10 min (reprocess existing data)
 
 ---
 
-## PRIORITY ORDER (for SSRN deadline)
+## PRIORITY 3: NICE-TO-HAVE
 
-### Must-have (paper is incomplete without these):
-1. Fig 1: knife-edge at correct gammas (~5 min) ← DO FIRST
-2. Fig 5: REE vs NL price function (~20 min) ← core result
-3. Fig 10: convergence path (~30 min) ← proves existence
-4. Fig 4B: REE panels γ-sweep (~1 hour) ← 3 new points
+### Fig 7: Trade volume E[|xₖ|] vs γ
+**γ = 0.5, 1.0, 4.0 + additional points**
+For each γ in [0.1, 0.25, 0.5, 1, 2, 4, 10, 50]:
+  - Converge REE at G=15, τ=2
+  - Compute E[|xₖ|] averaged over signal distribution
+**Time:** ~4 hours
 
-### Should-have (strengthen the paper):
-5. Fig 3A+3B: multi-contour at 7 price levels (~15 min) ← mechanism
-6. Fig 6B: posteriors fan-out (~10 min) ← visual intuition
-7. Fig 4A: REE panels τ-sweep (~3-6 hours) ← comparative statics
+### Fig 8: Value of information V(τ)
+**γ = 0.5, 1.0, 4.0**
+For each γ, for 10-15 τ values from 0 to 5:
+  - Converge REE, compute V(τ) = E[U(W+x*(v-p))] - E[U(W)]
+**Time:** ~8 hours
 
-### Nice-to-have (can submit without):
-8. Fig 7: trade volume (~4 hours)
-9. Fig 8+9: value of info + GS (~8 hours)
-10. Fig 11: mechanisms bar chart (~30 min)
-11. Fig R1+R2: check robustness gammas (~20 min)
+### Fig 9: GS resolution V(τ)-c
+Derived from Fig 8 data. No additional computation.
 
-### Total computation time estimate:
-- Must-have: ~2 hours
-- Should-have: ~4-7 hours  
-- Nice-to-have: ~13 hours
-- Grand total: ~19-22 hours of solver time
+### Fig 11: Mechanisms bar chart
+No-learning computation at heterogeneous configurations.
+Already have most data. Need het-α CARA entry.
+**Time:** ~30 min
 
 ---
 
 ## OUTPUT FORMAT
 
-For each figure, the solver should output a JSON file:
+For each figure, save:
+```
+results/full_ree/fig_NAME_data.json     — raw data
+results/full_ree/fig_NAME_pgfplots.tex  — ready-to-paste coordinates
+```
+
+JSON format:
 ```json
 {
-  "figure": "fig_knife_edge",
-  "params": {"G": 15, "tau_range": [0.1, 20], "gammas": [0.25, 1, 4]},
+  "figure": "fig_NAME",
+  "params": {"G": 15, "gamma": [0.5, 1, 4], "tau": 2.0},
   "curves": [
-    {"gamma": 0.25, "points": [{"tau": 0.1, "1-R2": 0.025}, ...]},
-    {"gamma": 1.0, "points": [{"tau": 0.1, "1-R2": 0.003}, ...]},
-    {"gamma": 4.0, "points": [{"tau": 0.1, "1-R2": 0.000}, ...]}
+    {"name": "gamma_0.5", "points": [{"x": ..., "y": ...}, ...]},
+    ...
   ]
 }
 ```
 
-Plus a pgfplots coordinate string ready to paste:
-```
-% gamma=0.25
-\addplot coordinates {(0.1,0.025)(0.2,0.040)...};
+pgfplots format:
+```latex
+% gamma=0.5
+\addplot coordinates {(x1,y1)(x2,y2)...};
+
+% gamma=1.0
+\addplot coordinates {(x1,y1)(x2,y2)...};
 ```
 
-Save to: results/full_ree/fig_NAME_data.json
-Save pgfplots to: results/full_ree/fig_NAME_pgfplots.tex
+## FIGURE STYLE REMINDER
+
+All figures use the same pgfplots template:
+- width=7.5cm, height=7.5cm, scale only axis
+- Colors: BCgreen(0.11,0.35,0.02), BCred(0.7,0.11,0.11), BCblue(0,0.20,0.42)
+- Line order: green solid (γ=0.5), red dashed (γ=1), blue dotted (γ=4), black dashdotted (CARA)
+- very thick curves, ultra thick CARA
+- ticklabel: scriptsize, fixed format
+- yticklabel/ylabel: text width=10mm
+- groupplot wrapper even for standalone figures
+
+## KEY REMINDERS
+- γ = 0.5, 1, 4 EVERYWHERE (not 0.25)
+- G = 15 for REE (strict convergence)
+- G = 15 or 20 for no-learning (fast, can use higher G)
+- Fig 5 (p vs T*): DO NOT BIN. Use symmetric triples.
+- Fig 6A (CARA posteriors): ANALYTICAL. One line: μ=p=Λ(T*/3). No solver.
+- Fig 6B (CRRA posteriors): CLIP to T* ∈ [-2, 4].
+
+---
+
+## URGENT: Fig 3B high-resolution contours
+
+The current Fig 3B contours have wobbles from the G=15 discrete grid.
+We smoothed with cubic splines but the underlying data needs to be
+computed at higher resolution.
+
+**Task:** Recompute CRRA contour lines on a fine grid.
+
+**Method:**
+1. Load converged `mu_star` at G=15, γ=0.5, τ=2
+2. Fix u₁=1 (agent 1's slice)
+3. Create a **200×200** grid in (u₂, u₃) ∈ [-3.5, 3.5]²
+4. At each (u₂, u₃), interpolate μ* and solve market clearing to get REE price
+5. Use `matplotlib.pyplot.contour` to extract contour lines at p ∈ {0.2, 0.3, 0.5, 0.7, 0.8}
+6. Output each contour as a list of (u₂, u₃) coordinates
+
+**Key:** Do NOT trace contours on the G=15 grid with root-finding.
+Instead evaluate the price function on the 200×200 fine grid by
+interpolating μ* (use scipy.interpolate.RegularGridInterpolator on the
+G=15 μ*(u,p) grid), then solve market clearing at each fine-grid point,
+then let matplotlib's marching-squares find smooth contours.
+
+**Standard gammas: γ = 0.5, 1.0, 4.0** (use γ=0.5 for this figure)
+
+**Output:**
+```
+results/full_ree/fig_multicontour_B_hires_pgfplots.tex
+```
+
+Format:
+```latex
+% p=0.2
+\addplot coordinates {(x1,y1)(x2,y2)...};
+% p=0.3
+\addplot coordinates {(x1,y1)(x2,y2)...};
+% p=0.5
+\addplot coordinates {(x1,y1)(x2,y2)...};
+% p=0.7
+\addplot coordinates {(x1,y1)(x2,y2)...};
+% p=0.8
+\addplot coordinates {(x1,y1)(x2,y2)...};
+```
+
+Thin each contour to ~40-50 points for pgfplots (evenly spaced along arc length).
