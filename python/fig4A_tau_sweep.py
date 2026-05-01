@@ -18,7 +18,7 @@ UMAX = 4.0; G = 15; TOL_MAX = 1e-14; TRIM = 0.05
 RESULTS_DIR = "results/full_ree"
 
 GAMMAS = [0.25, 1.0, 4.0]
-TAUS = list(np.exp(np.linspace(np.log(0.2), np.log(8.0), 14)))
+TAUS = list(np.exp(np.linspace(np.log(0.2), np.log(8.0), 30)))
 # Sort so τ=2 is first (paper baseline), then sweep down then up
 def sort_taus(taus, anchor=2.0):
     sorted_taus = sorted(taus, key=lambda t: abs(t - anchor))
