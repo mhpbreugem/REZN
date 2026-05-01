@@ -695,9 +695,9 @@ hump-shaped deficit. Table~\ref{tab:smooth} reports the same data across
 a wider range of $(\gamma,\tau)$ values (Table~\ref{tab:smooth} in
 Appendix~\ref{app:numerics}).
 
-\begin{figure}[htbp]
+\begin{figure}[t]
    \centering
-   \includegraphics{figures/fig_knife_edge.pdf}
+   \includegraphics[width=0.47\textwidth]{figures/fig_knife_edge.pdf}
    \caption{The knife-edge: revelation deficit $1-R^{2}$ versus signal
    precision $\tau$ in the no-learning equilibrium, for three values of
    the CRRA parameter $\gamma$. Every finite $\gamma$ produces strictly
@@ -715,14 +715,14 @@ the natural direction, to any preference outside CARA in the CRRA class and
 to a wide range of signal distributions. Two robustness exercises confirm
 this.
 
-\begin{figure}[htbp]
+\begin{figure}[t]
    \centering
-   \begin{subfigure}[t]{0.46\textwidth}
+   \begin{subfigure}[t]{0.47\textwidth}
       \includegraphics[width=\textwidth]{figures/fig_knife_edge_K.pdf}
       \caption{Number of agent groups $K$.}
       \label{fig:robust-K}
    \end{subfigure}\hfill
-   \begin{subfigure}[t]{0.46\textwidth}
+   \begin{subfigure}[t]{0.47\textwidth}
       \includegraphics[width=\textwidth]{figures/fig_knife_edge_lognormal.pdf}
       \caption{Lognormal payoff variant.}
       \label{fig:robust-lognormal}
@@ -873,9 +873,9 @@ curved and non-parallel: $\Tstar$ varies along each contour, and the
 curvature itself changes with the price level. The agent observing a
 CRRA price cannot extract $\Tstar$.
 
-\begin{figure}[htbp]
+\begin{figure}[t]
    \centering
-   \includegraphics[width=0.95\textwidth]{figures/fig_multicontour.pdf}
+   \begin{subfigure}[t]{0.47\textwidth}\includegraphics[width=\textwidth]{figures/fig_multicontour_A.pdf}\end{subfigure}\hfill\begin{subfigure}[t]{0.47\textwidth}\includegraphics[width=\textwidth]{figures/fig_multicontour_B.pdf}\end{subfigure}
    \caption{Price-function contours in the agent-1 slice at $u_{1}=1$,
    $\tau=2$, shown at five price levels. Left: CARA --- contours are
    straight, parallel, equally spaced. Right: CRRA with $\gamma=0.5$
@@ -951,9 +951,9 @@ in $\gamma$ (panel~b), with the REE deficit strictly above the
 no-learning deficit at every parameter tested---learning from curved
 contours amplifies the Jensen gap.
 
-\begin{figure}[htbp]
+\begin{figure}[t]
    \centering
-   \includegraphics[width=0.95\textwidth]{figures/fig_ree_panels.pdf}
+   \begin{subfigure}[t]{0.47\textwidth}\includegraphics[width=\textwidth]{figures/fig_ree_panels_A.pdf}\end{subfigure}\hfill\begin{subfigure}[t]{0.47\textwidth}\includegraphics[width=\textwidth]{figures/fig_ree_panels_B.pdf}\end{subfigure}
    \caption{Revelation deficit $1-R^{2}$ at the converged REE.
    Panel~(a): versus signal precision $\tau$ for three values of $\gamma$.
    Panel~(b): versus $\gamma$ at $\tau=2$, comparing REE (circles, $G=14$)
@@ -1007,9 +1007,9 @@ The visual signature of partial revelation is a slope on $\Tstar$
 shy of unity (here $\beta_{T}=0.34$), not a large per-realisation
 gap.
 
-\begin{figure}[htbp]
+\begin{figure}[t]
    \centering
-   \includegraphics{figures/fig_ree_vs_nolearning.pdf}
+   \includegraphics[width=0.47\textwidth]{figures/fig_ree_vs_nolearning.pdf}
    \caption{Price as a function of $\Tstar$ at the converged REE
    ($G\!=\!14$, $\gamma\!=\!0.5$, $\tau\!=\!2$). The red solid curve is the
    CRRA REE price function; the blue dashed curve is the no-learning
@@ -1020,9 +1020,9 @@ gap.
    \label{fig:ree-vs-nolearning}
 \end{figure}
 
-\begin{figure}[htbp]
+\begin{figure}[t]
    \centering
-   \includegraphics[width=0.95\textwidth]{figures/fig4_posteriors.pdf}
+   \begin{subfigure}[t]{0.47\textwidth}\includegraphics[width=\textwidth]{figures/fig4_posteriors_A.pdf}\end{subfigure}\hfill\begin{subfigure}[t]{0.47\textwidth}\includegraphics[width=\textwidth]{figures/fig4_posteriors_B.pdf}\end{subfigure}
    \caption{Converged REE posteriors and price as functions of
    $\Tstar$ under CARA (identity line) and CRRA ($\gamma=0.5$).
    \emph{Placeholder: pending computation at $G\geq 50$.}}
@@ -1071,9 +1071,9 @@ Figure~\ref{fig:volume} reports trade volume as a function of $\gamma$ for
 the canonical parameters: it is strictly positive everywhere in $(0,\infty)$
 and converges to zero only in the CARA limit.
 
-\begin{figure}[htbp]
+\begin{figure}[t]
    \centering
-   \includegraphics{figures/fig7_volume.pdf}
+   \includegraphics[width=0.47\textwidth]{figures/fig7_volume.pdf}
    \caption{Expected trade volume $E[|x_{k}|]$ as a function of $\gamma$
    at $\tau=2$. Volume is strictly positive at every finite $\gamma$ and
    converges to zero as $\gamma\to\infty$ (CARA).
@@ -1099,9 +1099,9 @@ for every $\tau$, and $V_{\mathrm{CRRA}}(\tau)>0$ for every $\tau>0$, with
 $V_{\mathrm{CRRA}}'(\tau)>0$ on a neighbourhood of the origin.
 \end{proposition}
 
-\begin{figure}[htbp]
+\begin{figure}[t]
    \centering
-   \includegraphics{figures/fig8_value_info.pdf}
+   \includegraphics[width=0.47\textwidth]{figures/fig8_value_info.pdf}
    \caption{Value of information $V(\tau)$ at the converged REE for three
    values of $\gamma$. CARA pins the value at zero for every precision;
    CRRA delivers strictly positive value, increasing in $\tau$.
@@ -1141,9 +1141,9 @@ function of cost; the noise-trader resolution and the CRRA resolution
 deliver qualitatively similar comparative statics, but only the CRRA route
 remains within the rational class.
 
-\begin{figure}[htbp]
+\begin{figure}[t]
    \centering
-   \includegraphics{figures/fig9_GS.pdf}
+   \includegraphics[width=0.47\textwidth]{figures/fig9_GS.pdf}
    \caption{Net value of acquiring a precision-$\tau$ signal: $V(\tau)-c$
    as a function of the acquisition cost $c$, at $\tau=2$. Under CARA
    (dash-dotted), $V=0$, so the net value is $-c<0$ for every $c>0$: no
@@ -1228,9 +1228,9 @@ from the CARA preference class produce partial revelation at the REE.
    \end{tabular}
 \end{table}
 
-\begin{figure}[htbp]
+\begin{figure}[t]
    \centering
-   \includegraphics{figures/fig6_mechanisms.pdf}
+   \includegraphics[width=0.47\textwidth]{figures/fig6_mechanisms.pdf}
    \caption{Decomposition of the revelation deficit across the
    mechanisms tabulated in Table~\ref{tab:mechanisms}.
    \emph{Placeholder: pending heterogeneous-agent solver.}}
@@ -1822,9 +1822,9 @@ from restricting signals to $|u|\leq u_{\max}=4$ is
 $O(e^{-\tau u_{\max}^{2}})<10^{-14}$ at $\tau=2$.
 Figure~\ref{fig:convergence} shows a representative convergence path.
 
-\begin{figure}[htbp]
+\begin{figure}[t]
    \centering
-   \includegraphics{figures/fig5_convergence.pdf}
+   \includegraphics[width=0.47\textwidth]{figures/fig5_convergence.pdf}
    \caption{Convergence of the posterior-function fixed point at $G=14$,
    $\gamma=0.5$, $\tau=2$. Picard iteration with damping reduces the
    residual to $\sim 10^{-3}$; Newton--Krylov polishing then reaches
