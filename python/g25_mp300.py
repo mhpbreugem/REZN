@@ -231,7 +231,21 @@ for nk_iter in range(1, 4):
     print(f"  LU solve...", flush=True)
     t_lu = time.time()
     rhs = mpmath.matrix([-F_flat[k] for k in range(n)])
-    delta = mpmath.lu_solve(J, rhs)
+    try:
+        delta = mpmath.lu_solve(J, rhs)
+    except ZeroDivisionError:
+        print(f"  LU singular — retrying with regularization (1e-30 * I)",
+              flush=True)
+        for k in range(n):
+            J[k, k] = J[k, k] + mpf("1e-30")
+        try:
+            delta = mpmath.lu_solve(J, rhs)
+        except ZeroDivisionError:
+            print(f"  Still singular — try larger reg (1e-15 * I)",
+                  flush=True)
+            for k in range(n):
+                J[k, k] = J[k, k] + mpf("1e-15")
+            delta = mpmath.lu_solve(J, rhs)
     print(f"  LU done in {(time.time()-t_lu)/60:.0f}min", flush=True)
     for k in range(n):
         i, j = k // G, k % G
