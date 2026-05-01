@@ -23,9 +23,9 @@
 ## P0: CRITICAL FOR PAPER
 
 ### 1. Run at paper figure gammas: γ = 0.25, 1.0, 4.0
-The paper figures use γ=0.25, 1, 4 (not 0.3, 0.5, 2). Need strict
+The paper figures use γ=0.5, 1, 4 (not 0.3, 0.5, 2). Need strict
 convergence at G=14 for all three at τ=2.
-- γ=0.25: between 0.3 (done, 1-R²=0.119) and 0.1 (fallback). Should converge.
+- γ=0.5: between 0.3 (done, 1-R²=0.119) and 0.1 (fallback). Should converge.
 - γ=1.0: already done (1-R²=0.100). Verify.
 - γ=4.0: between 2.0 (done, 1-R²=0.079) and 10 (not done). Should converge.
 
