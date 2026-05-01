@@ -4,7 +4,7 @@
 \pgfplotsset{compat=1.18}
 \definecolor{BCred}{rgb}{0.7, 0.11, 0.11}
 \pgfplotsset{every axis/.append style={width=7cm, height=7cm, scale only axis,
-  ticklabel style={font=\scriptsize}, label style={font=\small},
+  ticklabel style={font=\scriptsize, /pgf/number format/fixed, /pgf/number format/precision=2}, yticklabel style={text width=10mm, align=right}, ylabel style={text width=10mm, align=center}, label style={font=\small},
   title style={font=\small}, legend style={draw=none, font=\footnotesize}}}
 \begin{document}
 \begin{tikzpicture}

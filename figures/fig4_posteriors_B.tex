@@ -6,13 +6,13 @@
 \definecolor{BCblue}{rgb}{0.0, 0.20, 0.42}
 \definecolor{BCgreen}{rgb}{0.11, 0.35, 0.02}
 \pgfplotsset{every axis/.append style={width=7cm, height=7cm, scale only axis,
-  ticklabel style={font=\scriptsize}, label style={font=\small},
+  ticklabel style={font=\scriptsize, /pgf/number format/fixed, /pgf/number format/precision=2}, yticklabel style={text width=10mm, align=right}, ylabel style={text width=10mm, align=center}, label style={font=\small},
   title style={font=\small}, legend style={draw=none, font=\footnotesize}}}
 \begin{document}
 \begin{tikzpicture}
 \begin{groupplot}[group style={group size=1 by 1}]
 \nextgroupplot[xmin=-10, xmax=10, ymin=-0.02, ymax=1.02,
-  xlabel={$T^{\star}$}, ylabel={posterior / price},
+  xlabel={$T^{\star}$}, ylabel={posterior},
   title={CRRA ($\gamma\!=\!0.5$): $\mu_k \neq p$},
   axis background/.style={fill=black!5}, legend pos=south east]
 \addplot[very thick,color=BCblue,dotted,smooth] coordinates {(-10,0.01)(-7,0.04)(-5,0.10)(-3,0.22)(-1,0.38)(0,0.50)(1,0.62)(3,0.78)(5,0.90)(7,0.96)(10,0.99)};

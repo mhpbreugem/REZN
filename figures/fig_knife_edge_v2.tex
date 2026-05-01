@@ -7,14 +7,14 @@
 \definecolor{BCgreen}{rgb}{0.11, 0.35, 0.02}
 \pgfplotsset{every axis/.append style={
   width=7cm, height=7cm, scale only axis,
-  ticklabel style={font=\scriptsize},
+  ticklabel style={font=\scriptsize, /pgf/number format/fixed, /pgf/number format/precision=2}, yticklabel style={text width=10mm, align=right}, ylabel style={text width=10mm, align=center},
   label style={font=\small},
   title style={font=\small},
   legend style={draw=none, font=\footnotesize}}}
 \begin{document}
 \begin{tikzpicture}
 \begin{groupplot}[group style={group size=1 by 1}]
-\nextgroupplot[
+\nextgroupplot[scaled ticks=false,
   ymin=-0.001, ymax=0.15, ylabel={$1-R^2$},
   xmin=0.08, xmax=22, xmode=log,
   xlabel={Signal precision $\tau$},
