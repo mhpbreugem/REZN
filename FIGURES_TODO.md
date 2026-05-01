@@ -193,3 +193,50 @@ All figures use the same pgfplots template:
 - Fig 5 (p vs T*): DO NOT BIN. Use symmetric triples.
 - Fig 6A (CARA posteriors): ANALYTICAL. One line: μ=p=Λ(T*/3). No solver.
 - Fig 6B (CRRA posteriors): CLIP to T* ∈ [-2, 4].
+
+---
+
+## URGENT: Fig 3B high-resolution contours
+
+The current Fig 3B contours have wobbles from the G=15 discrete grid.
+We smoothed with cubic splines but the underlying data needs to be
+computed at higher resolution.
+
+**Task:** Recompute CRRA contour lines on a fine grid.
+
+**Method:**
+1. Load converged `mu_star` at G=15, γ=0.5, τ=2
+2. Fix u₁=1 (agent 1's slice)
+3. Create a **200×200** grid in (u₂, u₃) ∈ [-3.5, 3.5]²
+4. At each (u₂, u₃), interpolate μ* and solve market clearing to get REE price
+5. Use `matplotlib.pyplot.contour` to extract contour lines at p ∈ {0.2, 0.3, 0.5, 0.7, 0.8}
+6. Output each contour as a list of (u₂, u₃) coordinates
+
+**Key:** Do NOT trace contours on the G=15 grid with root-finding.
+Instead evaluate the price function on the 200×200 fine grid by
+interpolating μ* (use scipy.interpolate.RegularGridInterpolator on the
+G=15 μ*(u,p) grid), then solve market clearing at each fine-grid point,
+then let matplotlib's marching-squares find smooth contours.
+
+**Standard gammas: γ = 0.5, 1.0, 4.0** (use γ=0.5 for this figure)
+
+**Output:**
+```
+results/full_ree/fig_multicontour_B_hires_pgfplots.tex
+```
+
+Format:
+```latex
+% p=0.2
+\addplot coordinates {(x1,y1)(x2,y2)...};
+% p=0.3
+\addplot coordinates {(x1,y1)(x2,y2)...};
+% p=0.5
+\addplot coordinates {(x1,y1)(x2,y2)...};
+% p=0.7
+\addplot coordinates {(x1,y1)(x2,y2)...};
+% p=0.8
+\addplot coordinates {(x1,y1)(x2,y2)...};
+```
+
+Thin each contour to ~40-50 points for pgfplots (evenly spaced along arc length).
