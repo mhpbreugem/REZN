@@ -213,3 +213,29 @@ Plus a pgfplots coordinate string ready to paste:
 
 Save to: results/full_ree/fig_NAME_data.json
 Save pgfplots to: results/full_ree/fig_NAME_pgfplots.tex
+
+---
+
+## FIGURE QUALITY REVIEW (2026-05-01)
+
+### INCLUDED (white background, real data):
+- Fig 1 knife-edge: 30 pts/curve, G=15, γ=0.25/1/4. EXCELLENT. ✓
+
+### REJECTED (kept as gray-bg placeholder):
+- Fig 5 REE vs NL: Only 20 bins. Severe outlier at T*=8.25 (price drops
+  from 0.973 to 0.803). Fix: use 80+ bins, or compute NL prices analytically
+  at evenly-spaced T* values instead of binning random triples.
+  
+- Fig 6B CRRA posteriors: Only 17 points. Step-like flat regions at extremes
+  (μ_high stuck at 0.333 for T*<0, μ_low stuck at 0.667 for T*>2).
+  Fix: evaluate μ(u,p) directly from converged posterior function at 50+
+  T* values, not from binning grid triples.
+
+### KEY ISSUE FOR SOLVER:
+The binning approach (sample G³ triples, bin by T*) gives too few points
+at the extremes. Better approach for Fig 5 and 6B:
+1. Choose 50 evenly-spaced T* values from -10 to +10
+2. For each T*, find representative signal triples with that T*
+   (e.g., symmetric u₁=u₂=u₃=T*/(3τ))
+3. Compute the exact no-learning and REE prices for those triples
+4. No binning artifacts, no outliers
