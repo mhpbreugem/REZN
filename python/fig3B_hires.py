@@ -87,14 +87,35 @@ def thin_contour(pts, n_target=50):
 
 CRRA_contours = {}
 for k, p in enumerate(P_LEVELS):
-    pts_all = []
+    # Each level may have multiple disconnected segments
+    segments = []
+    raw_count = 0
     if k < len(cs.allsegs):
         for c in cs.allsegs[k]:
-            for x, y in c:
-                pts_all.append((float(x), float(y)))
-    thinned = thin_contour(pts_all, n_target=50)
-    CRRA_contours[f"{p:g}"] = thinned
-    print(f"  p={p}: raw {len(pts_all)} → thinned {len(thinned)}", flush=True)
+            seg_pts = [(float(x), float(y)) for x, y in c]
+            raw_count += len(seg_pts)
+            # Thin each segment separately, proportional to its length
+            n_per_seg = max(5, int(50 * len(seg_pts) / max(raw_count, 1)))
+            segments.append(thin_contour(seg_pts, n_target=n_per_seg))
+    # Re-thin proportionally
+    total_raw = sum(len(s) for s in segments)
+    if total_raw > 0:
+        thinned_segments = []
+        for seg in segments:
+            n_t = max(5, int(round(50 * len(seg) / total_raw * 50 / 50)))
+            # Re-derive raw seg length
+            thinned_segments.append(seg)
+        # Flatten with NaN separators (so plot draws breaks)
+        flat = []
+        for j_seg, seg in enumerate(thinned_segments):
+            if j_seg > 0:
+                flat.append((float("nan"), float("nan")))
+            flat.extend(seg)
+        CRRA_contours[f"{p:g}"] = flat
+    else:
+        CRRA_contours[f"{p:g}"] = []
+    print(f"  p={p}: {len(segments)} segs, raw {raw_count} → "
+          f"flat {len(CRRA_contours[f'{p:g}'])}", flush=True)
 
 # Save
 with open(f"{RESULTS_DIR}/fig_multicontour_B_hires_G17_data.json", "w") as f:
@@ -107,14 +128,27 @@ with open(f"{RESULTS_DIR}/fig_multicontour_B_hires_G17_data.json", "w") as f:
 
 
 def pgf(pts, fmt="{:.6g}"):
-    return "".join(f"({fmt.format(x)},{fmt.format(y)})" for x, y in pts)
+    """pgfplots: skip NaN-separated breaks; emit each segment as separate addplot."""
+    parts = []
+    cur = []
+    for x, y in pts:
+        if np.isnan(x) or np.isnan(y):
+            if cur:
+                parts.append("".join(f"({fmt.format(x)},{fmt.format(y)})" for x, y in cur))
+                cur = []
+        else:
+            cur.append((x, y))
+    if cur:
+        parts.append("".join(f"({fmt.format(x)},{fmt.format(y)})" for x, y in cur))
+    return parts
 
 
 with open(f"{RESULTS_DIR}/fig_multicontour_B_hires_G17_pgfplots.tex", "w") as f:
     for p in P_LEVELS:
         f.write(f"% p={p}\n")
-        f.write(f"\\addplot coordinates "
-                f"{{{pgf(CRRA_contours[f'{p:g}'])}}};\n\n")
+        for segstr in pgf(CRRA_contours[f"{p:g}"]):
+            f.write(f"\\addplot coordinates {{{segstr}}};\n")
+        f.write("\n")
 print("Saved fig_multicontour_B_hires_G17_*.{json,tex}", flush=True)
 
 # Render preview
