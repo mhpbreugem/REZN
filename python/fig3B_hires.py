@@ -15,7 +15,7 @@ TAU = 2.0; GAMMA = 0.5
 P_LEVELS = [0.2, 0.3, 0.5, 0.7, 0.8]
 u1_fixed = 1.0
 
-ck = np.load(f"{RESULTS_DIR}/posterior_v3_trim90_G20.npz")
+ck = np.load(f"{RESULTS_DIR}/posterior_v3_trim90_G17.npz")
 mu_REE = ck["mu"]; u_grid_R = ck["u_grid"]; p_grid_R = ck["p_grid"]
 
 
@@ -97,10 +97,10 @@ for k, p in enumerate(P_LEVELS):
     print(f"  p={p}: raw {len(pts_all)} → thinned {len(thinned)}", flush=True)
 
 # Save
-with open(f"{RESULTS_DIR}/fig_multicontour_B_hires_G20_data.json", "w") as f:
-    json.dump({"figure": "fig_multicontour_B_hires_G20",
+with open(f"{RESULTS_DIR}/fig_multicontour_B_hires_G17_data.json", "w") as f:
+    json.dump({"figure": "fig_multicontour_B_hires_G17",
                 "params": {"u1": u1_fixed, "tau": TAU, "gamma": GAMMA,
-                           "model": "CRRA_REE", "G": 20, "trim": 0.05,
+                           "model": "CRRA_REE", "G": 17, "trim": 0.05,
                            "N_grid": N},
                 "p_levels": P_LEVELS,
                 "contours": CRRA_contours}, f, indent=2)
@@ -110,12 +110,12 @@ def pgf(pts, fmt="{:.6g}"):
     return "".join(f"({fmt.format(x)},{fmt.format(y)})" for x, y in pts)
 
 
-with open(f"{RESULTS_DIR}/fig_multicontour_B_hires_G20_pgfplots.tex", "w") as f:
+with open(f"{RESULTS_DIR}/fig_multicontour_B_hires_G17_pgfplots.tex", "w") as f:
     for p in P_LEVELS:
         f.write(f"% p={p}\n")
         f.write(f"\\addplot coordinates "
                 f"{{{pgf(CRRA_contours[f'{p:g}'])}}};\n\n")
-print("Saved fig_multicontour_B_hires_G20_*.{json,tex}", flush=True)
+print("Saved fig_multicontour_B_hires_G17_*.{json,tex}", flush=True)
 
 # Render preview
 fig, ax = plt.subplots(figsize=(8/2.54, 8/2.54))
@@ -136,12 +136,12 @@ ax.set_xlim(-3.5, 3.5); ax.set_ylim(-3.5, 3.5)
 ax.set_aspect("equal"); ax.grid(alpha=0.3)
 ax.set_title(f"Fig 3B hires: CRRA contours (REE)\n"
               f"$u_1={u1_fixed}$, $\\tau={TAU}$, $\\gamma={GAMMA}$, "
-              f"$G=20$ (90% coverage), $N={N}^2$",
+              f"$G=17$ strict (90% coverage), $N={N}^2$",
               fontsize=10)
 plt.tight_layout()
-fig.savefig(f"{RESULTS_DIR}/fig_multicontour_B_hires_G20_preview.pdf",
+fig.savefig(f"{RESULTS_DIR}/fig_multicontour_B_hires_G17_preview.pdf",
               bbox_inches="tight")
-fig.savefig(f"{RESULTS_DIR}/fig_multicontour_B_hires_G20_preview.png",
+fig.savefig(f"{RESULTS_DIR}/fig_multicontour_B_hires_G17_preview.png",
               dpi=150, bbox_inches="tight")
 plt.close(fig)
 print("Saved preview", flush=True)
