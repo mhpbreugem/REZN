@@ -18,33 +18,35 @@
   xmin=-3.5, xmax=3.5, ymin=-3.5, ymax=3.5,
   xlabel={$u_2$}, ylabel={$u_3$},
   axis equal image,
-  title={CRRA ($\gamma\!=\!0.5$): curved, non-parallel},
-  axis background/.style={fill=black!5}]
-% p=0.2 (projected, smooth curve)
-\addplot[thick,color=BCred!30,smooth,tension=0.6] coordinates {
-  (-2.9,0.6)(-2.5,0.2)(-2.0,-0.3)(-1.4,-0.9)(-0.8,-1.5)
-  (-0.2,-2.1)(0.3,-2.6)(0.6,-2.9)};
-% p=0.3 (projected)
-\addplot[thick,color=BCred!45,smooth,tension=0.6] coordinates {
-  (-2.8,1.5)(-2.4,1.0)(-1.9,0.4)(-1.3,-0.2)(-0.6,-0.9)
-  (0.0,-1.5)(0.6,-2.1)(1.2,-2.6)(1.5,-2.8)};
-% p=0.5 (from solver REE data, smoothed key points)
-\addplot[very thick,color=BCred,smooth,tension=0.6] coordinates {
-  (-2.1,3.2)(-2.0,2.5)(-1.9,2.1)(-1.6,1.5)(-1.1,1.0)
-  (-0.5,0.3)(0.3,-0.5)(1.0,-1.1)(1.5,-1.6)(2.1,-1.9)
-  (2.5,-2.0)(3.2,-2.1)};
-% p=0.7 (projected)
-\addplot[thick,color=BCred!45,smooth,tension=0.6] coordinates {
-  (-1.5,2.8)(-1.2,2.6)(-0.6,2.1)(0.0,1.5)(0.6,0.9)
-  (1.3,0.2)(1.9,-0.4)(2.4,-1.0)(2.8,-1.5)};
-% p=0.8 (projected)
-\addplot[thick,color=BCred!30,smooth,tension=0.6] coordinates {
-  (-0.6,2.9)(-0.3,2.6)(0.2,2.1)(0.8,1.5)
-  (1.4,0.9)(2.0,0.3)(2.5,-0.2)(2.9,-0.6)};
+  title={CRRA ($\gamma\!=\!0.5$): curved, non-parallel}]
+% p=0.2 (REAL solver data, G=15, REE)
+\addplot[thick,color=BCred!30,smooth,tension=0.4] coordinates {
+  (-3.500,-0.584)(-3.217,-0.585)(-2.934,-0.588)(-2.652,-0.589)
+  (-2.369,-0.590)(-2.086,-0.599)(-1.874,-0.625)(-1.623,-0.672)
+  (-1.408,-0.742)(-1.237,-0.816)(-1.036,-0.955)(-0.904,-1.096)
+  (-0.813,-1.243)(-0.729,-1.449)(-0.663,-1.662)(-0.615,-1.944)
+  (-0.595,-2.157)(-0.590,-2.439)(-0.589,-2.722)(-0.587,-3.005)
+  (-0.585,-3.288)(-0.584,-3.500)};
+% p=0.5 (REAL solver data)
+\addplot[very thick,color=BCred,smooth,tension=0.4] coordinates {
+  (-3.500,2.580)(-3.218,2.227)(-2.937,1.944)(-2.652,1.722)
+  (-2.325,1.449)(-2.063,1.167)(-1.803,0.841)(-1.520,0.553)
+  (-1.255,0.247)(-0.976,-0.035)(-0.695,-0.318)(-0.413,-0.601)
+  (-0.128,-0.884)(0.156,-1.167)(0.460,-1.428)(0.742,-1.713)
+  (1.025,-1.977)(1.343,-2.227)(1.662,-2.468)(1.870,-2.864)
+  (2.155,-3.146)(2.439,-3.395)(2.580,-3.500)};
+% p=0.8 (REAL solver data)
+\addplot[thick,color=BCred!30,smooth,tension=0.4] coordinates {
+  (-1.768,3.500)(-1.758,3.005)(-1.751,2.510)(-1.722,2.086)
+  (-1.591,1.670)(-1.395,1.379)(-1.167,1.135)(-0.884,0.899)
+  (-0.601,0.709)(-0.389,0.434)(-0.110,0.177)(0.116,-0.035)
+  (0.364,-0.318)(0.601,-0.534)(0.851,-0.813)(1.074,-1.096)
+  (1.308,-1.337)(1.591,-1.545)(1.944,-1.689)(2.369,-1.751)
+  (2.864,-1.752)(3.359,-1.767)(3.500,-1.768)};
 % Labels
-\node[font=\scriptsize,color=BCred!45,rotate=-50] at (axis cs:-1.8,-1.2) {$p\!=\!0.2$};
-\node[font=\scriptsize,color=BCred,rotate=-40] at (axis cs:-0.2,0.0) {$p\!=\!0.5$};
-\node[font=\scriptsize,color=BCred!45,rotate=-30] at (axis cs:1.5,1.2) {$p\!=\!0.8$};
+\node[font=\scriptsize,color=BCred!50] at (axis cs:-2.0,-1.5) {$p\!=\!0.2$};
+\node[font=\scriptsize,color=BCred,rotate=-40] at (axis cs:-0.3,0.0) {$p\!=\!0.5$};
+\node[font=\scriptsize,color=BCred!50] at (axis cs:1.8,1.5) {$p\!=\!0.8$};
 \end{groupplot}
 \end{tikzpicture}
 \end{document}
