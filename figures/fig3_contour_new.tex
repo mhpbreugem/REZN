@@ -1,4 +1,3 @@
-% CARA vs CRRA contour — REE data from posterior method, G=14
 \documentclass[border=2mm]{standalone}
 \usepackage{pgfplots}
 \pgfplotsset{compat=1.18}
@@ -8,34 +7,31 @@
 \begin{tikzpicture}
 \begin{axis}[
   legend style={draw=none,legend pos=north east,font=\footnotesize},
-  xmin=-3.8, xmax=3.8, ymin=-3.8, ymax=3.8,
+  xmin=-3.2, xmax=3.2, ymin=-3.2, ymax=3.2,
   xlabel={$u_2$}, ylabel={$u_3$},
-  width=8cm, height=8cm,
-  axis equal,
-  title={Level set $P(1,u_2,u_3)=p^{\star}$, $\gamma\!=\!0.5$, $\tau\!=\!2$}]
+  width=6.5cm, height=6.5cm,
+  axis equal image,
+  title style={font=\small},
+  title={$P(1,u_2,u_3)=p^{\star}$}]
 
-% CRRA REE contour (G=14, curved)
-\addplot[very thick,color=red,smooth] coordinates {
-  (-2.053,3.500) (-2.051,3.150) (-2.046,2.800) (-2.025,2.450)
-  (-1.976,2.100) (-1.837,1.750) (-1.750,1.638) (-1.564,1.400)
-  (-1.400,1.308) (-1.079,1.050) (-1.050,1.043) (-0.702,0.700)
-  (-0.700,0.698) (-0.350,0.362) (-0.344,0.350) (-0.047,0.000)
-  (0.000,-0.047) (0.350,-0.344) (0.362,-0.350) (0.698,-0.700)
-  (0.700,-0.702) (1.043,-1.050) (1.050,-1.079) (1.308,-1.400)
-  (1.400,-1.564) (1.638,-1.750) (1.750,-1.837) (2.100,-1.976)
-  (2.450,-2.025) (2.800,-2.046) (3.150,-2.051) (3.500,-2.053)};
+% CRRA REE contour (G=14, curved) — use tension spline
+\addplot[very thick,color=red,smooth,tension=0.6] coordinates {
+  (-2.05,3.20) (-2.05,2.80) (-2.03,2.45) (-1.98,2.10)
+  (-1.84,1.75) (-1.56,1.40) (-1.40,1.31) (-1.08,1.05)
+  (-0.70,0.70) (-0.35,0.36) (-0.05,0.00)
+  (0.36,-0.35) (0.70,-0.70) (1.05,-1.08) (1.31,-1.40)
+  (1.64,-1.75) (1.75,-1.84) (2.10,-1.98) (2.45,-2.03)
+  (2.80,-2.05) (3.20,-2.05)};
 
-% CARA contour (straight: u2+u3 = const)
-\addplot[very thick,color=blue,dashed] coordinates {
-  (-3.500,3.175) (-2.500,2.175) (-1.500,1.175) (-0.500,0.175)
-  (0.500,-0.825) (1.500,-1.825) (2.500,-2.825) (3.500,-3.825)};
+% CARA contour (straight: u2+u3 = const ≈ -0.325)
+\addplot[very thick,color=blue,dashed]
+  coordinates {(-3.2,2.88) (3.2,-3.52)};
 
-% Actual realization marker
-\addplot[only marks,mark=x,mark size=4pt,very thick,color=black]
+% Actual realization
+\addplot[only marks,mark=x,mark size=3.5pt,very thick,color=black]
   coordinates {(-1,1)};
 
-\legend{CRRA (curved), CARA (straight)}
-
+\legend{CRRA, CARA}
 \end{axis}
 \end{tikzpicture}
 \end{document}

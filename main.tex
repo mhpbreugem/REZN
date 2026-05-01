@@ -1,12 +1,12 @@
 % =====================================================================
-% Noise Traders Are Not a Primitive
+% On the Possibility of Informationally Inefficient Markets Without Noise
 % Matthijs Breugem, Nyenrode Business University
 % Target: Econometrica
 % =====================================================================
-\documentclass[11pt,letterpaper]{article}
+\documentclass[12pt,letterpaper]{article}
 
 % --- packages ---
-\usepackage[margin=1in]{geometry}
+\usepackage[margin=0.92in]{geometry}
 \usepackage{amsmath,amssymb,amsthm}
 \usepackage{mathtools}
 \usepackage{graphicx}
@@ -53,46 +53,59 @@
 \onehalfspacing
 
 % =====================================================================
-\title{\textbf{Noise Traders Are Not a Primitive}\\[4pt]
-\large Partial Revelation from Preferences Alone}
-\author{Matthijs Breugem\\[2pt]\small Nyenrode Business University}
-\date{\today}
+\title{}
+\author{}
+\date{}
 
 \begin{document}
-\maketitle
 
 % =====================================================================
+% TITLE PAGE
+% =====================================================================
+\thispagestyle{empty}
+\vspace*{1.5cm}
+\begin{center}
+{\LARGE\bfseries On the Possibility of Informationally}\\[2pt]
+{\LARGE\bfseries Inefficient Markets Without Noise}\\[24pt]
+{\large Matthijs Breugem\footnote{Nyenrode Business University.
+I thank Doruk Ceremen, Diego Garcia, Roberto Marf\`e,
+Francesco Sangiorgi, G\"unter Strobl, and Jing Zeng
+for useful discussions and feedback.
+E-mail: \texttt{m.breugem@nyenrode.nl}.}}\\[8pt]
+{\normalsize \today}
+\end{center}
+
+\vspace{18pt}
+
+\begin{center}
+\begin{minipage}{0.88\textwidth}
 \begin{abstract}
 \noindent
-The textbook resolution of the Grossman--Stiglitz paradox treats noise
-traders as a structural prerequisite for partial revelation of information
-through prices. This paper shows that the prerequisite is preference-specific.
-Full revelation in the canonical rational-expectations model is a knife-edge
-property of constant absolute risk aversion (CARA): demand under CARA is
-linear in the log-odds of the posterior, market clearing therefore averages
-in log-odds space, and the Bayesian sufficient statistic for the joint
-posterior \emph{is} a sum in log-odds space; the two coincide and prices
-reveal the statistic exactly. Any departure from CARA within the constant
-relative risk aversion (CRRA) class destroys the alignment. Market clearing
-under non-CARA CRRA preferences aggregates posteriors in probability space;
-the Jensen gap between probability- and log-odds-aggregation is the size of
-the revelation failure, and equilibrium is generically partially revealing
-without any noise. I formalise the mechanism in a binary-state model with
-$K\geq 3$ informed groups, derive a third-order asymptotic expansion of the
-Jensen gap, characterise the full rational-expectations equilibrium as a
-fixed point on the price function over a three-dimensional grid, solve it
-numerically by a contour-integration method, and show that partial
-revelation survives rational learning from prices. The implications follow
-immediately: trade volume is strictly positive, the value of private
-information is strictly positive and increasing in precision, and the
-Grossman--Stiglitz paradox is resolved within the rational class without
-recourse to liquidity or behavioural noise.
-\\[6pt]
-\noindent\textbf{Keywords:} rational expectations equilibrium, partial
-revelation, noise traders, CARA, CRRA, Grossman--Stiglitz paradox,
-aggregation space.\\
+Full revelation of information through prices in rational-expectations
+models is a knife-edge property of exponential (CARA) utility. I show
+that partial revelation arises under any other expected-utility
+preference---including CRRA---without noise traders and without any
+substitute: no random endowments, no supply shocks, no hedging motives,
+no behavioural biases. The model has zero exogenous noise of any kind.
+The mechanism is an aggregation-space mismatch: CARA clears markets in
+log-odds space, which coincides with the Bayesian sufficient statistic,
+so prices reveal the statistic exactly. Non-CARA preferences aggregate
+in a different space, and the resulting Jensen gap breaks full
+revelation. I prove this for the no-learning equilibrium, establish that
+CARA is the unique preference class with log-odds-linear demand,
+characterise the rational-expectations equilibrium via a
+contour-integration fixed point, and verify that partial revelation
+survives learning from prices. The Grossman--Stiglitz paradox is
+resolved within the rational class.
+\\[14pt]
+\noindent\textbf{Keywords:} rational expectations, partial revelation,
+noise traders, CRRA, Grossman--Stiglitz paradox, aggregation space.\\
 \noindent\textbf{JEL codes:} D82, D83, G14.
 \end{abstract}
+\end{minipage}
+\end{center}
+
+\newpage
 
 % =====================================================================
 \section{Introduction}\label{sec:intro}
@@ -238,22 +251,22 @@ preference-driven complement.
 Numerically, the contour-integration fixed point introduced in
 Section~\ref{sec:ree} builds on the projection method of
 \citet{BreugemBuss2019} for non-standard rational-expectations problems.
-The role of \citet{Milgrom1982} appears in Section~\ref{sec:welfare}: the
+The role of \citet{Milgrom1982} appears in Section~\ref{sec:implications}: the
 classical no-trade theorem describes precisely the CARA-REE outcome,
 which the CRRA-REE escapes.
 
 \paragraph{Organisation.}
 Section~\ref{sec:model} sets out the model and the demand
-characterisations. Section~\ref{sec:no-learning} proves the no-learning
+characterisations. Section~\ref{sec:knife-edge} proves the no-learning
 benchmark results and presents the smooth-transition table that maps the
 move from CARA to log utility. Section~\ref{sec:ree} develops the contour
 method, states the rational-expectations result, and reports converged
-posteriors. Section~\ref{sec:welfare} treats welfare, the value of
+posteriors. Section~\ref{sec:implications} treats welfare, the value of
 information, and the Grossman--Stiglitz paradox.
 Section~\ref{sec:mechanisms} dissects the mechanisms that drive
 partial revelation under heterogeneity, including a fourth channel within
 CARA itself that learning from prices fully neutralises.
-Section~\ref{sec:discussion} relates
+Section~\ref{sec:literature} relates
 the results to the wider literature, and Section~\ref{sec:conclusion}
 concludes. All proofs are in Appendix~\ref{app:proofs}; the numerical
 implementation of the contour fixed point is in Appendix~\ref{app:contour}.
@@ -457,6 +470,14 @@ this equilibrium. Throughout, we focus on equilibria in which $p$ depends on
 the signal vector only through prices the agents can observe (a standard
 internal consistency requirement).
 
+
+% =====================================================================
+\section{The Knife-Edge}\label{sec:knife-edge}
+
+This section establishes the paper's central result: CARA is the
+unique preference class that generates full revelation. Any departure
+from CARA---however small---breaks it.
+
 \subsection{The aggregation space and the alignment principle}\label{sec:agg-space}
 
 The unifying observation of this paper is that no-learning equilibrium prices
@@ -504,36 +525,11 @@ class, only $\gamma=\infty$ (CARA) satisfies this requirement; every
 other $\gamma$ produces an aggregator that is non-affine in log-odds and
 therefore strictly partially revealing.
 \end{quote}
-The remainder of Section~\ref{sec:no-learning} formalises both halves of
+The remainder of Section~\ref{sec:knife-edge} formalises both halves of
 this principle, and Section~\ref{sec:ree} verifies that the principle
 survives the introduction of price-based learning.
 
 % =====================================================================
-\section{The No-Learning Benchmark}\label{sec:no-learning}
-
-This section establishes the analytical core of the paper in the simpler
-no-learning environment, where each agent uses only her own private signal.
-The conclusions extend to the full REE in Section~\ref{sec:ree}.
-
-\begin{definition}[Revelation deficit]\label{def:deficit}
-The \emph{revelation deficit} of a price function
-$p:(u_{1},\ldots,u_{K})\mapsto p\in(0,1)$ relative to the Bayesian
-sufficient statistic $\Tstar=\sum_{k=1}^{K}\tau_{k}u_{k}$ is
-\begin{equation}
-   1 - R^{2}\bigl(\Tstar\,;\,p\bigr) \;\equiv\;
-   1 - \frac{\bigl[\Cov_{w}(\logit p,\,\Tstar)\bigr]^{2}}
-            {\Var_{w}(\logit p)\,\cdot\,\Var_{w}(\Tstar)},
-\label{eq:deficit}
-\end{equation}
-where the weighted moments use the ex ante signal density averaged over
-the two states,
-$w(u_{1},\ldots,u_{K})=\tfrac12\bigl[\prod_{k}f_{1}(u_{k})
-+\prod_{k}f_{0}(u_{k})\bigr]$. The deficit equals zero if and only if
-$\logit p$ is an affine function of $\Tstar$ over the support of $w$
-(full revelation), takes values in $[0,1]$, and equals one when $\logit p$
-is independent of $\Tstar$ (no revelation at all).
-\end{definition}
-
 \subsection{CARA implies full revelation}
 
 \begin{proposition}[CARA log-odds aggregation and full revelation]\label{prop:cara}
@@ -692,79 +688,20 @@ Figure~\ref{fig:knife-edge} plots the deficit as a function of $\tau$ for
 three values of $\gamma$: the CARA line sits at zero regardless of signal
 precision, while every finite $\gamma$ produces a strictly positive and
 hump-shaped deficit. Table~\ref{tab:smooth} reports the same data across
-a wider range of $(\gamma,\tau)$ values.
+a wider range of $(\gamma,\tau)$ values (Table~\ref{tab:smooth} in
+Appendix~\ref{app:numerics}).
 
-\begin{figure}[htbp]
+\begin{figure}[t]
    \centering
-   \includegraphics[width=0.55\textwidth]{figures/fig_knife_edge.pdf}
+   \includegraphics[width=0.49\textwidth]{figures/fig_knife_edge.pdf}
    \caption{The knife-edge: revelation deficit $1-R^{2}$ versus signal
-   precision $\tau$ in the no-learning equilibrium, for three values of
-   the CRRA parameter $\gamma$. Every finite $\gamma$ produces strictly
+   precision $\tau$ in the no-learning equilibrium, for
+   $\gamma\in\{0.5,\,1,\,4\}$. Every finite $\gamma$ produces strictly
    positive partial revelation; only CARA ($\gamma=\infty$, dash-dotted at
-   zero) achieves full revelation. $K=3$, $W=1$, $G=12$.}
+   zero) achieves full revelation. $K=3$, $W=1$, $G=15$.}
    \label{fig:knife-edge}
 \end{figure}
 
-\begin{table}[htbp]
-   \centering
-   \caption{No-learning revelation deficit $1-R^{2}$ across $\gamma$ and
-   $\tau$. Computed exactly on a $G=20$ grid. CARA ($\gamma=\infty$) is the
-   knife-edge. Entries reported to three decimal places; values shown as
-   $0.000$ are strictly positive but below display precision (cf.\
-   Proposition~\ref{prop:jensen} for the $\tau^{3}/\gamma^{2}$ asymptotic
-   order).}
-   \label{tab:smooth}
-   \begin{tabular}{lccc}
-      \toprule
-      $\gamma$ & $\tau=0.5$ & $\tau=1.0$ & $\tau=2.0$ \\
-      \midrule
-       0.1   & 0.146 & 0.145 & 0.137 \\
-       0.3   & 0.044 & 0.070 & 0.090 \\
-       0.5   & 0.016 & 0.038 & 0.062 \\
-       1.0   & 0.004 & 0.013 & 0.029 \\
-       3.0   & 0.000 & 0.002 & 0.006 \\
-      10.0   & 0.000 & 0.000 & 0.001 \\
-      $\infty$ (CARA) & 0.000 & 0.000 & 0.000 \\
-      \bottomrule
-   \end{tabular}
-\end{table}
-
-\subsection{Robustness}
-
-The CARA full-revelation result extends, with weighted aggregation, to
-heterogeneous parameters. The non-CARA partial-revelation result extends, in
-the natural direction, to any preference outside CARA in the CRRA class and
-to a wide range of signal distributions. Two robustness exercises confirm
-this.
-
-\begin{figure}[htbp]
-   \centering
-   \begin{subfigure}[t]{0.46\textwidth}
-      \includegraphics[width=\textwidth]{figures/fig_knife_edge_K.pdf}
-      \caption{Number of agent groups $K$.}
-      \label{fig:robust-K}
-   \end{subfigure}\hfill
-   \begin{subfigure}[t]{0.46\textwidth}
-      \includegraphics[width=\textwidth]{figures/fig_knife_edge_lognormal.pdf}
-      \caption{Lognormal payoff variant.}
-      \label{fig:robust-lognormal}
-   \end{subfigure}
-   \caption{Robustness of the knife-edge. Panel (a): the deficit declines
-   roughly as $1/K$ but never vanishes for any finite $\gamma$; CARA is zero
-   for every $K$. Panel (b): under a lognormal payoff, the same pattern
-   obtains, indicating the result is not specific to the binary
-   parametrisation.}
-   \label{fig:robust}
-\end{figure}
-
-\paragraph{Heterogeneity.} The size of the no-learning revelation deficit
-is amplified by heterogeneity in risk aversion and in signal precision,
-and a separate channel arises within CARA itself when risk aversion
-varies across groups. We defer the systematic decomposition to
-Section~\ref{sec:mechanisms} so as not to interrupt the homogeneous-CRRA
-core that the next two sections build on; the punch line is that the
-homogeneous deficits reported in Table~\ref{tab:smooth} are a lower
-envelope.
 
 % =====================================================================
 \section{Full Rational-Expectations Equilibrium}\label{sec:ree}
@@ -796,73 +733,38 @@ Grid-convergence checks from $G\!=\!10$ to $G\!=\!20$ show that
 $1\!-\!R^{2}$ stabilises near $0.105$ by $G\!=\!16$; see
 Appendix~\ref{app:numerics} for details.
 
-\subsection{The price-function fixed point}
+\subsection{The contour mechanism}\label{sec:contour-mechanism}
 
-For computational purposes, fix $K=3$ and discretise the centred-signal
-support uniformly at $G$ grid points $\{u_{i}\}_{i=1}^{G}$. The unknown is
-the price array
-\(P\in[0,1]^{G^{3}}\), where $P[i,j,l]$ is the equilibrium price at the
-realisation $(u_{i},u_{j},u_{l})$.
+The no-learning results of Section~\ref{sec:knife-edge} assume agents
+ignore prices. In a rational-expectations equilibrium (REE), each agent
+observes the market-clearing price and updates her posterior. The
+question is whether the Jensen gap survives this learning.
 
-Each agent observes her own signal and the price. Conditioning on the price,
-agent $k$ at signal $u_{i_{k}}$ infers the set of other-signal pairs that are
-consistent with the observed price. This set is the level set of $P$ at the
-price level, restricted to the appropriate two-dimensional slice. We call
-this set the \emph{contour} traced by the agent.
-
-The contour fixed point is the requirement that, when each agent integrates
-the prior signal density along her contour to form a conditional posterior
-and then submits her optimal demand, the market clears at every realisation
-$(i,j,l)$ at the conjectured price $P[i,j,l]$. Symbolically:
+The equilibrium is a fixed point of a contour-integration map
+$\Phi$. Agent~$k$, knowing her own signal $u_k$ and the price $p$,
+extracts the contour $\{(u_j,u_l): P(u_k,u_j,u_l)=p\}$ from the
+price function, integrates the signal density along this contour to
+form her posterior, and clears the market:
 \begin{equation}
    P \;=\; \Phi(P), \qquad
    \Phi(P)[i,j,l] \;=\;
-   \bigl\{\,p\,:\,\textstyle\sum_{k=1}^{3} x_{k}(\mu_{k}^{P}(p),p)=0\,\bigr\},
+   \bigl\{\,p\,:\,\textstyle\sum_{k=1}^{3} x_{k}(\mu_{k}^{P}(p),p)=0\,\bigr\}.
 \label{eq:fixed-point}
 \end{equation}
-where $\mu_{k}^{P}(p)$ is the conditional posterior of agent $k$ obtained by
-integrating along her contour, given the conjectured price function $P$ and
-the observed price $p$.
-
-\subsection{The contour integration}
-
-Agent $1$ at her own signal $u_{i}$ extracts the slice $P[i,\cdot,\cdot]$,
-which is a $G\times G$ matrix of prices in $(u_{j},u_{l})$ space. The set
-\(\bigl\{(u_{j},u_{l})\,:\,P[i,j,l]=p\bigr\}\) is a one-dimensional curve.
-We trace it numerically by a two-pass algorithm:
-\begin{enumerate}[topsep=2pt,itemsep=2pt]
-   \item Pass A. For each grid point $u_{j'}$, treat the row $P[i,j',\cdot]$
-         as a function of $u_{l}$ and root-find $u_{l}^{c}(j')$ such that
-         $P[i,j',u_{l}^{c}]=p$.
-   \item Pass B. For each grid point $u_{l'}$, treat the column $P[i,\cdot,l']$
-         as a function of $u_{j}$ and root-find $u_{j}^{c}(l')$.
-\end{enumerate}
-Each crossing contributes the joint signal density
-$f_{v}(u_{j}^{c})\,f_{v}(u_{l}^{c})$ to a state-conditional accumulator
-$A_{v}^{(1)}$. Averaging the two passes,
+Each crossing of the contour contributes the joint signal density
+$f_{v}(u_{j}^{c})\,f_{v}(u_{l}^{c})$ to a state-conditional accumulator.
+Averaging two orthogonal sweeps,
 \begin{equation}
    A_{v}^{(1)}(i,p) \;=\;
    \tfrac12 \!\left[\sum_{j'} f_{v}(u_{j'})\,f_{v}(u_{l}^{c}(j'))
                  + \sum_{l'} f_{v}(u_{j}^{c}(l'))\,f_{v}(u_{l'})\right].
 \label{eq:contour-integral}
 \end{equation}
-Agent $1$'s posterior is then
-\begin{equation}
-   \mu_{1}(i,p) \;=\;
-   \frac{f_{1}(u_{i})\,A_{1}^{(1)}(i,p)}
-        {f_{0}(u_{i})\,A_{0}^{(1)}(i,p) + f_{1}(u_{i})\,A_{1}^{(1)}(i,p)}.
+Agent~$1$'s posterior follows by Bayes' rule:
+$\mu_{1} = f_{1}(u_{i})\,A_{1} / (f_{0}(u_{i})\,A_{0} + f_{1}(u_{i})\,A_{1})$.
 \label{eq:contour-bayes}
-\end{equation}
-Agents $2$ and $3$ proceed analogously on their own slices,
-$P[\cdot,j,\cdot]$ and $P[\cdot,\cdot,l]$ respectively. The market-clearing
-condition $\sum_{k}x_{k}(\mu_{k}(\cdot,p),p)=0$ then determines a new price
-at every $(i,j,l)$, completing one application of $\Phi$.
-
-A central observation is that the integrals \eqref{eq:contour-integral}
-employ \emph{prior} densities; all conditioning on the price is encoded in
-the contour itself, that is, in the price function $P$. The unknown of the
-problem is therefore $P$ and only $P$; there is no separate fixed point in
-posteriors.
+The full numerical procedure is described in
+Appendix~\ref{app:numerics}.
 
 \subsection{Why CARA gives a straight contour and CRRA gives a curved one}
 
@@ -886,41 +788,36 @@ in equilibrium, the market clears at a price intermediate between the
 private and the fully-revealing levels, and the equilibrium is partially
 revealing.
 
-Figure~\ref{fig:contours} visualises the two cases at the point
-$(u_{1},u_{2},u_{3})=(1,-1,1)$ for $\tau=2$. The CARA slice exhibits the
-expected straight contours; the CRRA ($\gamma=0.5$) slice is visibly curved.
+Figure~\ref{fig:contours} visualises the two cases in the agent-1 slice
+at $u_{1}=1$, $\tau=2$, showing contours at multiple price levels. Under
+CARA, the contours are straight and parallel: every price level
+corresponds to a hyperplane $\tau u_{2}+\tau u_{3}=c$, and $\Tstar$ is
+constant along each contour. Under CRRA ($\gamma=0.5$), the contours are
+curved and non-parallel: $\Tstar$ varies along each contour, and the
+curvature itself changes with the price level. The agent observing a
+CRRA price cannot extract $\Tstar$.
 
-\begin{figure}[htbp]
+\begin{figure}[t]
    \centering
-   \includegraphics[width=0.85\textwidth]{figures/fig3_contour.pdf}
-   \caption{Price-function contours in the agent-1 slice at
-   $(u_{1},u_{2},u_{3})=(1,-1,1)$ and $\tau=2$. Left: CARA. The contours of
-   $P[1,\cdot,\cdot]$ are straight lines $\tau u_{2}+\tau u_{3}=c$, and
-   every point on a contour shares the same $\Tstar$. Right: CRRA with
-   $\gamma=0.5$. Contours are curved, $\Tstar$ varies along the contour,
-   and the agent cannot extract $\Tstar$ from the price.}
+   \begin{subfigure}[t]{0.49\textwidth}\includegraphics[width=\textwidth]{figures/fig_multicontour_A.pdf}\end{subfigure}\hfill\begin{subfigure}[t]{0.49\textwidth}\includegraphics[width=\textwidth]{figures/fig_multicontour_B.pdf}\end{subfigure}
+   \caption{Price-function contours in the agent-1 slice at $u_{1}=1$,
+   $\tau=2$, shown at five price levels. Left: CARA --- contours are
+   straight, parallel, equally spaced. Right: CRRA with $\gamma=0.5$
+   --- contours are curved and non-parallel; the spacing varies across
+   the $(u_{2},u_{3})$ plane. The curvature is the Jensen gap made
+   visible.
+   \emph{Gray background: projected contour shapes pending multi-level
+   computation.}}
    \label{fig:contours}
 \end{figure}
 
 \subsection{Existence and convergence}\label{sec:convergence}
 
-The contour fixed point \eqref{eq:fixed-point} is solved by Picard iteration
-with damping or by Anderson acceleration. Both schemes converge across the
-parameter range we consider. Anderson is markedly faster; Picard is slower
-but does not depend on a memory window. Figure~\ref{fig:convergence}
-compares the convergence paths for the canonical case
-$(K,\tau,\gamma,W)=(3,2,0.5,1)$ at $G=14$.
-
-\begin{figure}[htbp]
-   \centering
-   \includegraphics[width=0.62\textwidth]{figures/fig5_convergence.pdf}
-   \caption{Convergence of the contour fixed point at $G=14$,
-   $\gamma=0.5$, $\tau=2$. The posterior-function method with
-   isotonic-regression monotonicity projection reaches
-   $\|F\|_{\infty}<10^{-14}$ (machine precision) via Picard iteration
-   followed by Newton--Krylov polishing.}
-   \label{fig:convergence}
-\end{figure}
+The contour fixed point \eqref{eq:fixed-point} is solved by Picard
+iteration followed by Newton--Krylov polishing, with isotonic-regression
+monotonicity projection at each step (Appendix~\ref{app:numerics}).
+Machine-precision convergence ($\|F\|_{\infty}<10^{-14}$) is achieved
+at $G=15$.
 
 \paragraph{Equilibrium selection.}
 The contour map $\Phi$ admits the fully-revealing price function
@@ -972,6 +869,25 @@ The slope on $\Tstar$ is $0.34$ at $\gamma=0.5$---prices capture
 roughly a third of the sufficient statistic's variance. Grid-convergence
 checks confirm that $1-R^{2}$ stabilises near $0.105$ from $G=14$
 onward (Appendix~\ref{app:numerics}, Table~\ref{tab:G-ladder}).
+Figure~\ref{fig:ree-panels} summarises the comparative statics: the
+deficit is hump-shaped in $\tau$ (panel~a) and monotonically decreasing
+in $\gamma$ (panel~b), with the REE deficit strictly above the
+no-learning deficit at every parameter tested---learning from curved
+contours amplifies the Jensen gap.
+
+\begin{figure}[t]
+   \centering
+   \begin{subfigure}[t]{0.49\textwidth}\includegraphics[width=\textwidth]{figures/fig_ree_panels_A.pdf}\end{subfigure}\hfill\begin{subfigure}[t]{0.49\textwidth}\includegraphics[width=\textwidth]{figures/fig_ree_panels_B.pdf}\end{subfigure}
+   \caption{Revelation deficit $1-R^{2}$ at the converged REE.
+   Panel~(a): versus signal precision $\tau$ for three values of $\gamma$.
+   Panel~(b): versus $\gamma$ at $\tau=2$, comparing REE (circles, $G=14$)
+   with the no-learning benchmark (squares, $G=20$). The REE deficit
+   exceeds the no-learning deficit at every $\gamma$ tested: learning from
+   prices amplifies partial revelation. CARA is zero in both panels.
+   \emph{Gray background in (b): pending additional $\gamma$ points.
+   Panel (a): curves for $\gamma=1,4$ are projected.}}
+   \label{fig:ree-panels}
+\end{figure}
 
 \subsection{Magnitudes at the converged equilibrium}\label{sec:posteriors}
 
@@ -1015,9 +931,9 @@ The visual signature of partial revelation is a slope on $\Tstar$
 shy of unity (here $\beta_{T}=0.34$), not a large per-realisation
 gap.
 
-\begin{figure}[htbp]
+\begin{figure}[t]
    \centering
-   \includegraphics[width=0.55\textwidth]{figures/fig_ree_vs_nolearning.pdf}
+   \includegraphics[width=0.49\textwidth]{figures/fig_ree_vs_nolearning.pdf}
    \caption{Price as a function of $\Tstar$ at the converged REE
    ($G\!=\!14$, $\gamma\!=\!0.5$, $\tau\!=\!2$). The red solid curve is the
    CRRA REE price function; the blue dashed curve is the no-learning
@@ -1028,9 +944,9 @@ gap.
    \label{fig:ree-vs-nolearning}
 \end{figure}
 
-\begin{figure}[htbp]
+\begin{figure}[t]
    \centering
-   \includegraphics[width=0.62\textwidth]{figures/fig4_posteriors.pdf}
+   \begin{subfigure}[t]{0.49\textwidth}\includegraphics[width=\textwidth]{figures/fig4_posteriors_A.pdf}\end{subfigure}\hfill\begin{subfigure}[t]{0.49\textwidth}\includegraphics[width=\textwidth]{figures/fig4_posteriors_B.pdf}\end{subfigure}
    \caption{Converged REE posteriors and price as functions of
    $\Tstar$ under CARA (identity line) and CRRA ($\gamma=0.5$).
    \emph{Placeholder: pending computation at $G\geq 50$.}}
@@ -1038,12 +954,14 @@ gap.
 \end{figure}
 
 % =====================================================================
-\section{Welfare and Grossman--Stiglitz}\label{sec:welfare}
 
-This section translates the informational result into welfare. The
-distinction between full and partial revelation matters precisely because
-trade volume, the value of information, and the resolution of the
-Grossman--Stiglitz paradox all depend on it.
+% =====================================================================
+\section{Economic Implications}\label{sec:implications}
+
+This section translates the informational result into welfare.
+The distinction between full and partial revelation matters
+precisely because trade volume, the value of information, and the
+resolution of the Grossman--Stiglitz paradox all depend on it.
 
 \subsection{Trade volume}
 
@@ -1079,9 +997,9 @@ Figure~\ref{fig:volume} reports trade volume as a function of $\gamma$ for
 the canonical parameters: it is strictly positive everywhere in $(0,\infty)$
 and converges to zero only in the CARA limit.
 
-\begin{figure}[htbp]
+\begin{figure}[t]
    \centering
-   \includegraphics[width=0.62\textwidth]{figures/fig7_volume.pdf}
+   \includegraphics[width=0.49\textwidth]{figures/fig7_volume.pdf}
    \caption{Expected trade volume $E[|x_{k}|]$ as a function of $\gamma$
    at $\tau=2$. Volume is strictly positive at every finite $\gamma$ and
    converges to zero as $\gamma\to\infty$ (CARA).
@@ -1107,9 +1025,9 @@ for every $\tau$, and $V_{\mathrm{CRRA}}(\tau)>0$ for every $\tau>0$, with
 $V_{\mathrm{CRRA}}'(\tau)>0$ on a neighbourhood of the origin.
 \end{proposition}
 
-\begin{figure}[htbp]
+\begin{figure}[t]
    \centering
-   \includegraphics[width=0.62\textwidth]{figures/fig8_value_info.pdf}
+   \includegraphics[width=0.49\textwidth]{figures/fig8_value_info.pdf}
    \caption{Value of information $V(\tau)$ at the converged REE for three
    values of $\gamma$. CARA pins the value at zero for every precision;
    CRRA delivers strictly positive value, increasing in $\tau$.
@@ -1149,9 +1067,9 @@ function of cost; the noise-trader resolution and the CRRA resolution
 deliver qualitatively similar comparative statics, but only the CRRA route
 remains within the rational class.
 
-\begin{figure}[htbp]
+\begin{figure}[t]
    \centering
-   \includegraphics[width=0.62\textwidth]{figures/fig9_GS.pdf}
+   \includegraphics[width=0.49\textwidth]{figures/fig9_GS.pdf}
    \caption{Net value of acquiring a precision-$\tau$ signal: $V(\tau)-c$
    as a function of the acquisition cost $c$, at $\tau=2$. Under CARA
    (dash-dotted), $V=0$, so the net value is $-c<0$ for every $c>0$: no
@@ -1163,7 +1081,7 @@ remains within the rational class.
 \end{figure}
 
 % =====================================================================
-\section{Mechanisms for Partial Revelation}\label{sec:mechanisms}
+\subsection{Sources of larger deficits}\label{sec:mechanisms}
 
 Partial revelation under CRRA arises from a single source --- the
 mismatch between the market-clearing aggregation space and the Bayesian
@@ -1236,9 +1154,9 @@ from the CARA preference class produce partial revelation at the REE.
    \end{tabular}
 \end{table}
 
-\begin{figure}[htbp]
+\begin{figure}[t]
    \centering
-   \includegraphics[width=0.62\textwidth]{figures/fig6_mechanisms.pdf}
+   \includegraphics[width=0.49\textwidth]{figures/fig6_mechanisms.pdf}
    \caption{Decomposition of the revelation deficit across the
    mechanisms tabulated in Table~\ref{tab:mechanisms}.
    \emph{Placeholder: pending heterogeneous-agent solver.}}
@@ -1262,7 +1180,83 @@ about whether the underlying preference class aligns with the log-odds
 sufficient statistic.
 
 % =====================================================================
-\section{Discussion}\label{sec:discussion}
+\subsection{Robustness}
+
+The CARA full-revelation result extends, with weighted aggregation, to
+heterogeneous parameters. The non-CARA partial-revelation result extends, in
+the natural direction, to any preference outside CARA in the CRRA class and
+to a wide range of signal distributions. Two robustness exercises confirm
+this.
+
+\begin{figure}[t]
+   \centering
+   \begin{subfigure}[t]{0.49\textwidth}
+      \includegraphics[width=\textwidth]{figures/fig_knife_edge_K.pdf}
+      \caption{Number of agent groups $K$.}
+      \label{fig:robust-K}
+   \end{subfigure}\hfill
+   \begin{subfigure}[t]{0.49\textwidth}
+      \includegraphics[width=\textwidth]{figures/fig_knife_edge_lognormal.pdf}
+      \caption{Lognormal payoff variant.}
+      \label{fig:robust-lognormal}
+   \end{subfigure}
+   \caption{Robustness of the knife-edge. Panel (a): the deficit declines
+   roughly as $1/K$ but never vanishes for any finite $\gamma$; CARA is zero
+   for every $K$. Panel (b): under a lognormal payoff, the same pattern
+   obtains, indicating the result is not specific to the binary
+   parametrisation.}
+   \label{fig:robust}
+\end{figure}
+
+\paragraph{Heterogeneity.} The size of the no-learning revelation deficit
+is amplified by heterogeneity in risk aversion and in signal precision,
+and a separate channel arises within CARA itself when risk aversion
+varies across groups. We defer the systematic decomposition to
+Section~\ref{sec:mechanisms} so as not to interrupt the homogeneous-CRRA
+core that the next two sections build on; the punch line is that the
+homogeneous deficits reported in Table~\ref{tab:smooth} are a lower
+envelope.
+
+% =====================================================================
+
+% =====================================================================
+\section{Related Literature and Extensions}\label{sec:literature}
+
+\subsection{Connection to the existing literature}
+
+Several papers have obtained partial revelation without noise traders,
+each through a different channel. \citet{HeifetzPolemarchakis1998} exhibit
+partially-revealing REE in general equilibrium when the dimension of
+the state space exceeds the dimension of the price vector; their mechanism
+is geometric and operates for any utility function, including CARA.
+\citet{Vives2011} obtains partial revelation in a private-values setting
+without noise, exploiting strategic incentives rather than preferences;
+the present mechanism is complementary and operates in a common-values
+environment. \citet{CondieGanguli2011} demonstrate partial revelation
+under ambiguity-averse (Maxmin expected utility) preferences without
+noise traders; their mechanism is portfolio inertia from non-smooth
+preferences, which differs from the aggregation-space mismatch identified
+here. The present paper is, to our knowledge, the first to show that
+\emph{standard} expected utility preferences---specifically, any member
+of the CRRA family---produce partial revelation with common values,
+Gaussian signals, and no noise of any kind.
+
+On the distributional side, \citet{AlbagliHellwigTsyvinski2024} show
+that non-Gaussian signal distributions break full revelation under CARA,
+while retaining noise traders. Together with the present results, their
+work establishes that full revelation is a joint knife-edge in preferences
+\emph{and} distributions: CARA plus exponential-family signals gives full
+revelation (\citealt{BreonDrish2015}); departing from either gives partial
+revelation. The preference departure (this paper) is arguably the more
+empirically relevant: CRRA is the workhorse of macro-finance, while CARA
+is used primarily for analytical convenience.
+
+The mechanism here also rationalises a feature of behavioural-finance
+empirics that is otherwise hard to square with rational-expectations
+models. Aggressive trading by relatively uninformed agents looks like
+noise; the present results show that, under CRRA, it can be a fully
+rational equilibrium phenomenon driven by misalignment between $\gamma$
+and $\tau$.
 
 \subsection{What CARA does and does not do}
 
@@ -1301,42 +1295,6 @@ recovers full revelation. The alignment principle of
 Section~\ref{sec:agg-space} singles out CARA across HARA, not only
 across CRRA.
 \end{remark}
-
-\subsection{Connection to the existing literature}
-
-Several papers have obtained partial revelation without noise traders,
-each through a different channel. \citet{HeifetzPolemarchakis1998} exhibit
-partially-revealing REE in general equilibrium when the dimension of
-the state space exceeds the dimension of the price vector; their mechanism
-is geometric and operates for any utility function, including CARA.
-\citet{Vives2011} obtains partial revelation in a private-values setting
-without noise, exploiting strategic incentives rather than preferences;
-the present mechanism is complementary and operates in a common-values
-environment. \citet{CondieGanguli2011} demonstrate partial revelation
-under ambiguity-averse (Maxmin expected utility) preferences without
-noise traders; their mechanism is portfolio inertia from non-smooth
-preferences, which differs from the aggregation-space mismatch identified
-here. The present paper is, to our knowledge, the first to show that
-\emph{standard} expected utility preferences---specifically, any member
-of the CRRA family---produce partial revelation with common values,
-Gaussian signals, and no noise of any kind.
-
-On the distributional side, \citet{AlbagliHellwigTsyvinski2024} show
-that non-Gaussian signal distributions break full revelation under CARA,
-while retaining noise traders. Together with the present results, their
-work establishes that full revelation is a joint knife-edge in preferences
-\emph{and} distributions: CARA plus exponential-family signals gives full
-revelation (\citealt{BreonDrish2015}); departing from either gives partial
-revelation. The preference departure (this paper) is arguably the more
-empirically relevant: CRRA is the workhorse of macro-finance, while CARA
-is used primarily for analytical convenience.
-
-The mechanism here also rationalises a feature of behavioural-finance
-empirics that is otherwise hard to square with rational-expectations
-models. Aggressive trading by relatively uninformed agents looks like
-noise; the present results show that, under CRRA, it can be a fully
-rational equilibrium phenomenon driven by misalignment between $\gamma$
-and $\tau$.
 
 \subsection{The vanishing-noise selection}\label{sec:vanishing-noise}
 
@@ -1384,7 +1342,7 @@ established for wide classes of preferences and signal distributions by
 case at hand. Verifying their conditions in this setting is left to a
 companion note. Numerically, the $\sigma_{z}\to 0$ limit at finite
 $\gamma$ is unambiguously the no-noise CRRA equilibrium of
-Section~\ref{sec:no-learning}, which is partially revealing.
+Section~\ref{sec:knife-edge}, which is partially revealing.
 
 
 \subsection{Extensions}
@@ -1668,7 +1626,7 @@ projection and Newton--Krylov polishing. Machine-precision convergence
 ($\|F\|_{\infty}<10^{-14}$, zero monotonicity violations) is achieved
 at grid resolution $G=15$. The converged deficit $1-R^{2}$ is stable
 under grid refinement from $G=10$ to $G=24$
-(Table~\ref{tab:ree-gamma}).
+(Table~\ref{tab:G-ladder}).
 \end{proof}
 
 \begin{proof}[Proof of Proposition~\ref{prop:welfare}]
@@ -1771,6 +1729,8 @@ $\lambda$ rises; this is confirmed numerically across a $\lambda$-grid
 but not established analytically.}
 \end{proof}
 
+
+% =====================================================================
 \section{Numerical Implementation of the Contour Method}\label{app:contour}\label{app:numerics}
 
 The contour fixed point of \eqref{eq:fixed-point} is implemented as follows.
@@ -1828,10 +1788,45 @@ sets; the quadrature error from discretisation is $O(G^{-2})$ for
 equally-spaced nodes on a $C^{\infty}$ integrand, and the truncation error
 from restricting signals to $|u|\leq u_{\max}=4$ is
 $O(e^{-\tau u_{\max}^{2}})<10^{-14}$ at $\tau=2$.
+Figure~\ref{fig:convergence} shows a representative convergence path.
+
+\begin{figure}[t]
+   \centering
+   \includegraphics[width=0.49\textwidth]{figures/fig5_convergence.pdf}
+   \caption{Convergence of the posterior-function fixed point at $G=14$,
+   $\gamma=0.5$, $\tau=2$. Picard iteration with damping reduces the
+   residual to $\sim 10^{-3}$; Newton--Krylov polishing then reaches
+   machine precision ($\|F\|_{\infty}<10^{-14}$) in $\sim 10$ additional
+   steps.
+   \emph{Gray background: projected convergence path.}}
+   \label{fig:convergence}
+\end{figure}
 
 \paragraph{Software.} The reference implementation is in Python using the
 posterior-function method described above. The full source code is
 available in the repository accompanying this paper.
+
+\begin{table}[htbp]
+\centering
+\caption{No-learning revelation deficit $1-R^{2}$ across $\gamma$ and
+$\tau$. Computed exactly on a $G=20$ grid. CARA ($\gamma=\infty$) is the
+knife-edge. Entries shown as $0.000$ are strictly positive but below
+display precision.}
+\label{tab:smooth}
+\begin{tabular}{lccc}
+   \toprule
+   $\gamma$ & $\tau=0.5$ & $\tau=1.0$ & $\tau=2.0$ \\
+   \midrule
+    0.1   & 0.146 & 0.145 & 0.137 \\
+    0.3   & 0.044 & 0.070 & 0.090 \\
+    0.5   & 0.016 & 0.038 & 0.062 \\
+    1.0   & 0.004 & 0.013 & 0.029 \\
+    3.0   & 0.000 & 0.002 & 0.006 \\
+   10.0   & 0.000 & 0.000 & 0.001 \\
+   $\infty$ (CARA) & 0.000 & 0.000 & 0.000 \\
+   \bottomrule
+\end{tabular}
+\end{table}
 
 \begin{table}[htbp]
 \centering

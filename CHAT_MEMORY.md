@@ -559,3 +559,23 @@ NEEDS FIX:
 Econometrica style: adequate. Color OK (online-only since 2024).
 Main issue is consistency (mixed matplotlib/pgfplots) and wrong data.
 Detailed fix specs in SOLVER_TODO.md P1.5.
+
+## FIGURE UPDATE (2026-05-01)
+
+### Standard gammas changed: 0.25 → 0.5
+All figures now use γ = 0.5, 1.0, 4.0 (not 0.25, 1, 4).
+
+### Figures with REAL solver data (white bg):
+- Fig 1: knife-edge at γ=0.5/1/4, G=15, 32 pts/curve ✓
+- Fig 4B: REE vs no-learning vs γ, 6 points, G=15 ✓
+
+### Figures REJECTED (kept as gray placeholder):
+- Fig 5 (p vs T*): binning artifacts. Fix: symmetric triples.
+- Fig 6A (CARA posteriors): solver gave no-learning. Fix: analytical Λ(T*/3).
+- Fig 6B (CRRA posteriors): step-like. Fix: clip to T*∈[-2,4].
+
+### New title
+"On the Possibility of Informationally Inefficient Markets Without Noise"
+(mirrors GS 1980)
+
+### Paper state: 34 pages, 0 todos, 2 real figures, ~10 gray placeholders
