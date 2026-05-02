@@ -7,7 +7,7 @@
 \definecolor{BCgreen}{rgb}{0.11, 0.35, 0.02}
 \pgfplotsset{every axis/.append style={
   width=7.5cm, height=7.5cm, scale only axis,
-  ticklabel style={font=\small, /pgf/number format/fixed, /pgf/number format/precision=2},
+  ticklabel style={font=\small, /pgf/number format/fixed, /pgf/number format/precision=3},
   yticklabel style={text width=10mm, align=right},
   ylabel style={text width=10mm, align=center},
   label style={font=\normalsize},
@@ -24,11 +24,11 @@
   xticklabels={0.1,0.25,0.5,1,2,4},
   legend pos=north east,
   title={(b) versus $\gamma$}]
-% REE (REAL DATA, G=15, τ=2)
-\addplot[very thick,color=BCgreen,smooth,mark=*,mark size=1.5pt] coordinates {(0.1,0.127)(0.25,0.119)(0.5,0.113)(1,0.093)(2,0.083)(4,0.060)};
-% No-learning (REAL DATA, G=15, τ=2)
-\addplot[very thick,color=BCred,dashed,smooth,mark=square*,mark size=1.5pt] coordinates {(0.1,0.138)(0.25,0.101)(0.5,0.062)(1,0.029)(2,0.011)(4,0.003)};
-% CARA
+% REE (WEIGHTED, G=20, UMAX=5, mp50, τ=2)
+\addplot[very thick,color=BCgreen,mark=*,mark size=1.5pt] coordinates {(0.5,0.088)(1.0,0.047)(2.0,0.025)(4.0,0.016)};
+% No-learning (WEIGHTED, G=20, τ=2)
+\addplot[very thick,color=BCred,dashed,mark=square*,mark size=1.5pt] coordinates {(0.1,0.141)(0.25,0.098)(0.5,0.062)(1.0,0.029)(2.0,0.011)(4.0,0.003)};
+% CARA baseline
 \addplot[ultra thick,color=black,dashdotted] coordinates {(0.08,0)(5,0)};
 \legend{REE, No-learning, CARA}
 \end{groupplot}
