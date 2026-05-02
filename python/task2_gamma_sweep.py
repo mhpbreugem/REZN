@@ -37,11 +37,11 @@ from gap_reparam import pava_p_only, pava_u_only
 def pava_2d_f64(mu): return pava_u_only(pava_p_only(mu))
 
 RESULTS_DIR = "results/full_ree"
-SEED = f"{RESULTS_DIR}/posterior_v3_G20_umax5_notrim_mp300.json"
+SEED = f"{RESULTS_DIR}/posterior_v3_G20_umax5_trim05_mp300.json"
 G = 20
 UMAX = 5.0
 TAU = mpf("2")
-TRIM = 0.0          # match seed
+TRIM = 0.05         # tighter p-grid; clean 5-iter LM convergence at G=20
 H_FD = mpf("1e-30")
 TARGET = mpf("1e-25")
 MAX_ITERS = 18
