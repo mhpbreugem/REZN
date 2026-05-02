@@ -5,9 +5,9 @@
     "gamma": 0.5,
     "tau": 2.0
   },
-  "1-R2": 0.19267780792568912,
-  "slope": 0.28515574071587074,
-  "intercept": -3.8214999116720094e-09,
+  "1-R2_weighted": 0.08520995136562544,
+  "slope_weighted": 0.5431219983182284,
+  "intercept_weighted": 2.8864276438888513e-09,
   "n_triples": 8000,
-  "n_total": 8000
+  "weighting": "ex-ante: 0.5*(f0(u_i)f0(u_j)f0(u_l) + f1(...))"
 }

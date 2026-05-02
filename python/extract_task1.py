@@ -246,50 +246,56 @@ def task_1c(u_grid, p_grid, mu, gamma, tau):
 
 # ---------------- Task 1d: 1-R² ----------------
 
+def signal_density(u, v, tau):
+    """f_v(u) = sqrt(τ/(2π)) exp(-τ/2 (u - (v-0.5))^2). v in {0,1}."""
+    mean = float(v) - 0.5
+    return float(np.sqrt(tau/(2*np.pi)) * np.exp(-tau/2 * (u - mean)**2))
+
+
 def task_1d(u_grid, p_grid, mu, gamma, tau, G):
-    print("\n=== Task 1d: 1-R² from seed ===")
-    n = G * G * G
-    Tstar = np.empty(n)
-    logit_p = np.empty(n)
-    valid = np.zeros(n, dtype=bool)
-    k = 0
+    """Weighted 1-R² with ex-ante probability weights (per FIGURES_TODO.md)."""
+    print("\n=== Task 1d: weighted 1-R² from seed ===")
+    Tstar = []; logit_p = []; weights = []
+    f0 = np.array([signal_density(u, 0, tau) for u in u_grid])
+    f1 = np.array([signal_density(u, 1, tau) for u in u_grid])
     for i in range(G):
         for j in range(G):
             for l in range(G):
                 u = (float(u_grid[i]), float(u_grid[j]), float(u_grid[l]))
                 p = market_clear(u, u_grid, p_grid, mu, gamma)
-                T = tau * (u[0] + u[1] + u[2])
-                Tstar[k] = T
-                if 1e-10 < p < 1 - 1e-10:
-                    logit_p[k] = logit(p)
-                    valid[k] = True
-                k += 1
+                if not (1e-10 < p < 1 - 1e-10): continue
+                w_ijl = 0.5 * (f0[i]*f0[j]*f0[l] + f1[i]*f1[j]*f1[l])
+                Tstar.append(tau * (u[0] + u[1] + u[2]))
+                logit_p.append(logit(p))
+                weights.append(w_ijl)
         if i % 5 == 0:
             print(f"  row {i+1}/{G}", flush=True)
 
-    T_v = Tstar[valid]; lp_v = logit_p[valid]
-    # Regress lp = a + b T
-    b, a = np.polyfit(T_v, lp_v, 1)
-    pred = a + b * T_v
-    ss_res = float(np.sum((lp_v - pred) ** 2))
-    ss_tot = float(np.sum((lp_v - lp_v.mean()) ** 2))
-    R2 = 1 - ss_res / ss_tot
-    one_minus_R2 = 1 - R2
+    Tstar = np.array(Tstar); logit_p = np.array(logit_p)
+    weights = np.array(weights)
+
+    # Weighted regression
+    slope, intercept = np.polyfit(Tstar, logit_p, 1, w=np.sqrt(weights))
+    pred = slope * Tstar + intercept
+    mean_lp = np.average(logit_p, weights=weights)
+    var_tot = np.average((logit_p - mean_lp)**2, weights=weights)
+    var_res = np.average((logit_p - pred)**2, weights=weights)
+    one_minus_R2 = float(var_res / var_tot)
 
     out_path = f"{OUTDIR}/G20_umax5_R2.json"
     rec = {
         "params": {"G": G, "UMAX": 5.0, "gamma": gamma, "tau": tau},
-        "1-R2": one_minus_R2,
-        "slope": float(b),
-        "intercept": float(a),
-        "n_triples": int(valid.sum()),
-        "n_total": int(n),
+        "1-R2_weighted": one_minus_R2,
+        "slope_weighted": float(slope),
+        "intercept_weighted": float(intercept),
+        "n_triples": int(len(Tstar)),
+        "weighting": "ex-ante: 0.5*(f0(u_i)f0(u_j)f0(u_l) + f1(...))",
     }
     with open(out_path, "w") as f:
         json.dump(rec, f, indent=2)
-    print(f"  1-R² = {one_minus_R2:.6e}")
-    print(f"  slope = {b:.6f}")
-    print(f"  n = {valid.sum()} / {n}")
+    print(f"  weighted 1-R² = {one_minus_R2:.6e}")
+    print(f"  weighted slope = {slope:.6f}")
+    print(f"  n = {len(Tstar)}")
     print(f"  Saved {out_path}")
 
 
