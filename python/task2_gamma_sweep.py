@@ -448,17 +448,58 @@ def main():
                         "F_max": "0", "F_med": "0", "iters": 0,
                         "elapsed_s": 0.0}}
 
-    for gamma_mp, src_mp in CHAIN:
-        if src_mp is None: continue   # seed already cached
-        gamma_f = float(gamma_mp); src_f = float(src_mp)
+    # Cold-start each γ ≠ 0.5 (warm-start from γ=0.5 trim05 hit boundary
+    # pathology; cold-start + picard polish is the proven recipe)
+    Lam_f64 = lambda z: 1.0/(1.0+np.exp(-z)) if z >= 0 else np.exp(z)/(1+np.exp(z))
+    for gamma_mp, _ in CHAIN:
+        if gamma_mp == mpf("0.5"): continue   # seed already cached
+        gamma_f = float(gamma_mp)
         tag = f"γ={gamma_f}"
-        print(f"\n=== {tag} (warm from γ={src_f}) ===")
+        print(f"\n=== {tag} (cold-start) ===")
         t0 = time.time()
-        # Warm start: interp source μ onto current p-grid
-        mu_src, p_src, _ = cache[str(src_f)]
-        mu_init = interp_mu(mu_src, u_seed, p_src, p_grid_mp)
 
-        # Solve at mp50 LM (no polish — picard doesn't converge at no-trim G=20)
+        # Cold start: no-learning Λ(τu) per row
+        mu_f = np.zeros((G, G))
+        for i, u in enumerate(u_grid_np):
+            mu_f[i, :] = Lam_f64(2.0 * u)
+        mu_f = pava_2d_f64(mu_f)
+
+        # Float64 picard polish: 3 rounds (proven recipe for G=20 trim05)
+        print(f"  Float64 picard polish (γ={gamma_f})...", flush=True)
+        last_status = time.time()
+        for round_idx, (n_iter, n_avg, alpha) in enumerate(
+                [(2000, 1000, 0.005), (2000, 1000, 0.002),
+                 (3000, 1500, 0.001)]):
+            mu_sum = np.zeros_like(mu_f); n_collected = 0
+            for it in range(n_iter):
+                cand, active, _ = phi_step_f64(mu_f, u_grid_np, p_grid_np,
+                                                  p_lo_np, p_hi_np,
+                                                  2.0, gamma_f)
+                cand = pava_2d_f64(cand)
+                mu_f = alpha * cand + (1 - alpha) * mu_f
+                mu_f = np.clip(mu_f, EPS_F64, 1 - EPS_F64)
+                if it >= n_iter - n_avg:
+                    mu_sum += mu_f; n_collected += 1
+                if time.time() - last_status > 30:
+                    cand2, act2, _ = phi_step_f64(mu_f, u_grid_np,
+                                                       p_grid_np,
+                                                       p_lo_np, p_hi_np,
+                                                       2.0, gamma_f)
+                    r = float(np.max(np.abs(cand2 - mu_f)[act2]))
+                    print(f"    polish r{round_idx+1} α={alpha} "
+                          f"it {it+1}/{n_iter}: max={r:.3e}", flush=True)
+                    last_status = time.time()
+            mu_f = pava_2d_f64(mu_sum / max(n_collected, 1))
+        cand2, act2, _ = phi_step_f64(mu_f, u_grid_np, p_grid_np,
+                                          p_lo_np, p_hi_np, 2.0, gamma_f)
+        F_f64 = float(np.max(np.abs(cand2 - mu_f)[act2]))
+        print(f"  Float64 polish done: max={F_f64:.3e}", flush=True)
+
+        # Cast to mp50
+        mu_init = [[mpf(str(mu_f[i, j])) for j in range(G)]
+                       for i in range(G)]
+
+        # mp50 LM
         mu_conv, F_max_v, F_med_v, history = nk_solve(
             mu_init, u_seed, p_grid_mp, p_lo_mp, p_hi_mp, gamma_mp, tag)
 
