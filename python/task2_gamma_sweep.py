@@ -27,7 +27,14 @@ mp.dps = 50
 
 import sys
 sys.path.insert(0, "python")
-from posterior_method_v3 import init_p_grid as init_p_grid_f64
+from posterior_method_v3 import (
+    init_p_grid as init_p_grid_f64,
+    phi_step as phi_step_f64, EPS as EPS_F64,
+)
+from gap_reparam import pava_p_only, pava_u_only
+
+
+def pava_2d_f64(mu): return pava_u_only(pava_p_only(mu))
 
 RESULTS_DIR = "results/full_ree"
 SEED = f"{RESULTS_DIR}/posterior_v3_G20_umax5_notrim_mp300.json"
@@ -451,7 +458,42 @@ def main():
         mu_src, p_src, _ = cache[str(src_f)]
         mu_init = interp_mu(mu_src, u_seed, p_src, p_grid_mp)
 
-        # Solve
+        # Float64 picard polish to absorb γ-shift before mp50 LM
+        print(f"  Float64 picard polish (γ={gamma_f})...", flush=True)
+        mu_f = to_floats(mu_init)
+        for round_idx, (n_iter, n_avg, alpha) in enumerate(
+                [(2000, 1000, 0.01), (2000, 1000, 0.005), (3000, 1500, 0.001)]):
+            mu_sum = np.zeros_like(mu_f); n_collected = 0
+            last_status = time.time()
+            for it in range(n_iter):
+                cand, active, _ = phi_step_f64(mu_f, u_grid_np, p_grid_np,
+                                                  p_lo_np, p_hi_np,
+                                                  2.0, gamma_f)
+                cand = pava_2d_f64(cand)
+                mu_f = alpha * cand + (1 - alpha) * mu_f
+                mu_f = np.clip(mu_f, EPS_F64, 1 - EPS_F64)
+                if it >= n_iter - n_avg:
+                    mu_sum += mu_f; n_collected += 1
+                if time.time() - last_status > 30:
+                    cand2, act2, _ = phi_step_f64(mu_f, u_grid_np,
+                                                       p_grid_np,
+                                                       p_lo_np, p_hi_np,
+                                                       2.0, gamma_f)
+                    r = float(np.max(np.abs(cand2 - mu_f)[act2]))
+                    print(f"    polish r{round_idx+1} α={alpha} "
+                          f"it {it+1}/{n_iter}: max={r:.3e}", flush=True)
+                    last_status = time.time()
+            mu_f = pava_2d_f64(mu_sum / max(n_collected, 1))
+        cand2, act2, _ = phi_step_f64(mu_f, u_grid_np, p_grid_np,
+                                          p_lo_np, p_hi_np, 2.0, gamma_f)
+        F_f64 = float(np.max(np.abs(cand2 - mu_f)[act2]))
+        print(f"  Float64 polish done: max={F_f64:.3e}", flush=True)
+
+        # Cast back to mp50 for LM
+        mu_init = [[mpf(str(mu_f[i, j])) for j in range(G)]
+                       for i in range(G)]
+
+        # Solve at mp50 LM
         mu_conv, F_max_v, F_med_v, history = nk_solve(
             mu_init, u_seed, p_grid_mp, p_lo_mp, p_hi_mp, gamma_mp, tag)
 
