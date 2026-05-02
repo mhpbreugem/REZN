@@ -1,0 +1,39 @@
+{
+  "G": 9,
+  "umax": 2.0,
+  "tau": 2.0,
+  "gamma": 0.5,
+  "seed": "array",
+  "seed_array": "results/full_ree/G5_tau2_gamma0.5_no-learning_prices.npz",
+  "method": "picard",
+  "damping": 0.25,
+  "anderson_window": 5,
+  "anderson_beta": 0.7,
+  "gmres_max_iter": null,
+  "gmres_tol": null,
+  "fd_eps": null,
+  "iterations": 300,
+  "converged": false,
+  "residual_inf": 0.00023567440900296166,
+  "revelation_deficit": 0.000497262230122475,
+  "max_fr_error": 0.1220951730115371,
+  "representative_realization": {
+    "u": [
+      1.0,
+      -1.0,
+      1.0
+    ],
+    "price": 0.9137994899726216,
+    "posteriors": [
+      0.9189585372883786,
+      0.9042396586516331,
+      0.9189585372883772
+    ],
+    "private_priors": [
+      0.8807970779778823,
+      0.11920292202211755,
+      0.8807970779778823
+    ],
+    "fr_price": 0.8807970779778823
+  }
+}

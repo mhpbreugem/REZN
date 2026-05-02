@@ -1,0 +1,33 @@
+{
+  "G": 5,
+  "umax": 2.0,
+  "tau": 2.0,
+  "gamma": 0.5,
+  "seed": "no-learning",
+  "seed_array": null,
+  "damping": 0.3,
+  "iterations": 1029,
+  "converged": true,
+  "residual_inf": 9.26037024839843e-13,
+  "revelation_deficit": 0.0003007337838675239,
+  "max_fr_error": 0.27051768310970814,
+  "representative_realization": {
+    "u": [
+      1.0,
+      -1.0,
+      1.0
+    ],
+    "price": 0.9055072217361804,
+    "posteriors": [
+      0.9160348944654121,
+      0.8870613490547371,
+      0.9160348944654121
+    ],
+    "private_priors": [
+      0.8807970779778823,
+      0.11920292202211755,
+      0.8807970779778823
+    ],
+    "fr_price": 0.8807970779778823
+  }
+}

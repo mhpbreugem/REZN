@@ -1,0 +1,39 @@
+{
+  "G": 7,
+  "umax": 2.0,
+  "tau": 2.0,
+  "gamma": 0.5,
+  "seed": "array",
+  "seed_array": "results/full_ree/G7_tau2_gamma0.5_G7_picard_adaptive_prices.npz",
+  "method": "newton",
+  "damping": 0.3,
+  "anderson_window": 0,
+  "anderson_beta": 1.0,
+  "gmres_max_iter": 50,
+  "gmres_tol": 1e-06,
+  "fd_eps": 1e-06,
+  "iterations": 2,
+  "converged": false,
+  "residual_inf": 2.2292166770299104e-06,
+  "revelation_deficit": 0.0002407454459881775,
+  "max_fr_error": 0.15890261641205972,
+  "representative_realization": {
+    "u": [
+      1.333333333333333,
+      -0.6666666666666667,
+      1.333333333333333
+    ],
+    "price": 0.9863833665187699,
+    "posteriors": [
+      0.9877843920759505,
+      0.9839390344591696,
+      0.9877843920759508
+    ],
+    "private_priors": [
+      0.935030830871336,
+      0.2086085273260449,
+      0.935030830871336
+    ],
+    "fr_price": 0.9820137900379085
+  }
+}

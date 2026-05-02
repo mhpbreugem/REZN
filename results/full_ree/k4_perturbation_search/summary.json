@@ -1,0 +1,29 @@
+{
+  "K": 4,
+  "G": 5,
+  "tau": 2.0,
+  "gamma": 0.5,
+  "base_array": "results/full_ree/generic_k/K4_G5_tau2_gamma0.5_K4_G5_prices.npz",
+  "runs": 20,
+  "rng_seed": 20260429,
+  "amplitude_log10_range": [
+    -8.0,
+    -4.0
+  ],
+  "max_iter": 80,
+  "damping": 0.18,
+  "anderson": 5,
+  "tol": 1e-08,
+  "converged_count": 0,
+  "best": {
+    "seed_index": 19,
+    "rng_seed": 22250280,
+    "amplitude": 5.21952797102603e-05,
+    "iterations": 80,
+    "converged": false,
+    "residual_inf": 0.0015665929416651611,
+    "max_fr_error": 0.11658919565643072,
+    "representative_price": 0.9901950179106583,
+    "representative_posteriors": "0.992477108309;0.985311118377;0.992477108309;0.992477108309"
+  }
+}

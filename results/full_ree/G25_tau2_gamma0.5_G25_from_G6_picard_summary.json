@@ -1,0 +1,39 @@
+{
+  "G": 25,
+  "umax": 2.0,
+  "tau": 2.0,
+  "gamma": 0.5,
+  "seed": "array",
+  "seed_array": "results/full_ree/G25_tau2_gamma0.5_G25_probe_from_G6_prices.npz",
+  "method": "picard",
+  "damping": 0.12,
+  "anderson_window": 5,
+  "anderson_beta": 0.7,
+  "gmres_max_iter": null,
+  "gmres_tol": null,
+  "fd_eps": null,
+  "iterations": 24,
+  "converged": false,
+  "residual_inf": 0.0016989542941674707,
+  "revelation_deficit": 6.748632154951473e-05,
+  "max_fr_error": 0.16095060857309434,
+  "representative_realization": {
+    "u": [
+      1.0,
+      -1.0,
+      1.0
+    ],
+    "price": 0.8899928990748257,
+    "posteriors": [
+      0.8910369137129298,
+      0.8892488490063055,
+      0.8910369137129296
+    ],
+    "private_priors": [
+      0.8807970779778823,
+      0.11920292202211755,
+      0.8807970779778823
+    ],
+    "fr_price": 0.8807970779778823
+  }
+}

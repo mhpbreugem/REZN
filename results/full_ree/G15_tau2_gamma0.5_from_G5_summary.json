@@ -1,0 +1,33 @@
+{
+  "G": 15,
+  "umax": 2.0,
+  "tau": 2.0,
+  "gamma": 0.5,
+  "seed": "array",
+  "seed_array": "results/full_ree/G5_tau2_gamma0.5_no-learning_prices.npz",
+  "damping": 0.2,
+  "iterations": 200,
+  "converged": false,
+  "residual_inf": 0.0024385083608408076,
+  "revelation_deficit": 0.00025276582225775,
+  "max_fr_error": 0.18736863556917138,
+  "representative_realization": {
+    "u": [
+      1.1428571428571428,
+      -1.1428571428571428,
+      1.1428571428571428
+    ],
+    "price": 0.9062629779117729,
+    "posteriors": [
+      0.9064962616330737,
+      0.9055476984589657,
+      0.9064962616330737
+    ],
+    "private_priors": [
+      0.9076869712477019,
+      0.09231302875229801,
+      0.9076869712477019
+    ],
+    "fr_price": 0.9076869712477019
+  }
+}

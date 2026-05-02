@@ -1,0 +1,14 @@
+{
+  "G": 7,
+  "umax": 2.0,
+  "tau": 2.0,
+  "gamma": 0.5,
+  "construction": "logit-space linear extrapolation from converged G5 and G6 tensors",
+  "h5": 1.0,
+  "h6": 0.8,
+  "h7": 0.6666666666666666,
+  "extrapolation_ratio": 0.6666666666666672,
+  "initial_residual_inf": 0.07479215995831628,
+  "initial_revelation_deficit": 0.006793610437990649,
+  "initial_max_fr_error": 0.17755026358370463
+}
