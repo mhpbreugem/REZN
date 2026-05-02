@@ -178,3 +178,45 @@ Also output: results/full_ree/fig4A_G20_pgfplots.tex
 - Arc-length resample contours to 40-50 points
 - Use linear interpolation in pgfplots (no smooth keyword needed if 40+ pts)
 - Colors will be applied in the paper's LaTeX, not in the pgfplots output
+
+---
+
+## CRITICAL FIX: USE WEIGHTED 1-R² EVERYWHERE
+
+**All 1-R² measurements MUST use ex-ante probability weights.**
+
+Unweighted gives wrong values (0.19-0.23) that depend on umax.
+Weighted gives stable values (0.078-0.085) that converge across grids.
+
+**Weight formula:**
+```python
+w(i,j,l) = 0.5 * (f_0(u_i)*f_0(u_j)*f_0(u_l) + f_1(u_i)*f_1(u_j)*f_1(u_l))
+
+def signal_density(u, v):
+    mean = v - 0.5
+    return sqrt(tau/(2*pi)) * exp(-tau/2 * (u - mean)^2)
+```
+
+**Weighted regression:**
+```python
+slope, intercept = np.polyfit(Tstar, logit_p, 1, w=np.sqrt(weights))
+```
+
+**Weighted R²:**
+```python
+pred = slope * Tstar + intercept
+w_norm = weights / weights.sum()
+mean_lp = np.average(logit_p, weights=weights)
+var_tot = np.average((logit_p - mean_lp)**2, weights=weights)
+var_res = np.average((logit_p - pred)**2, weights=weights)
+R2 = 1 - var_res / var_tot
+```
+
+**Verified results (γ=0.5, τ=2):**
+| Grid            | Unwtd 1-R² |  Wtd 1-R² | Wtd slope |
+|-----------------|------------|-----------|-----------|
+| G=15 umax=4     |    0.191   |   0.078   |   0.521   |
+| G=18 umax=4     |    0.195   |   0.083   |   0.545   |
+| G=20 umax=5     |    0.230   |   0.085   |   0.543   |
+
+Apply this to ALL 1-R² measurements: Fig 4A τ-sweep, Fig 4B γ-sweep.
