@@ -220,3 +220,60 @@ R2 = 1 - var_res / var_tot
 | G=20 umax=5     |    0.230   |   0.085   |   0.543   |
 
 Apply this to ALL 1-R² measurements: Fig 4A τ-sweep, Fig 4B γ-sweep.
+
+---
+
+## URGENT: RE-MEASURE 1-R² WITH WEIGHTED FORMULA FOR γ=1, 2, 4
+
+The 1-R² values you reported for Task 2 are UNWEIGHTED and therefore WRONG:
+- γ=1.0: you report 0.155 — true weighted value is much lower
+- γ=2.0: you report 0.100 — same issue
+- γ=4.0: you report 0.070 — same issue
+
+For reference: γ=0.5 gives unweighted=0.230 but weighted=0.085.
+
+**Re-measure each converged checkpoint using this code:**
+
+```python
+import numpy as np
+
+def signal_density(u, v, tau):
+    mean = v - 0.5
+    return np.sqrt(tau/(2*np.pi)) * np.exp(-tau/2 * (u - mean)**2)
+
+# For each triple (i,j,l):
+w = 0.5 * (signal_density(u1,0,tau)*signal_density(u2,0,tau)*signal_density(u3,0,tau)
+          + signal_density(u1,1,tau)*signal_density(u2,1,tau)*signal_density(u3,1,tau))
+
+# Weighted regression:
+slope, intercept = np.polyfit(Tstar, logit_p, 1, w=np.sqrt(weights))
+
+# Weighted R²:
+pred = slope * Tstar + intercept
+mean_lp = np.average(logit_p, weights=weights)
+var_tot = np.average((logit_p - mean_lp)**2, weights=weights)
+var_res = np.average((logit_p - pred)**2, weights=weights)
+weighted_1mR2 = 1 - (1 - var_res / var_tot)  # i.e. var_res / var_tot
+```
+
+**Do this for ALL checkpoint files:**
+- posterior_v3_G20_umax5_*_g1.0_*.json
+- posterior_v3_G20_umax5_*_g2.0_*.json
+- posterior_v3_G20_umax5_*_g4.0_*.json
+
+**Save updated summary:**
+results/full_ree/fig4B_G20_gamma_sweep_weighted.json
+
+**Also: still need γ=0.25 and γ=0.1 convergence runs to complete Fig 4B.**
+
+## ALSO: FIG 5 FIX
+
+The symmetric-triple method gives FR ≡ NL (correct but uninformative).
+For Fig 5, use ASYMMETRIC triples instead:
+- Fix u₁ = 1.0 (closest grid point)
+- Fix u₂ = -1.0 (closest grid point)
+- Vary u₃ from -3 to +3 (50 points)
+- T* = τ(u₁ + u₂ + u₃) varies from -6 to +10
+- At each u₃: compute p_FR = Λ(T*/3), p_NL, p_REE
+
+This gives three DIFFERENT curves that show the PR gap.
