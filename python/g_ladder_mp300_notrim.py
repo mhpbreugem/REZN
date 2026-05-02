@@ -158,12 +158,26 @@ def interp_grid(mu_old, u_old, p_old_grid, u_new, p_new_grid, G_new, G_old):
     return mu
 
 
+def lm_step(J, F_flat, n, lam):
+    """Levenberg-Marquardt step: (J^T J + λ I) Δx = -J^T F."""
+    # JTJ = J.T * J
+    JT = J.T
+    JTJ = JT * J
+    for k in range(n):
+        JTJ[k, k] = JTJ[k, k] + lam
+    JTF = JT * mpmath.matrix([-F_flat[k] for k in range(n)])
+    return mpmath.lu_solve(JTJ, JTF)
+
+
 def nk_solve_mp(mu, u_grid, p_grid, p_lo, p_hi, G, max_iters=4):
     history = []
+    lam = mpf("1e-30")  # initial LM damping
     for nk_iter in range(1, max_iters + 1):
         t_iter = time.time()
         F_curr = F_mu(mu, u_grid, p_grid, p_lo, p_hi, TAU, GAMMA, G)
         F_max_c = F_max(F_curr, G); F_med_c = F_med(F_curr, G)
+        F_norm_c = sum(abs(F_curr[i][j])**2 for i in range(G)
+                         for j in range(G))
         print(f"  NK iter {nk_iter}: F_max={mpmath.nstr(F_max_c, 6)}, "
               f"F_med={mpmath.nstr(F_med_c, 6)}", flush=True)
         if F_max_c < TARGET:
@@ -188,23 +202,51 @@ def nk_solve_mp(mu, u_grid, p_grid, p_lo, p_hi, G, max_iters=4):
                       f"eta {(n-col-1)*elapsed/(col+1):.0f}s",
                       flush=True)
         print(f"    Jacobian {(time.time()-t_jac)/60:.0f}min", flush=True)
-        rhs = mpmath.matrix([-F_flat[k] for k in range(n)])
-        try:
-            delta = mpmath.lu_solve(J, rhs)
-        except ZeroDivisionError:
-            print(f"    LU singular — reg 1e-30", flush=True)
-            for k in range(n): J[k, k] = J[k, k] + mpf("1e-30")
+
+        # Levenberg-Marquardt with adaptive λ
+        print(f"    LM step (λ={mpmath.nstr(lam, 3)})...", flush=True)
+        t_lu = time.time()
+        accepted = False
+        for attempt in range(8):
             try:
-                delta = mpmath.lu_solve(J, rhs)
+                delta = lm_step(J, F_flat, n, lam)
             except ZeroDivisionError:
-                print(f"    Still singular — reg 1e-15", flush=True)
-                for k in range(n): J[k, k] = J[k, k] + mpf("1e-15")
-                delta = mpmath.lu_solve(J, rhs)
-        for k in range(n):
-            i, j = k // G, k % G
-            mu[i][j] = mu[i][j] + delta[k]
-            if mu[i][j] < mpf("1e-150"): mu[i][j] = mpf("1e-150")
-            if mu[i][j] > mpf(1) - mpf("1e-150"): mu[i][j] = mpf(1) - mpf("1e-150")
+                print(f"    LM singular at λ={mpmath.nstr(lam, 3)}; "
+                      f"increasing", flush=True)
+                lam = lam * mpf(100)
+                continue
+            # Try the step
+            mu_trial = [row[:] for row in mu]
+            for k in range(n):
+                i, j = k // G, k % G
+                mu_trial[i][j] = mu_trial[i][j] + delta[k]
+                if mu_trial[i][j] < mpf("1e-150"):
+                    mu_trial[i][j] = mpf("1e-150")
+                if mu_trial[i][j] > mpf(1) - mpf("1e-150"):
+                    mu_trial[i][j] = mpf(1) - mpf("1e-150")
+            F_try = F_mu(mu_trial, u_grid, p_grid, p_lo, p_hi, TAU, GAMMA, G)
+            F_norm_try = sum(abs(F_try[i][j])**2 for i in range(G)
+                               for j in range(G))
+            if F_norm_try < F_norm_c:
+                # Accept, decrease λ
+                mu = mu_trial
+                lam = lam / mpf(10)
+                accepted = True
+                F_norm_c = F_norm_try
+                print(f"    LM accepted, new λ={mpmath.nstr(lam, 3)}",
+                      flush=True)
+                break
+            else:
+                # Reject, increase λ
+                lam = lam * mpf(10)
+                print(f"    LM rejected (norm grew), λ={mpmath.nstr(lam, 3)}",
+                      flush=True)
+        if not accepted:
+            print(f"    LM no improvement after 8 attempts; keeping mu",
+                  flush=True)
+        print(f"    LM step total {(time.time()-t_lu)/60:.0f}min",
+              flush=True)
+
         F_after = F_mu(mu, u_grid, p_grid, p_lo, p_hi, TAU, GAMMA, G)
         F_max_a = F_max(F_after, G); F_med_a = F_med(F_after, G)
         elapsed = time.time() - t_iter
@@ -214,6 +256,7 @@ def nk_solve_mp(mu, u_grid, p_grid, p_lo, p_hi, G, max_iters=4):
         history.append({"iter": nk_iter,
                           "F_max": mpmath.nstr(F_max_a, 50),
                           "F_med": mpmath.nstr(F_med_a, 50),
+                          "lambda": mpmath.nstr(lam, 10),
                           "elapsed_s": elapsed})
     return mu, F_max_a, F_med_a, history
 
