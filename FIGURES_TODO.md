@@ -277,3 +277,20 @@ For Fig 5, use ASYMMETRIC triples instead:
 - At each u₃: compute p_FR = Λ(T*/3), p_NL, p_REE
 
 This gives three DIFFERENT curves that show the PR gap.
+
+---
+
+## TODO: FIG 6B (posteriors) NEEDS HIGHER G OR UMAX=4
+
+Current Fig 6B has visible artifacts from G=20 umax=5:
+- Flat regions at extremes (μ₁≈0.324 for T*<-1, μ₂≈0.676 for T*>1)
+- Step/kink at T*≈-1.1 where μ₂ jumps
+- These are grid boundary effects, not real features
+
+Options to fix:
+1. Use G=18 umax=4 mp300 seed instead (tighter grid, no wasted tails)
+2. Or use G=25 when it converges
+3. Or clip T* range to [-0.5, 1.5] (transition zone only, no flat regions)
+4. Or interpolate μ* more finely before evaluating
+
+Currently has gray background (black!8) to flag as pending.
