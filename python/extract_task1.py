@@ -176,26 +176,33 @@ def task_1a(u_grid, p_grid, mu, gamma):
 # ---------------- Task 1b: Fig 5 ----------------
 
 def task_1b(u_grid, p_grid, mu, gamma, tau):
-    print("\n=== Task 1b: Fig 5 price vs T* ===")
-    Ts = np.linspace(-8.0, 8.0, 50)
+    """Fig 5 with ASYMMETRIC triples (per FIGURES_TODO update).
+    u1=+1, u2=-1, u3 varying -3 to +3 → T* varies -6 to +10.
+    This gives 3 DISTINCT curves (symmetric triples gave FR≡NL).
+    """
+    print("\n=== Task 1b: Fig 5 price vs T* (asymmetric triples) ===")
+    u1 = 1.0; u2 = -1.0
+    u3_vals = np.linspace(-3.0, 3.0, 50)
+    Ts = tau * (u1 + u2 + u3_vals)
     p_FR = Lam(Ts / 3.0)
     p_NL = np.empty_like(Ts)
     p_REE = np.empty_like(Ts)
-    for k, T in enumerate(Ts):
-        u = float(T) / (3.0 * tau)
-        p_NL[k] = market_clear_no_learning((u, u, u), tau, gamma)
-        p_REE[k] = market_clear((u, u, u), u_grid, p_grid, mu, gamma)
+    for k, u3 in enumerate(u3_vals):
+        p_NL[k] = market_clear_no_learning((u1, u2, float(u3)),
+                                                tau, gamma)
+        p_REE[k] = market_clear((u1, u2, float(u3)), u_grid, p_grid,
+                                     mu, gamma)
 
     out_path = f"{OUTDIR}/fig5_G20_pgfplots.tex"
-    lines = ["% Fig 5 price vs T* (symmetric triples)",
+    lines = ["% Fig 5 price vs T* (asymmetric triples u1=+1, u2=-1, u3 varying)",
              f"% G=20 UMAX=5 γ={gamma} τ={tau}", ""]
 
     def fmt(xs, ys):
         return "".join(f"({x:.4f},{y:.6f})" for x, y in zip(xs, ys))
 
-    lines += ["% FR (analytical)",
+    lines += ["% FR (analytical, T*/3)",
               f"\\addplot coordinates {{{fmt(Ts, p_FR)}}};", ""]
-    lines += ["% NL (no learning)",
+    lines += ["% NL (no learning, private priors)",
               f"\\addplot coordinates {{{fmt(Ts, p_NL)}}};", ""]
     lines += ["% REE (using μ*)",
               f"\\addplot coordinates {{{fmt(Ts, p_REE)}}};", ""]
@@ -203,8 +210,9 @@ def task_1b(u_grid, p_grid, mu, gamma, tau):
     with open(out_path, "w") as f:
         f.write("\n".join(lines))
     print(f"  Saved {out_path}")
-    print(f"  Sample: T*=0 → FR={p_FR[len(Ts)//2]:.4f}, NL={p_NL[len(Ts)//2]:.4f}, "
-          f"REE={p_REE[len(Ts)//2]:.4f}")
+    mid = len(Ts) // 2
+    print(f"  Sample: T*={Ts[mid]:.2f} → "
+          f"FR={p_FR[mid]:.4f}, NL={p_NL[mid]:.4f}, REE={p_REE[mid]:.4f}")
 
 
 # ---------------- Task 1c: Fig 6B ----------------
