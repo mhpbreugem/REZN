@@ -13,6 +13,7 @@
 \usepackage{booktabs}
 \usepackage{caption}
 \usepackage{subcaption}
+\usepackage{colortbl}
 \usepackage[round,authoryear]{natbib}
 \usepackage{setspace}
 \usepackage{xcolor}
@@ -725,7 +726,7 @@ converges to machine precision
 $\gamma\!\in\!\{0.3,\,0.5,\,1,\,2\}$ and for
 $\tau\!\in\!\{0.5,\,1,\,2,\,4,\,8\}$ at $\gamma\!=\!0.5$. The
 revelation deficit at the canonical case $(\gamma,\tau)\!=\!(0.5,2)$
-is $1\!-\!R^{2}\!=\!0.085$, with slope $\beta_{T}\!=\!0.54$ on
+is $1\!-\!R^{2}\!=\!0.088$, with slope $\beta_{T}\!=\!0.52$ on
 $\Tstar$---prices capture only 34\% of the sufficient statistic's
 variance. The deficit is monotonically decreasing in $\gamma$
 (from $0.119$ at $\gamma\!=\!0.3$ to $0.079$ at $\gamma\!=\!2$)
@@ -854,18 +855,20 @@ $\|F\|_{\infty}<10^{-14}$ with zero monotonicity violations:
 \toprule
 $\gamma$ & $1-R^{2}$ & slope on $\Tstar$ & $\|F\|_\infty$ & status \\
 \midrule
-0.10 & 0.154 & 0.243 & $4.9\times 10^{-2}$ & fallback \\
-0.30 & 0.119 & 0.293 & $5.1\times 10^{-15}$ & strict \\
-0.50 & 0.085 & 0.543 & $7.4\times 10^{-119}$ & strict \\
-1.00 & 0.100 & 0.452 & $8.4\times 10^{-15}$ & strict \\
-2.00 & 0.079 & 0.599 & $8.2\times 10^{-15}$ & strict \\
+\rowcolor{black!15} 0.10 & 0.154 & 0.243 & $4.9\times 10^{-2}$ & fallback \\
+\rowcolor{black!15} 0.30 & 0.119 & 0.293 & $5.1\times 10^{-15}$ & strict \\
+0.50 & 0.088 & 0.523 & $7.4\times 10^{-119}$ & strict \\
+1.00 & 0.047 & 0.550 & $<10^{-25}$ & strict \\
+2.00 & 0.025 & 0.586 & $<10^{-25}$ & strict \\
+4.00 & 0.016 & 0.605 & $<10^{-25}$ & strict \\
 \bottomrule
 \end{tabular}
 \end{center}
-All runs use $G=20$, $\tau=2$, $W=1$. The revelation deficit is
-monotonically decreasing in $\gamma$, from $0.119$ at $\gamma=0.3$
-to $0.079$ at $\gamma=2$, exactly as the no-learning analysis predicts.
-The slope on $\Tstar$ is $0.54$ at $\gamma=0.5$---prices capture
+All runs use $G=20$, $\tau=2$, $W=1$; $1\!-\!R^{2}$ is weighted by
+ex-ante signal probability. The revelation deficit is
+monotonically decreasing in $\gamma$, from $0.088$ at $\gamma=0.5$
+to $0.016$ at $\gamma=4$, exactly as the no-learning analysis predicts.
+The slope on $\Tstar$ is $0.52$ at $\gamma=0.5$---prices capture
 roughly half of the sufficient statistic's variance. Grid-convergence
 checks confirm that $1-R^{2}$ stabilises near $0.105$ from $G=15$
 onward (Appendix~\ref{app:numerics}, Table~\ref{tab:G-ladder}).
@@ -895,8 +898,8 @@ partial revelation. At a representative realisation
 $(u_{1},u_{2},u_{3})=(1,-1,1)$, $G=20$, $\gamma=0.5$, the converged
 posteriors differ from each other and from the fully-revealing common
 value $\Lam(\Tstar)=0.881$ (Table~\ref{tab:posteriors}). The aggregate
-revelation deficit at the same parameters is $1-R^{2}=0.085$, with
-slope $\beta_{T}=0.54$ on $\Tstar$: the partial revelation manifests as a
+revelation deficit at the same parameters is $1-R^{2}=0.088$, with
+slope $\beta_{T}=0.52$ on $\Tstar$: the partial revelation manifests as a
 systematic non-affineness of $\logit p$ in $\Tstar$ averaged over the
 joint signal distribution. Figure~\ref{fig:ree-vs-nolearning}
 contrasts the REE price function with the no-learning and
@@ -927,7 +930,7 @@ fully-revealing benchmarks.
 A graphical depiction of how posteriors and price track $\Tstar$ across
 a range of realisations is reported in Figure~\ref{fig:posteriors}.
 The visual signature of partial revelation is a slope on $\Tstar$
-shy of unity (here $\beta_{T}=0.54$), not a large per-realisation
+shy of unity (here $\beta_{T}=0.52$), not a large per-realisation
 gap.
 
 \begin{figure}[t]
@@ -1857,8 +1860,8 @@ value of $1-R^{2}$ is already converged.}
 \toprule
 $G$ & $1-R^{2}$ & slope & $\|F\|_\infty$ \\
 \midrule
-10 & 0.128 & 0.352 & $2.9\times 10^{-15}$ \\
-12 & 0.115 & 0.344 & $6.2\times 10^{-15}$ \\
+\rowcolor{black!15} 10 & 0.128 & 0.352 & $2.9\times 10^{-15}$ \\
+\rowcolor{black!15} 12 & 0.115 & 0.344 & $6.2\times 10^{-15}$ \\
 15 & 0.078 & 0.521 & $4.2\times 10^{-91}$ \\
 18 & 0.083 & 0.545 & $1.3\times 10^{-131}$ \\
 20 & 0.085 & 0.543 & $7.4\times 10^{-119}$ \\
