@@ -242,8 +242,12 @@ def nk_solve_mp(mu, u_grid, p_grid, p_lo, p_hi, G, max_iters=4):
                 print(f"    LM rejected (norm grew), λ={mpmath.nstr(lam, 3)}",
                       flush=True)
         if not accepted:
-            print(f"    LM no improvement after 8 attempts; keeping mu",
-                  flush=True)
+            # Picard fallback: take damped step toward phi(mu) to escape local trap
+            print(f"    LM stuck — applying damped Picard α=0.1", flush=True)
+            cand_p = phi_step_mp(mu, u_grid, p_grid, p_lo, p_hi, TAU, GAMMA, G)
+            mu = [[mu[i][j] + mpf("0.1") * (cand_p[i][j] - mu[i][j])
+                     for j in range(G)] for i in range(G)]
+            lam = mpf("1e-30")  # reset λ
         print(f"    LM step total {(time.time()-t_lu)/60:.0f}min",
               flush=True)
 
