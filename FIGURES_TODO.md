@@ -1,157 +1,180 @@
-# DEFINITIVE FIGURE COMPUTATION PLAN
+# SOLVER INSTRUCTIONS — READ THIS FILE, EXECUTE IN ORDER
 # Updated 2026-05-02
-# Seed: G=20 UMAX=5 notrim mp300, γ=0.5 τ=2 (||F||=7.4e-119)
 
-## STANDARD PARAMETERS
-```
-γ_paper = [0.5, 1.0, 4.0]
-G = 20, UMAX = 5 (grid: [-5, 5], spacing = 0.526)
-Precision: mp50 for sweeps, mp300 for showpiece
-Tolerance: ||F|| < 1e-25 (mp50), 1e-100 (mp300)
-```
-
-## SEED AVAILABLE
-```
-G=20 UMAX=5 notrim mp300: γ=0.5 τ=2 → ||F||=7.4e-119 ✅
-```
-All runs below warm-start from this seed or from neighboring converged points.
+## GLOBAL PARAMETERS
+- Standard gammas: γ = 0.5, 1.0, 4.0
+- Grid: G=20, u_grid from -5 to +5 (UMAX=5), spacing 0.526
+- Precision: mp50 (50 decimal digits) for sweeps
+- Tolerance: ||F||∞ < 1e-25 (do NOT converge to machine precision)
+- Seed checkpoint: results/full_ree/posterior_v3_G20_umax5_notrim_mp300.json
+  (G=20, UMAX=5, γ=0.5, τ=2, ||F||=7.4e-119)
 
 ---
 
-## A. ZERO RUNS — ANALYTICAL OR EXISTING
+## TASK 1: EXTRACT FIGURES FROM EXISTING SEED (no new convergence runs)
 
-| Fig | Description | Source | Status |
-|-----|-------------|--------|--------|
-| 1   | Knife-edge 1-R² vs τ | No-learning, G=15 | ✅ DONE |
-| 3A  | CARA contours | Analytical straight lines | ✅ DONE |
-| 6A  | CARA posteriors | Analytical Λ(T*/3) | ✅ DONE |
+Load the seed file posterior_v3_G20_umax5_notrim_mp300.json.
+This contains the converged μ*(u,p) at G=20, γ=0.5, τ=2.
 
----
+### Task 1a: Fig 3B — CRRA contour lines
+- Fix u₁ = closest grid point to 1.0
+- Create 300×300 fine grid in (u₂, u₃) ∈ [-3.5, 3.5]²
+- At each (u₂, u₃): interpolate μ* for all 3 agents, solve market clearing → price
+- Apply Gaussian smoothing (σ=1.5 pixels) to the 300×300 price surface
+- Extract contour lines at p ∈ {0.2, 0.3, 0.5, 0.7, 0.8} using matplotlib contour
+- For each contour: arc-length resample to 50 points
+- Save: results/full_ree/fig3B_G20_pgfplots.tex
+- Format: `\addplot coordinates {(x1,y1)(x2,y2)...};` per price level
 
-## B. ZERO RUNS — EXTRACT FROM SEED (G=20 umax5 γ=0.5 τ=2)
+### Task 1b: Fig 5 — price vs T* (three curves)
+- Choose 50 evenly-spaced T* values from -8 to +8
+- For each T*, set u₁ = u₂ = u₃ = T*/(3τ) (symmetric triple)
+- Compute three prices:
+  - p_FR = Λ(T*/3) (analytical)
+  - p_NL = solve Σ crra_demand(Λ(τuₖ), p) = 0 (no-learning, private priors)
+  - p_REE = solve Σ crra_demand(μ*(uₖ, p), p) = 0 (using converged μ*)
+- Save: results/full_ree/fig5_G20_pgfplots.tex
+- Format: three \addplot coordinate lists (FR, NL, REE)
 
-| Fig | What to extract | Method |
-|-----|-----------------|--------|
-| 3B  | CRRA contour lines at 5 prices | 300×300 fine grid, market clearing with μ*, matplotlib contour |
-| 5   | Price vs T* (FR, NL, REE) | 50 symmetric triples u₁=u₂=u₃=T*/(3τ), solve MC |
-| 6B  | Posteriors μ₁(u=+1), μ₂(u=-1), p vs T* | Evaluate μ*(u,p) at representative triples |
-| 10  | Convergence path | Use iteration history from mp300 convergence log |
+### Task 1c: Fig 6B — CRRA posteriors vs T*
+- Choose 50 T* values from -3 to +4 (transition zone)
+- For each T*, use triple (u₁=+1, u₂=-1, u₃=T*/τ - u₁ - u₂ + 1)
+  OR simpler: sweep T* and pick representative (u₁, u₂, u₃) with that T*
+- At each triple: solve market clearing with μ* → get price p_REE
+- Compute: μ₁ = μ*(u₁, p_REE), μ₂ = μ*(u₂, p_REE)
+- Save: results/full_ree/fig6B_G20_pgfplots.tex
+- Format: three \addplot coordinate lists (μ₁, μ₂, price)
 
-**Fig 3B note:** G=20 umax=5 gives spacing 0.526. Use 300×300 fine grid
-+ Gaussian smoothing σ=1.5 + arc-length resample to 50 pts per contour.
-If G=25 finishes, redo from G=25 (spacing 0.42, even smoother).
-
----
-
-## C. NEW CONVERGENCE RUNS
-
-### C1. Fig 4B — γ-sweep at τ=2 (complete the ladder)
-**Precision:** mp50, G=20, UMAX=5, tol < 1e-25
-
-| γ | Warm-start from | Status |
-|---|-----------------|--------|
-| 0.5 | SEED (existing mp300) | ✅ DONE — just measure 1-R² |
-| 1.0 | γ=0.5 seed | 🔲 RUN |
-| 2.0 | γ=1.0 | 🔲 RUN |
-| 4.0 | γ=2.0 | 🔲 RUN |
-| 0.25 | γ=0.5 seed | 🔲 RUN |
-| 0.1 | γ=0.25 | 🔲 RUN |
-
-**6 points, 5 new runs.** Walk outward from γ=0.5:
-```
-γ=0.5 (done) → γ=1.0 → γ=2.0 → γ=4.0
-γ=0.5 (done) → γ=0.25 → γ=0.1
-```
-**Extract:** 1-R² and slope at each γ.
-**Also extract:** no-learning 1-R² at same γ values (cheap, no REE needed).
-
-### C2. Fig 4A — τ-sweep at 3 γ values
-**Precision:** mp50, G=20, UMAX=5, tol < 1e-25
-
-For each γ ∈ {0.5, 1.0, 4.0}, sweep τ:
-```
-τ = [0.3, 0.5, 0.8, 1.0, 1.5, 2.0, 3.0, 4.0, 5.0, 7.0, 10.0, 15.0]
-```
-
-**Warm-start chain** (from C1 converged points at τ=2):
-```
-γ=0.5: τ=2 (seed) → 1.5 → 1.0 → 0.8 → 0.5 → 0.3
-                   → 3.0 → 4.0 → 5.0 → 7.0 → 10.0 → 15.0
-
-γ=1.0: τ=2 (from C1) → same walk up/down
-
-γ=4.0: τ=2 (from C1) → same walk up/down
-```
-
-**36 points total, 33 new runs** (3 at τ=2 already from C1).
-~2 NK iterations per step (warm-started).
-
-**Extract:** 1-R² at each (γ, τ).
+### Task 1d: Measure 1-R² from seed
+- From the converged μ*, compute 1-R² and slope at G=20 γ=0.5 τ=2
+- Method: for all G³ triples, compute T* and logit(p_REE), regress
+- Save: results/full_ree/G20_umax5_R2.json
+- Include: 1-R², slope, n_triples
 
 ---
 
-## D. CHEAP — NO-LEARNING (seconds, no REE)
+## TASK 2: γ-SWEEP AT τ=2 (5 new convergence runs)
 
-| Fig | Description | What to run |
-|-----|-------------|-------------|
-| R1  | 1-R² vs K | K=3..20, γ=0.5/1/4, τ=2. Check existing uses correct γ. |
-| R2  | Lognormal variant | Same γ=0.5/1/4. Check existing uses correct γ. |
-| 11  | Mechanisms bar chart | 6 het-γ/het-τ configs. Already have most data. |
+Run the posterior-function fixed-point solver at G=20, UMAX=5, mp50.
+Warm-start each from the nearest converged γ.
+
+### Execution order (warm-start chain):
+```
+Run 1: γ=1.0, τ=2  — warm from γ=0.5 seed (interpolate μ* onto new p-grid)
+Run 2: γ=2.0, τ=2  — warm from γ=1.0 result
+Run 3: γ=4.0, τ=2  — warm from γ=2.0 result
+Run 4: γ=0.25, τ=2 — warm from γ=0.5 seed
+Run 5: γ=0.1, τ=2  — warm from γ=0.25 result
+```
+
+For each converged run, save:
+- Checkpoint: results/full_ree/posterior_v3_G20_umax5_gXX_mp50.json
+- Measure: 1-R², slope
+- Summary: results/full_ree/fig4B_G20_gamma_sweep.json
+
+The final fig4B_G20_gamma_sweep.json should contain:
+```json
+{
+  "figure": "fig4B",
+  "params": {"G": 20, "tau": 2.0, "umax": 5},
+  "REE": [
+    {"gamma": 0.1, "1-R2": ..., "slope": ...},
+    {"gamma": 0.25, "1-R2": ..., "slope": ...},
+    {"gamma": 0.5, "1-R2": ..., "slope": ...},
+    {"gamma": 1.0, "1-R2": ..., "slope": ...},
+    {"gamma": 2.0, "1-R2": ..., "slope": ...},
+    {"gamma": 4.0, "1-R2": ..., "slope": ...}
+  ],
+  "no_learning": [
+    {"gamma": 0.1, "1-R2": ...},
+    ...
+  ]
+}
+```
+
+Also output: results/full_ree/fig4B_G20_pgfplots.tex with:
+```latex
+% REE
+\addplot coordinates {(0.1,...)  (0.25,...) (0.5,...) (1,...) (2,...) (4,...)};
+% no-learning
+\addplot coordinates {(0.1,...) (0.25,...) (0.5,...) (1,...) (2,...) (4,...)};
+```
 
 ---
 
-## E. PAPER NUMBER UPDATES (from converged mp50+ solutions)
+## TASK 3: τ-SWEEP AT 3 γ VALUES (33 new convergence runs)
 
-After C1 completes, update main.tex:
+After Task 2 completes, you have converged μ* at τ=2 for γ=0.5, 1.0, 4.0.
+Now sweep τ for each γ.
+
+### τ values: [0.3, 0.5, 0.8, 1.0, 1.5, 2.0, 3.0, 4.0, 5.0, 7.0, 10.0, 15.0]
+### γ values: [0.5, 1.0, 4.0]
+
+τ=2.0 is already done (from Task 2). So 11 new τ values per γ = 33 runs.
+
+### Warm-start chain for each γ:
 ```
-OLD (float64):        NEW (mp100):
-1-R² = 0.108    →    1-R² = 0.077
-slope = 0.341   →    slope = 0.541
-G = 14           →    G = 20
+τ=2.0 (done) → τ=1.5 → τ=1.0 → τ=0.8 → τ=0.5 → τ=0.3   (walk down)
+τ=2.0 (done) → τ=3.0 → τ=4.0 → τ=5.0 → τ=7.0 → τ=10.0 → τ=15.0  (walk up)
 ```
 
-Update: γ-ladder table, posteriors table, G-ladder table, all inline mentions.
+When changing τ: the u_grid stays the same, but μ*(u,p) changes.
+Interpolate the previous τ's converged μ* as the initial guess.
+
+For each converged run, measure 1-R².
+
+Save: results/full_ree/fig4A_G20_tau_sweep.json
+```json
+{
+  "figure": "fig4A",
+  "params": {"G": 20, "umax": 5},
+  "curves": [
+    {"gamma": 0.5, "points": [{"tau": 0.3, "1-R2": ...}, {"tau": 0.5, "1-R2": ...}, ...]},
+    {"gamma": 1.0, "points": [...]},
+    {"gamma": 4.0, "points": [...]}
+  ]
+}
+```
+
+Also output: results/full_ree/fig4A_G20_pgfplots.tex
 
 ---
 
-## F. SKIP FOR SSRN v2
+## TASK 4: NO-LEARNING FIGURES (cheap, no REE)
 
-| Fig | Why |
-|-----|-----|
-| 7   | Trade volume — needs 8 additional γ convergence runs |
-| 8   | Value of info V(τ) — needs 45 runs |
-| 9   | GS resolution — derived from Fig 8 |
+### Task 4a: Fig R1 — 1-R² vs K (number of agents)
+- For K = 3, 5, 7, 10, 15, 20
+- For each γ ∈ {0.5, 1.0, 4.0}
+- Compute no-learning 1-R² at τ=2, G=20
+- Save: results/full_ree/figR1_G20_pgfplots.tex
 
----
+### Task 4b: Fig R2 — lognormal payoff variant
+- Same as knife-edge but with lognormal payoff v ~ LogNormal
+- For γ ∈ {0.5, 1.0, 4.0}, sweep τ
+- Save: results/full_ree/figR2_G20_pgfplots.tex
 
-## EXECUTION ORDER
-
-```
-STEP 1: Extract B (figs 3B, 5, 6B, 10) from existing seed     → 1 hour compute
-STEP 2: Run C1 (5 γ points, warm-started)                      → 3-5 hours  
-STEP 3: Run D (no-learning, check R1/R2/11 gammas)             → minutes
-STEP 4: Update paper numbers from C1 results                   → 30 min editing
-STEP 5: Run C2 (33 τ points, warm-started from C1)             → overnight
-STEP 6: Build pgfplots coordinates for all figures              → 1 hour
-STEP 7: Upload SSRN v2                                         → done
-```
-
-Total new convergence runs: 38 (5 from C1 + 33 from C2)
-All warm-started from G=20 UMAX=5 seed.
-All at mp50, tol < 1e-25.
+### Task 4c: Fig 11 — mechanisms bar chart
+- Compute no-learning 1-R² at 6 configurations:
+  1. CRRA symmetric (γ=0.5, equal τ)
+  2. Het γ = (0.5, 3, 10), equal τ=2
+  3. Het τ = (1, 3, 10), equal γ=0.5
+  4. Het γ + het τ aligned (low γ = high τ)
+  5. Het γ + het τ opposed (low γ = low τ)
+  6. CRRA γ=2 (weak effect)
+- Save: results/full_ree/fig11_G20_pgfplots.tex
 
 ---
 
-## OUTPUT FORMAT
+## EXECUTION PRIORITY
+1. Task 1 (extractions from seed) — DO FIRST, no convergence needed
+2. Task 2 (5 γ-sweep runs) — DO SECOND
+3. Task 4 (no-learning, cheap) — DO ANYTIME
+4. Task 3 (33 τ-sweep runs) — DO OVERNIGHT after Task 2
 
-Save to: `results/full_ree/`
+---
 
-```
-fig_NAME_G20_data.json         — raw data
-fig_NAME_G20_pgfplots.tex      — pgfplots coordinates
-```
-
-pgfplots coordinates: 40-50 points per curve, arc-length resampled.
-Linear interpolation in pgfplots (no smooth keyword).
-Style 29 colors for contours: blue(low p) → black(p=0.5) → red(high p).
-BC20 colors for 1-R² plots: green(γ=0.5), red(γ=1), blue(γ=4).
+## NOTES
+- All pgfplots output: one \addplot coordinates {...}; per curve
+- Arc-length resample contours to 40-50 points
+- Use linear interpolation in pgfplots (no smooth keyword needed if 40+ pts)
+- Colors will be applied in the paper's LaTeX, not in the pgfplots output
