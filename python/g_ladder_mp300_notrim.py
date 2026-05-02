@@ -292,7 +292,7 @@ for G in GS:
           f"med={mpmath.nstr(F_med(F0, G), 6)}", flush=True)
 
     mu, F_max_f, F_med_f, history = nk_solve_mp(mu, u_grid, p_grid,
-                                                    p_lo, p_hi, G, max_iters=4)
+                                                    p_lo, p_hi, G, max_iters=15)
 
     elapsed = time.time() - t_G
     print(f"\n  G={G} TOTAL t={elapsed/60:.0f}min, "
