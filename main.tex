@@ -570,6 +570,48 @@ asset, and a parallel extension obtains for any signal distribution in the
 exponential family with CARA preferences (\citealp{BreonDrish2015}); the
 proof in Appendix~\ref{app:proofs} sketches this extension.
 
+\begin{remark}[CARA full revelation for general payoff distributions]%
+\label{rem:general-payoff}
+The binary payoff $v\in\{0,1\}$ is adopted for tractability, but the
+full-revelation result under CARA holds for arbitrary payoff
+distributions. The argument requires only two properties of CARA:
+\begin{enumerate}[label=(\roman*),topsep=2pt,itemsep=2pt]
+\item \emph{Wealth cancellation.} Under CARA, the first-order condition
+for a general risky payoff $v$ with price $p$ is
+$\E\bigl[(v-p)\,e^{-\alpha x(v-p)} \mid \mathcal{F}_{k}\bigr]=0$,
+where $\mathcal{F}_{k}$ is agent~$k$'s information set.  The wealth
+$W_{k}$ does not appear: the factor $e^{-\alpha W_{k}}$ cancels from
+both sides.  Hence the optimal demand $x_{k}$ depends only on the
+conditional distribution of~$v$ given $\mathcal{F}_{k}$, not on
+$W_{k}$.
+
+\item \emph{Identical posteriors imply zero trade.}  Let $T$ be a
+sufficient statistic for $v$ given the joint signal
+$(s_{1},\ldots,s_{K})$.  If the price function is invertible in $T$
+--- that is, observing $p$ reveals $T$ --- then every agent's posterior
+satisfies $\PP(v \in \cdot \mid s_{k}, T) = \PP(v \in \cdot \mid T)$
+by sufficiency.  All agents share the same conditional distribution.
+Because the CARA demand depends only on the conditional distribution
+(by~(i)) and the demands are evaluated at a common price, all agents
+solve identical optimisation problems.  Market clearing
+$\sum_{k}x_{k}=0$ with zero supply then forces $x_{k}=0$ for each $k$
+(otherwise all agents would trade in the same direction).  The
+equilibrium price is $p^{*}(T) = \E[v \mid T]$, which satisfies the
+first-order condition at $x=0$:
+$\E[(v-p^{*})\mid T] = \E[v\mid T]-p^{*} = 0$.
+\end{enumerate}
+The fully-revealing REE $p=\E[v\mid T]$, $x_{k}\equiv 0$ thus exists
+for any payoff distribution, any signal structure, and any
+configuration of CARA parameters $(\alpha_{k},W_{k})_{k=1}^{K}$.  The
+binary and Gaussian cases are special instances: $\E[v\mid T] =
+\Lam(\Tstar)$ for binary, $\E[v\mid T] = \bar v + \sigma_{v}^{2}
+\sum_{k}\tau_{k}u_{k}/(\sigma_{v}^{-2}+\sum_{k}\tau_{k})$ for
+Gaussian.  The non-CARA partial-revelation result, by contrast, does
+depend on the payoff structure through the functional form of the
+demand --- but the \emph{mechanism} (aggregation-space mismatch) is
+universal.
+\end{remark}
+
 \begin{remark}[CARA as the unique log-odds aggregator within CRRA]\label{rem:unique-cara}
 Within the CRRA preference class indexed by $\gamma\in(0,\infty]$, the
 demand function is $x_{k}=W_{k}(R_{k}-1)/[(1-p)+R_{k}p]$ with
@@ -1606,10 +1648,32 @@ With heterogeneous $\alpha_{k}$, the no-learning price reveals
 $\sum_{k}w_{k}\tau_{k}u_{k}$, which for $K\geq 3$ is generically not
 informationally equivalent to $\Tstar$ (different linear combinations
 of $K\geq 3$ variables are linearly independent). However, the price
-function $p=\Lam(\Tstar/K)$ is still a valid REE: at this price every
-agent's posterior equals $\Lam(\Tstar/K)=p$, demands are zero
-identically, and the market clears with zero supply. This is an REE
-for any $(\alpha_{k})$.
+function $p=\Lam(\Tstar)$ is a valid fully-revealing REE: at this
+price, every agent infers $\Tstar$ by inverting $\Lam$, so her posterior
+becomes $\Lam(\Tstar)=p$. Hence $\logit\mu_{k}=\logit p$ for all $k$,
+demands are zero identically, and the market clears with zero supply.
+This is an REE for any $(\alpha_{k})$.
+
+\emph{General payoff distributions.} The FR result extends beyond
+binary payoffs. For an arbitrary random payoff $v$ with prior $\pi$ and
+signals $s_{k}$ admitting a sufficient statistic $T(s_{1},\ldots,s_{K})$:
+under CARA utility, the agent's first-order condition is
+\[
+   \E\!\left[(v-p)\,e^{-\alpha_{k} x_{k}(v-p)} \;\middle|\; s_{k},\, p\right] = 0.
+\]
+The wealth $W_{k}$ does not appear (the factor $e^{-\alpha_{k}W_{k}}$
+cancels from both terms in the expected-utility objective, as in the
+proof of Lemma~\ref{lem:cara-demand}). If the price reveals $T$, then
+every agent's posterior satisfies
+$\PP(v\in\cdot \mid s_{k}, T) = \PP(v\in\cdot\mid T)$
+by sufficiency. All agents share the same conditional distribution and
+face the same price, so all solve identical FOCs. Market clearing
+$\sum_{k}x_{k}=0$ with identical demands forces $x_{k}=0$ for each $k$.
+At $x_{k}=0$, the FOC reduces to $\E[v-p\mid T]=0$, giving the
+equilibrium price $p^{*}=\E[v\mid T]$. This is an invertible function
+of $T$ (under standard regularity), so the REE is fully revealing.
+For binary payoffs, $\E[v\mid T]=\Lam(\Tstar)$; for Gaussian payoffs,
+$\E[v\mid T]$ is the posterior mean.
 
 The exponential-family extension replaces $\tau_{k}u_{k}$ by the
 natural-parameter log-likelihood ratio of the chosen family; the
