@@ -35,7 +35,7 @@ UMAX = 5.0
 TRIM = 0.05
 H_FD = mpf("1e-30")
 TARGET = mpf("1e-25")
-MAX_ITERS = 8
+MAX_ITERS = 15
 
 GAMMAS = [0.5, 1.0, 4.0]
 TAU_VALUES = [0.3, 0.5, 0.8, 1.0, 1.5, 3.0, 4.0, 5.0, 7.0, 10.0, 15.0]
