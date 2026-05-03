@@ -168,3 +168,44 @@ Each terminal should work on its own branch:
 
 ## WHEN DONE
 Push all results. I will pull from all branches and assemble Fig 4A.
+
+---
+
+## STATUS UPDATE (2026-05-03)
+
+### Terminal 2 (γ=1.0): DONE for τ≤4. Stop.
+τ=0.3 to 3.0 have ||F|| < 1e-12 — excellent.
+τ=4.0 has ||F|| = 2.3e-5 — acceptable.
+τ≥5 did NOT converge (||F|| > 0.001) — DISCARD those points.
+→ You have 8 usable points. STOP this terminal.
+
+### Terminal 3 (γ=4.0): REDO WITH CORRECT SOLVER
+You used K3 staggered NK float64. That is the WRONG solver.
+The correct solver is the posterior-method v3 (code in python/).
+||F|| = 0.001-0.013 everywhere — nothing converged.
+→ REDO all 12 τ values using posterior-method v3 with mp50.
+→ Warm-start from the γ=4.0 Task 2 checkpoint.
+→ γ=4.0 is closest to CARA — should converge fastest.
+
+### Terminal 1 (γ=0.5 high-τ): STOP, MOVE ON
+τ≥4 won't converge at G=20. Accept 7 points (τ=0.3 to 3.0).
+→ Switch to helping Terminal 3 or doing Fig R2.
+
+### Terminal 4 (extractions): ✅ COMPLETE
+All figures extracted. No further work needed.
+
+## WHAT WE HAVE FOR FIG 4A
+
+| τ | γ=0.5 | γ=1.0 | γ=4.0 |
+|---|---|---|---|
+| 0.3 | 0.037 ✅ | 0.030 ✅ | 🔲 REDO |
+| 0.5 | 0.038 ✅ | 0.026 ✅ | 🔲 |
+| 0.8 | 0.047 ✅ | 0.031 ✅ | 🔲 |
+| 1.0 | 0.052 ✅ | 0.033 ✅ | 🔲 |
+| 1.5 | 0.064 ✅ | 0.040 ✅ | 🔲 |
+| 2.0 | 0.088 ✅ | 0.046 ✅ | 0.016 ✅ (Task 2) |
+| 3.0 | 0.138 ✅ | 0.066 ✅ | 🔲 |
+| 4.0 | ❌ stuck | 0.090 ⚠️ | 🔲 |
+
+We can build Fig 4A now with γ=0.5 (7 pts) and γ=1.0 (7-8 pts).
+γ=4.0 needs Terminal 3 redo.
