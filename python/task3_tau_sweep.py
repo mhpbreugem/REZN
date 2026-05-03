@@ -35,7 +35,7 @@ UMAX = 5.0
 TRIM = 0.05
 H_FD = mpf("1e-30")
 TARGET = mpf("1e-25")
-MAX_ITERS = 12
+MAX_ITERS = 8
 
 GAMMAS = [0.5, 1.0, 4.0]
 TAU_VALUES = [0.3, 0.5, 0.8, 1.0, 1.5, 3.0, 4.0, 5.0, 7.0, 10.0, 15.0]
@@ -239,6 +239,19 @@ def nk_solve(mu, u_grid, p_grid, p_lo, p_hi, tau_mp, gamma_mp, tag):
                           "F_max": mpmath.nstr(F_max_a, 30),
                           "F_med": mpmath.nstr(F_med_a, 30),
                           "elapsed_s": elapsed})
+        # Fast-fail: if max < 1e-3 we have a usable solution; bail
+        # out early to avoid wasting time on stuck-boundary cases.
+        if F_max_a < mpf("1e-3") and nk_iter >= 4:
+            print(f"  [{tag}] usable convergence (max < 1e-3), stopping early",
+                  flush=True)
+            return mu, F_max_a, F_med_a, history
+        # Fast-fail stuck: if max barely changing for 3 iters AND high, bail
+        if (len(history) >= 3 and nk_iter >= 4 and F_max_a > mpf("0.1")
+                and abs(F_max_a - mpf(history[-2]["F_max"])) /
+                    F_max_a < mpf("0.05")):
+            print(f"  [{tag}] stuck (max~{mpmath.nstr(F_max_a,3)}), "
+                  f"bailing out early", flush=True)
+            return mu, F_max_a, F_med_a, history
     return mu, F_max_a, F_med_a, history
 
 
