@@ -34,7 +34,7 @@ from task3_tau_sweep import (
 )
 
 RESULTS_DIR = "results/full_ree"
-GAMMAS = [0.5, 1.0, 4.0]
+GAMMAS = [1.0, 4.0, 0.5]   # process γ=1, 4 first then come back to γ=0.5
 
 # τ chain: full ladder including intermediates
 TAU_CHAIN_DOWN = [2.0, 1.5, 1.0, 0.8, 0.5, 0.3]
