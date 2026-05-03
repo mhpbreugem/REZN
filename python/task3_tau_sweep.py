@@ -427,6 +427,23 @@ def main():
     # Now sweep τ for each γ
     for gamma_f in GAMMAS:
         for tau_f in TAU_VALUES:
+            # Skip if ckpt already exists (resume across restarts)
+            existing = (f"{RESULTS_DIR}/posterior_v3_G{G}_umax5_"
+                        f"{gamma_tag(gamma_f)}_{tau_tag(tau_f)}_mp50.json")
+            import os.path
+            if os.path.exists(existing):
+                with open(existing) as f:
+                    d = json.load(f)
+                results[gamma_f].append({
+                    "tau": tau_f,
+                    "1-R2": d.get("1-R2_weighted", None),
+                    "slope": d.get("slope_weighted", None),
+                    "source": "existing_ckpt",
+                })
+                print(f"  Skipping γ={gamma_f}, τ={tau_f} (ckpt exists, "
+                      f"1-R²={d.get('1-R2_weighted')})", flush=True)
+                continue
+
             print(f"\n=== γ={gamma_f}, τ={tau_f} ({time.time()-t_start:.0f}s elapsed) ===")
             t0 = time.time()
             try:
