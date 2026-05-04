@@ -26,7 +26,7 @@ from mpmath import mp as mpctx
 
 MP_DPS   = 52        # 50 significant decimal digits + 2 guard
 F64_TOL  = 1e-8      # Picard phase target before switching to Newton
-F64_MAX  = 2000      # max Picard iterations
+F64_MAX  = 3000      # max Picard iterations (plain Picard at rate ~0.966/step: ~535 iters)
 N_NEWTON = 5         # max LM-Newton outer steps
 LM_REG   = 0.0       # λ for LM (0 = pure Newton; small > 0 adds stability)
 
@@ -461,24 +461,39 @@ def run(args):
     # Phase 1 — float64 Picard α=0.05
     # ══════════════════════════════════════════════════════════════════════════
     f64_iters = min(F64_MAX, args.max_iter)
-    ALPHA_P1  = 0.05
+    ALPHA_P1  = 1.0   # plain Picard — rate=ρ(Φ')≈0.966/step; damping was 58× slower
 
     print(f"\n  ── Phase 1 (float64 Picard α={ALPHA_P1}) "
           f"until F_max < {F64_TOL:.0e} ──", flush=True)
+
+    prev_F_max   = float('inf')
+    bad_streak   = 0
+    alpha_p1_eff = ALPHA_P1
 
     for it in range(1, f64_iters + 1):
         mu_phi, F_max, F_med = phi_step_f64(u_grid, p_grids, mu_arr, gamma, tau)
         elapsed = time.time() - t0
 
+        # Adaptive α: if residual increased 3 steps running, halve step
+        if F_max > prev_F_max:
+            bad_streak += 1
+            if bad_streak >= 3:
+                alpha_p1_eff = max(0.05, alpha_p1_eff * 0.5)
+                bad_streak   = 0
+                print(f"  [adaptive] α reduced to {alpha_p1_eff:.3f}", flush=True)
+        else:
+            bad_streak = 0
+
         for i in range(G):
             for j in range(len(mu_arr[i])):
-                mu_arr[i][j] = ALPHA_P1*mu_phi[i][j] + (1-ALPHA_P1)*mu_arr[i][j]
+                mu_arr[i][j] = alpha_p1_eff*mu_phi[i][j] + (1-alpha_p1_eff)*mu_arr[i][j]
         mu_arr = enforce_mono(mu_arr, G)
+        prev_F_max = F_max
 
         entry = {'phase':1,'iter':it,'F_max':F_max,'F_med':F_med,'t':round(elapsed,1)}
         history.append(entry)
         print(f"  [{elapsed:7.0f}s] P1 iter={it:4d}  "
-              f"F_max={F_max:.3e}  F_med={F_med:.3e}", flush=True)
+              f"F_max={F_max:.3e}  F_med={F_med:.3e}  α={alpha_p1_eff:.3f}", flush=True)
 
         if time.time() - last_save > 120 or F_max < tol:
             save_ckpt(args.out, G, tau, gamma, u_grid, p_grids, mu_arr,
