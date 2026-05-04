@@ -17,11 +17,11 @@ SEED   = f'{OUT}/posterior_v3_G20_umax5_notrim_mp300.json'  # γ=0.5 τ=2 mp300 
 
 G        = 20
 UMAX     = 5.0
-TOL      = 1e-10   # float64 achievable; converged μ* is usable for all figures
-MAX_ITER_COLD = 3000   # no warm-start: needs ~2000+ Picard steps at alpha=0.05
-MAX_ITER_WARM = 600    # warm-start: already near fixed point, converges fast
-ALPHA    = 0.05        # matches working G=14 runs (5000 iters at alpha=0.05)
-ANDERSON = 0           # plain Picard (most stable)
+TOL      = 1e-25   # mp50 target — beyond machine precision
+MAX_ITER_COLD = 4000   # cold: Phase1 f64 Anderson (~500) + Phase2 mp50 (~3500)
+MAX_ITER_WARM = 2000   # warm: already near fixed point, less mp50 work needed
+ALPHA    = 0.3         # Picard damping (Phase1 Anderson + Phase2)
+ANDERSON = 5           # Anderson history depth (Phase 1 only)
 
 # τ values per FIGURES_TODO.md
 TAU_ALL = [0.3, 0.5, 0.8, 1.0, 1.5, 2.0, 3.0, 4.0, 5.0, 7.0, 10.0, 15.0]
