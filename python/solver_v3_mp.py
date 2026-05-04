@@ -248,7 +248,6 @@ def build_p_grids(u_grid, gamma, tau, Gp):
 def phi_step_f64(u_grid, p_grids, mu_arr, gamma, tau):
     G = len(u_grid)
     mu_new = [[0.0]*len(p_grids[i]) for i in range(G)]
-    residuals = []
     for i in range(G):
         ps = np.empty((G, G))
         for j in range(G):
@@ -256,10 +255,11 @@ def phi_step_f64(u_grid, p_grids, mu_arr, gamma, tau):
                 ps[j,l] = solve_mc(u_grid[i], u_grid[j], u_grid[l],
                                    gamma, u_grid, p_grids, mu_arr)
         for k, p_tgt in enumerate(p_grids[i]):
-            mv = contour_posterior(ps, u_grid, p_tgt, u_grid[i], tau)
-            mu_new[i][k] = mv
-            residuals.append(abs(mv - float(mu_arr[i][k])))
+            mu_new[i][k] = contour_posterior(ps, u_grid, p_tgt, u_grid[i], tau)
     mu_new = enforce_mono(mu_new, G)
+    # residual computed AFTER monotone projection — true fixed-point residual
+    residuals = [abs(float(mu_new[i][k]) - float(mu_arr[i][k]))
+                 for i in range(G) for k in range(len(mu_arr[i]))]
     return mu_new, max(residuals), float(np.median(residuals))
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -269,8 +269,7 @@ def phi_step_f64(u_grid, p_grids, mu_arr, gamma, tau):
 
 def phi_step_mp50(u_grid, p_grids, mu_arr_mp, mu_arr_f64, gamma, tau):
     G = len(u_grid)
-    mu_new    = [[mp.mpf('0')]*len(p_grids[i]) for i in range(G)]
-    residuals = []
+    mu_new = [[mp.mpf('0')]*len(p_grids[i]) for i in range(G)]
     for i in range(G):
         u_own  = u_grid[i]
         ps_f64 = np.empty((G, G))
@@ -279,12 +278,14 @@ def phi_step_mp50(u_grid, p_grids, mu_arr_mp, mu_arr_f64, gamma, tau):
                 ps_f64[j,l] = solve_mc(u_own, u_grid[j], u_grid[l],
                                        gamma, u_grid, p_grids, mu_arr_f64)
         for k, p_tgt in enumerate(p_grids[i]):
-            mv = contour_posterior_mp(ps_f64, u_grid, mp.mpf(str(p_tgt)), u_own, tau)
-            mu_new[i][k] = mv
-            residuals.append(abs(mv - mu_arr_mp[i][k]))
+            mu_new[i][k] = contour_posterior_mp(
+                ps_f64, u_grid, mp.mpf(str(p_tgt)), u_own, tau)
     mu_new = enforce_mono(mu_new, G)
-    F_max  = max(residuals)
-    F_med  = sorted(residuals)[len(residuals)//2]
+    # residual computed AFTER monotone projection — true fixed-point residual
+    residuals = [abs(mu_new[i][k] - mu_arr_mp[i][k])
+                 for i in range(G) for k in range(len(mu_arr_mp[i]))]
+    F_max = max(residuals)
+    F_med = sorted(residuals)[len(residuals)//2]
     return mu_new, F_max, F_med
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -461,10 +462,11 @@ def run(args):
     # Phase 1 — float64 Picard α=0.05
     # ══════════════════════════════════════════════════════════════════════════
     f64_iters = min(F64_MAX, args.max_iter)
-    ALPHA_P1  = 1.0   # plain Picard — rate=ρ(Φ')≈0.966/step; damping was 58× slower
+    ALPHA_P1  = 0.05  # small damping keeps the non-contracting Picard map stable
 
+    f64_threshold = args.f64_tol  # CLI override; set >1 to skip Phase 1
     print(f"\n  ── Phase 1 (float64 Picard α={ALPHA_P1}) "
-          f"until F_max < {F64_TOL:.0e} ──", flush=True)
+          f"until F_max < {f64_threshold:.0e} ──", flush=True)
 
     prev_F_max   = float('inf')
     bad_streak   = 0
@@ -504,7 +506,7 @@ def run(args):
             print(f"\n  CONVERGED in Phase 1  F_max={F_max:.3e}", flush=True)
             converged = True; break
 
-        if F_max < F64_TOL:
+        if F_max < f64_threshold:
             print(f"  Phase 1 done  F_max={F_max:.3e}", flush=True)
             break
 
@@ -590,5 +592,7 @@ if __name__ == '__main__':
                     help='(unused, kept for CLI compatibility)')
     ap.add_argument('--lm_reg',   type=float, default=0.0,
                     help='LM regularisation λ (0=pure Newton)')
+    ap.add_argument('--f64_tol',  type=float, default=1e-8,
+                    help='Phase 1 exit threshold (default 1e-8); set >1 to skip Phase 1')
     args = ap.parse_args()
     run(args)
