@@ -18,8 +18,8 @@ SEED   = f'{OUT}/posterior_v3_G20_umax5_notrim_mp300.json'  # γ=0.5 τ=2 mp300 
 G        = 20
 UMAX     = 5.0
 TOL      = 1e-25   # mp50 target — beyond machine precision
-MAX_ITER_COLD = 4000   # cold: Phase1 f64 Anderson (~500) + Phase2 mp50 (~3500)
-MAX_ITER_WARM = 2000   # warm: already near fixed point, less mp50 work needed
+MAX_ITER_COLD = 500    # cold: Phase1 Picard (~200) + Phase2 LM-Newton (~20 steps)
+MAX_ITER_WARM = 300    # warm: already near fixed point, Phase2 Newton directly
 ALPHA    = 0.3         # Picard damping (Phase1 Anderson + Phase2)
 ANDERSON = 5           # Anderson history depth (Phase 1 only)
 
@@ -72,7 +72,9 @@ for gamma, chains in CHAINS.items():
     summary[gamma] = {}
 
     # Walk up from τ=2.0
-    prev = None   # no-learning init for first run
+    # Use SEED (γ=0.5 τ=2 fully converged) as anchor warm-start; gives F_max~0.49
+    # vs no-learning F_max~0.98, halving the distance for Phase-2 Newton.
+    prev = SEED if os.path.exists(SEED) else None
     for tau in chains['up']:
         seed = prev  # warm-start from previous τ (or None → no-learning)
         label = f'γ={gamma} τ={tau} (up)'

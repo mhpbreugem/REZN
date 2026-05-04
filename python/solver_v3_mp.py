@@ -26,9 +26,9 @@ from mpmath import mp as mpctx
 
 MP_DPS   = 52        # 50 significant decimal digits + 2 guard
 F64_TOL  = 1e-8      # Picard phase target before switching to Newton
-F64_MAX  = 3000      # max Picard iterations (plain Picard at rate ~0.966/step: ~535 iters)
-N_NEWTON = 5         # max LM-Newton outer steps
-LM_REG   = 0.0       # λ for LM (0 = pure Newton; small > 0 adds stability)
+F64_MAX  = 200       # Picard budget: enough to find a good point, then Newton takes over
+N_NEWTON = 20        # max LM-Newton outer steps (adaptive λ handles far starts)
+LM_REG   = 0.0       # λ for LM (0 = pure Newton; adaptive overwrites when far from cvg)
 
 mpctx.dps = MP_DPS
 
@@ -469,22 +469,13 @@ def run(args):
           f"until F_max < {f64_threshold:.0e} ──", flush=True)
 
     prev_F_max   = float('inf')
-    bad_streak   = 0
+    best_F_max   = float('inf')
+    best_mu_arr  = None    # best iterate seen in Phase 1 (Picard cycles — save best)
     alpha_p1_eff = ALPHA_P1
 
     for it in range(1, f64_iters + 1):
         mu_phi, F_max, F_med = phi_step_f64(u_grid, p_grids, mu_arr, gamma, tau)
         elapsed = time.time() - t0
-
-        # Adaptive α: if residual increased 3 steps running, halve step
-        if F_max > prev_F_max:
-            bad_streak += 1
-            if bad_streak >= 3:
-                alpha_p1_eff = max(0.05, alpha_p1_eff * 0.5)
-                bad_streak   = 0
-                print(f"  [adaptive] α reduced to {alpha_p1_eff:.3f}", flush=True)
-        else:
-            bad_streak = 0
 
         for i in range(G):
             for j in range(len(mu_arr[i])):
@@ -492,10 +483,15 @@ def run(args):
         mu_arr = enforce_mono(mu_arr, G)
         prev_F_max = F_max
 
+        # Track best iterate (Picard may cycle — save the best point for Phase 2)
+        if F_max < best_F_max:
+            best_F_max  = F_max
+            best_mu_arr = [[v for v in row] for row in mu_arr]
+
         entry = {'phase':1,'iter':it,'F_max':F_max,'F_med':F_med,'t':round(elapsed,1)}
         history.append(entry)
         print(f"  [{elapsed:7.0f}s] P1 iter={it:4d}  "
-              f"F_max={F_max:.3e}  F_med={F_med:.3e}  α={alpha_p1_eff:.3f}", flush=True)
+              f"F_max={F_max:.3e}  best={best_F_max:.3e}  F_med={F_med:.3e}", flush=True)
 
         if time.time() - last_save > 120 or F_max < tol:
             save_ckpt(args.out, G, tau, gamma, u_grid, p_grids, mu_arr,
@@ -510,36 +506,71 @@ def run(args):
             print(f"  Phase 1 done  F_max={F_max:.3e}", flush=True)
             break
 
+    # Restore best iterate if Picard cycled past it
+    if best_mu_arr is not None and best_F_max < F_max:
+        print(f"  [restoring best Phase-1 iterate: F_max {F_max:.3e} → {best_F_max:.3e}]",
+              flush=True)
+        mu_arr = best_mu_arr
+        F_max  = best_F_max
+
     remaining = args.max_iter - it
 
     # ══════════════════════════════════════════════════════════════════════════
-    # Phase 2 — LM-Newton (no cutoff)
+    # Phase 2 — LM-Newton with adaptive λ
+    # Start with moderate λ when far from convergence; reduce toward pure Newton.
+    # Jacobian reused across λ-retry attempts (only linear solve changes).
     # ══════════════════════════════════════════════════════════════════════════
     if not converged and remaining > 0:
-        lam   = args.lm_reg
-        print(f"\n  ── Phase 2 (LM-Newton λ={lam}  max {N_NEWTON} steps) ──",
-              flush=True)
+        # Choose initial λ based on how close Phase 1 got
+        if F_max > 0.1:
+            lam = 10.0   # far from fixed point: LM ≈ gradient descent
+        elif F_max > 1e-4:
+            lam = 1.0    # moderate: LM-Newton mix
+        else:
+            lam = args.lm_reg  # near convergence: use CLI value (default 0 = pure Newton)
+
+        print(f"\n  ── Phase 2 (LM-Newton adaptive λ, start λ={lam:.1f}, "
+              f"max {N_NEWTON} steps) ──", flush=True)
 
         x_curr = flatten(mu_arr)
 
         for nit in range(1, N_NEWTON + 1):
             elapsed = time.time() - t0
-            print(f"\n  [Newton step {nit}/{N_NEWTON}  {elapsed:.0f}s]", flush=True)
+            print(f"\n  [Newton step {nit}/{N_NEWTON}  elapsed={elapsed:.0f}s  λ={lam:.2e}]",
+                  flush=True)
 
-            # Jacobian (float64)
+            # Jacobian (float64) — expensive, computed once per outer step
             J_f64, F_f64 = compute_jacobian(
                 u_grid, p_grids, mu_arr, gamma, tau, G, t0)
 
-            # LM-Newton step — full step, no cutoff
-            mu_arr, x_curr, F_max, F_med, phi_mp = lm_newton_step(
-                x_curr, J_f64, F_f64, mu_arr, u_grid, p_grids, gamma, tau, G,
-                lam=lam)
+            # Try current λ, then escalate if step doesn't reduce residual
+            accepted = False
+            lam_try  = lam
+            for _ in range(5):
+                mu_try, x_try, F_try, Fm_try, phi_try = lm_newton_step(
+                    x_curr, J_f64, F_f64, mu_arr, u_grid, p_grids, gamma, tau, G,
+                    lam=lam_try)
+                F_try_f = float(F_try)
+                if F_try_f < float(F_max):
+                    accepted = True
+                    break
+                lam_try *= 3
+                print(f"    [λ backtrack → {lam_try:.2e}  F={F_try_f:.3e}]", flush=True)
+
+            if not accepted:
+                print(f"  [LM: no improvement after backtrack — stopping]", flush=True)
+                break
+
+            # Commit step; warm λ toward 0 for next iteration
+            lam = max(lam_try / 3, args.lm_reg)
+            mu_arr, x_curr, F_max, F_med, phi_mp = mu_try, x_try, F_try, Fm_try, phi_try
 
             elapsed = time.time() - t0
             print(f"  [Newton {nit}] F_max(mp50)={float(F_max):.3e}  "
-                  f"F_med(mp50)={float(F_med):.3e}  {elapsed:.0f}s", flush=True)
+                  f"F_med(mp50)={float(F_med):.3e}  λ={lam:.2e}  {elapsed:.0f}s",
+                  flush=True)
 
-            entry = {'phase':2,'newton':nit,
+            entry = {'phase':2,'newton':nit,'lam':lam,
                      'F_max':str(F_max),'F_med':str(F_med),'t':round(elapsed,1)}
             history.append(entry)
 
@@ -551,17 +582,6 @@ def run(args):
                 print(f"\n  CONVERGED in Phase 2 (Newton {nit})  "
                       f"F_max={float(F_max):.3e}", flush=True)
                 converged = True; break
-
-            # Use Newton iterate as new starting point for next step
-            # The mp50 phi output is the new Picard update — apply it for cleanup
-            alpha2 = args.alpha
-            mu_arr_mp = [[mp.mpf(str(v)) for v in row] for row in mu_arr]
-            for i in range(G):
-                for j in range(len(mu_arr[i])):
-                    mu_arr[i][j] = float(
-                        alpha2*phi_mp[i][j] + (1-alpha2)*mu_arr_mp[i][j])
-            mu_arr = enforce_mono(mu_arr, G)
-            x_curr = flatten(mu_arr)
 
     # ── Final metrics ─────────────────────────────────────────────────────────
     elapsed = time.time() - t0
